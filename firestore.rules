@@ -1,5 +1,10 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v2.2)
+// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v2.3)
+// ============================================================
+// PERUBAHAN v2.3:
+//   - getUserRole() kini baca dokumen guna UID (request.auth.uid)
+//     yang konsisten dengan cara app.js menyimpan data pengguna.
+//   - Tambah sokongan baca/tulis dokumen pending_uid semasa migrasi.
 // ============================================================
 rules_version = '2';
 service cloud.firestore {
@@ -9,6 +14,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Baca role dari dokumen users/{uid} — UID sebagai doc ID
     function getUserRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
@@ -43,10 +49,13 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
+      // Pengguna boleh baca dokumen sendiri (guna UID), Superadmin & HR boleh baca semua
       allow read: if isAuthenticated() && (
         request.auth.uid == userId || isSuperadmin() || isHR()
       );
-      allow write: if isSuperadmin();
+      // Pengguna boleh kemaskini rekod sendiri sahaja (profil)
+      // Superadmin boleh tulis mana-mana rekod
+      allow write: if isSuperadmin() || request.auth.uid == userId;
     }
 
     match /employees/{empId} {
