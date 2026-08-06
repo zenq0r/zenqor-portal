@@ -1,0 +1,125 @@
+// ============================================================
+// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v2.1)
+// PEMBAIKAN KESELAMATAN:
+//   [ISU #1 FIX] Buang || true daripada isAuthenticated()
+//                Firebase Auth sebenar kini digunakan
+//   [ISU #5 FIX] Selaraskan nama role dengan app.js:
+//                Superadmin, HR, Account, IT, Client, Staff
+// ============================================================
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------
+    // [ISU #1 FIX] isAuthenticated() kini menggunakan Firebase Auth sebenar
+    // Tiada lagi || true -- hanya pengguna yang log masuk boleh akses
+    // ----------------------------------------------------------------
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // ----------------------------------------------------------------
+    // Ambil data pengguna dari Firestore menggunakan UID Firebase Auth
+    // ----------------------------------------------------------------
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    // ----------------------------------------------------------------
+    // [ISU #5 FIX] Nama role diselaraskan dengan RBAC_ROLES dalam app.js:
+    // Superadmin, HR, Account, IT, Client, Staff
+    // ----------------------------------------------------------------
+    function isSuperadmin() {
+      return isAuthenticated() && getUserRole() == 'Superadmin';
+    }
+
+    function isHR() {
+      return isAuthenticated() && getUserRole() == 'HR';
+    }
+
+    function isAccount() {
+      return isAuthenticated() && getUserRole() == 'Account';
+    }
+
+    function isIT() {
+      return isAuthenticated() && getUserRole() == 'IT';
+    }
+
+    function isStaff() {
+      return isAuthenticated() && getUserRole() == 'Staff';
+    }
+
+    function isClient() {
+      return isAuthenticated() && getUserRole() == 'Client';
+    }
+
+    // ----------------------------------------------------------------
+    // Company Settings -- hanya Superadmin boleh tulis
+    // ----------------------------------------------------------------
+    match /settings/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperadmin();
+    }
+
+    // ----------------------------------------------------------------
+    // Users Collection -- [ISU #2 FIX] Password TIDAK disimpan di sini
+    // Hanya metadata (name, role) -- auth diurus oleh Firebase Auth
+    // Hanya Superadmin boleh urus akaun pengguna
+    // ----------------------------------------------------------------
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || isSuperadmin() || isHR()
+      );
+      allow write: if isSuperadmin();
+    }
+
+    // ----------------------------------------------------------------
+    // Employees Collection (HRIS)
+    // ----------------------------------------------------------------
+    match /employees/{empId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperadmin() || isHR();
+    }
+
+    // ----------------------------------------------------------------
+    // Customers / Clients Collection
+    // ----------------------------------------------------------------
+    match /customers/{customerId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperadmin() || isHR() || isAccount();
+    }
+
+    // ----------------------------------------------------------------
+    // Docs Collection (Quotations / Invoices)
+    // ----------------------------------------------------------------
+    match /docs/{docId} {
+      allow read: if isAuthenticated() && (
+        isSuperadmin() || isHR() || isAccount() || isIT() ||
+        // Client hanya boleh baca dokumen mereka sendiri
+        (isClient() && resource.data.raw.clientEmail == request.auth.token.email)
+      );
+      allow write: if isSuperadmin() || isHR() || isAccount();
+    }
+
+    // ----------------------------------------------------------------
+    // Payslips Collection
+    // Staff hanya boleh baca payslip mereka sendiri
+    // ----------------------------------------------------------------
+    match /payslips/{payslipId} {
+      allow read: if isAuthenticated() && (
+        isSuperadmin() || isHR() || isAccount() ||
+        (isStaff() && resource.data.raw.empEmail == request.auth.token.email)
+      );
+      allow write: if isSuperadmin() || isHR() || isAccount();
+    }
+
+    // ----------------------------------------------------------------
+    // Audit Logs -- immutable, hanya Superadmin & IT boleh baca
+    // ----------------------------------------------------------------
+    match /audit_logs/{logId} {
+      allow read: if isSuperadmin() || isIT();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+  }
+}

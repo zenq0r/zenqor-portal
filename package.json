@@ -1,0 +1,22 @@
+{
+  "name": "zenqor-operation-enterprise",
+  "version": "2.0.0",
+  "description": "ZENQOR Technologies Enterprise Operation Unified System v2.0",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "zenqor",
+    "enterprise",
+    "hris",
+    "payroll",
+    "quotation",
+    "invoice",
+    "firebase",
+    "vue3",
+    "tailwind"
+  ],
+  "author": "ZENQOR Technologies",
+  "license": "MIT"
+}
