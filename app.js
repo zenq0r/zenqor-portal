@@ -55,12 +55,8 @@ const RBAC_ROLES = {
 createApp({
     data() {
         return {
-            // ----------------------------------------------------------------
-            // [ISU #3 FIX] isLoggedIn kini dikawal oleh Firebase Auth state
-            // Bukan localStorage semata-mata
-            // ----------------------------------------------------------------
             isLoggedIn: false,
-            authLoading: true, // Tunggu Firebase Auth state sebelum render
+            authLoading: true,
             loginForm: { email: '', password: '' },
             loginError: '',
             currentTab: 'dashboard',
@@ -78,10 +74,6 @@ createApp({
             revenueChartInstance: null,
             statusChartInstance: null,
 
-            // ----------------------------------------------------------------
-            // [ISU #2 FIX] userModal TIDAK lagi menyimpan password
-            // Password diurus sepenuhnya oleh Firebase Auth
-            // ----------------------------------------------------------------
             changePasswordModal: {
                 show: false,
                 currentPassword: '',
@@ -112,11 +104,6 @@ createApp({
             payslipHistory: [],
             employees: [],
             customers: [],
-            // ----------------------------------------------------------------
-            // [ISU #3 FIX] users[] kini hanya menyimpan metadata (name, role)
-            // TIADA password dalam array ini -- semak password dilakukan
-            // sepenuhnya oleh Firebase Auth di server
-            // ----------------------------------------------------------------
             users: [],
             auditLogs: [],
 
@@ -135,21 +122,17 @@ createApp({
 
             officialEmailDomain: 'zenq0r.com',
 
-            // ----------------------------------------------------------------
-            // [ISU #2 FIX] userModal TIDAK mengandungi field password
-            // Akaun baharu dibuat melalui Firebase Console atau Admin SDK
-            // ----------------------------------------------------------------
             userModal: {
                 show: false,
                 isEdit: false,
                 form: { name: '', email: '', role: 'Staff' }
-                // TIADA 'password' di sini -- Firebase Auth menguruskan ini
             },
 
             docForm: {
                 type: 'Quotation',
                 docNo: 'QT-2026-000001',
-                status: 'Unpaid',
+                status: 'Open',                 // BAHARU: Status penyelesaian
+                paymentMethod: 'Bank Transfer', // BAHARU: Cara penyelesaian / bayaran
                 date: new Date().toISOString().substr(0, 10),
                 dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
                 clientName: '', clientPhone: '', clientSSM: '', clientAddress: '',
@@ -240,7 +223,8 @@ createApp({
                 this.docForm = {
                     type: 'Quotation',
                     docNo: this.docForm.docNo,
-                    status: 'Unpaid',
+                    status: 'Open',                 // BAHARU
+                    paymentMethod: 'Bank Transfer', // BAHARU
                     date: new Date().toISOString().substr(0, 10),
                     dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
                     clientName: '', clientPhone: '', clientSSM: '', clientAddress: '',
@@ -344,7 +328,6 @@ createApp({
                 user: this.userProfile.email,
                 action: action,
                 details: details,
-                // IP akan diambil dari sisi server jika perlu -- jangan hardcode
                 browser: navigator.userAgent.substring(0, 80)
             };
             setDoc(doc(db, "audit_logs", newLog.id), newLog).catch(e => console.error(e));
@@ -370,11 +353,6 @@ createApp({
             }
         },
 
-        // ----------------------------------------------------------------
-        // [ISU #3 FIX] handleLogin -- menggunakan Firebase Auth sepenuhnya
-        // Password TIDAK dibandingkan di frontend, TIDAK dimuatkan dari Firestore
-        // Firebase Authentication mengesahkan di server
-        // ----------------------------------------------------------------
         async handleLogin() {
             this.loginError = '';
 
@@ -384,7 +362,6 @@ createApp({
             }
 
             try {
-                // Firebase Auth -- semakan berlaku di server Google, bukan browser
                 const userCredential = await signInWithEmailAndPassword(
                     auth,
                     this.loginForm.email,
@@ -392,7 +369,6 @@ createApp({
                 );
                 const firebaseUser = userCredential.user;
 
-                // Ambil metadata role dari Firestore (bukan password)
                 const userDocRef = doc(db, "users", firebaseUser.uid);
                 const userSnap = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
                     .then(m => m.getDoc(userDocRef));
@@ -423,7 +399,6 @@ createApp({
                 this.$nextTick(() => { this.renderCharts(); });
 
             } catch (error) {
-                // Firebase Auth error codes -- jangan dedahkan maklumat teknikal
                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                     this.loginError = 'Emel atau kata laluan tidak sah!';
                 } else if (error.code === 'auth/too-many-requests') {
@@ -437,9 +412,6 @@ createApp({
             }
         },
 
-        // ----------------------------------------------------------------
-        // [ISU #3 FIX] handleLogout -- menggunakan Firebase signOut
-        // ----------------------------------------------------------------
         async handleLogout() {
             try {
                 this.logAudit('LOGOUT', 'User logged out');
@@ -452,10 +424,6 @@ createApp({
             }
         },
 
-        // ----------------------------------------------------------------
-        // [ISU #2 FIX] Tukar Kata Laluan -- guna Firebase Auth updatePassword
-        // Password lama disahkan semula sebelum tukar (reauthenticate)
-        // ----------------------------------------------------------------
         async handleChangePassword() {
             this.changePasswordModal.error = '';
             const { currentPassword, newPassword, confirmPassword } = this.changePasswordModal;
@@ -472,7 +440,6 @@ createApp({
             this.changePasswordModal.loading = true;
             try {
                 const user = auth.currentUser;
-                // Reauthenticate dahulu sebelum tukar password
                 const credential = EmailAuthProvider.credential(user.email, currentPassword);
                 await reauthenticateWithCredential(user, credential);
                 await updatePassword(user, newPassword);
@@ -508,7 +475,6 @@ createApp({
                     csvContent += `"${d.type}","${d.docNo}","${d.date}","${d.name}","${d.amount}","${d.status || 'N/A'}"\n`;
                 });
             } else if (type === 'payroll') {
-                // [ISU #12 FIX] Betulkan lajur CSV payroll -- 7 lajur header, 7 nilai
                 csvContent += "EmpNo,Name,Month,PayDate,GrossSalary,TotalDeduction,NetSalary\n";
                 this.payslipHistory.forEach(p => {
                     const gross = p.raw?.basic || 0;
@@ -530,14 +496,13 @@ createApp({
         },
 
         backupDatabase() {
-            // [ISU #2 FIX] Backup TIDAK memasukkan passwords -- tiada lagi dalam users[]
             const data = {
                 company: this.company,
                 employees: this.employees,
                 customers: this.customers,
                 docHistory: this.docHistory,
                 payslipHistory: this.payslipHistory,
-                users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })), // Hapus sebarang field sensitif
+                users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })),
                 exportDate: new Date().toISOString()
             };
             const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
@@ -665,12 +630,6 @@ createApp({
             }
         },
 
-        // ----------------------------------------------------------------
-        // [ISU #2 FIX] savePortalUser -- TIDAK menyimpan password dalam Firestore
-        // Hanya menyimpan metadata: name, email, role
-        // Untuk cipta akaun baharu, gunakan Firebase Console atau Admin SDK
-        // Untuk kemaskini role sedia ada, fungsi ini masih berfungsi
-        // ----------------------------------------------------------------
         openUserAccessModal(usr = null) {
             if (usr) {
                 this.userModal.isEdit = true;
@@ -691,13 +650,11 @@ createApp({
                     alert(`Emel mesti menggunakan domain rasmi (@${this.officialEmailDomain}).`);
                     return;
                 }
-                // Simpan HANYA metadata -- tiada password di sini
                 const userRef = doc(db, "users", this.userModal.form.email);
                 await setDoc(userRef, {
                     name: this.userModal.form.name,
                     email: this.userModal.form.email,
                     role: this.userModal.form.role
-                    // TIADA password -- Firebase Auth menguruskan ini
                 }, { merge: true });
                 this.userModal.show = false;
                 this.logAudit(this.userModal.isEdit ? 'UPDATE' : 'CREATE', `User role/metadata for ${this.userModal.form.email}`);
@@ -865,9 +822,14 @@ createApp({
             try {
                 const docId = String(this.editingDocId || Date.now());
                 const payload = {
-                    id: docId, type: this.docForm.type, docNo: this.docForm.docNo,
-                    status: this.docForm.status || 'Unpaid', date: this.docForm.date,
-                    name: this.docForm.clientName, amount: this.docGrandTotal,
+                    id: docId, 
+                    type: this.docForm.type, 
+                    docNo: this.docForm.docNo,
+                    status: this.docForm.status || (this.docForm.type === 'Invoice' ? 'Unpaid' : 'Open'), // BAHARU
+                    paymentMethod: this.docForm.paymentMethod || 'Bank Transfer',                         // BAHARU
+                    date: this.docForm.date,
+                    name: this.docForm.clientName, 
+                    amount: this.docGrandTotal,
                     raw: JSON.parse(JSON.stringify(this.docForm))
                 };
                 await setDoc(doc(db, "docs", docId), payload);
@@ -947,7 +909,10 @@ createApp({
         editRecord(item) {
             if (item.isDoc) {
                 this.editingDocId = item.id;
-                if (item.raw) { this.docForm = JSON.parse(JSON.stringify(item.raw)); this.docForm.status = item.raw.status || item.status || 'Unpaid'; }
+                if (item.raw) { 
+                    this.docForm = JSON.parse(JSON.stringify(item.raw)); 
+                    this.docForm.status = item.raw.status || item.status || (item.type === 'Invoice' ? 'Unpaid' : 'Open'); 
+                }
                 this.currentTab = 'doc-generator';
             } else if (item.isPay) {
                 this.editingPayId = item.id;
@@ -987,7 +952,6 @@ createApp({
             const unsubPayslips = onSnapshot(collection(db, "payslips"), (snapshot) => {
                 this.payslipHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             });
-            // [ISU #2 FIX] users[] kini hanya mengandungi metadata (name, email, role) -- tiada password
             const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
                 this.users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             });
@@ -1002,13 +966,8 @@ createApp({
         this.autoCalculatePayroll();
         this.generateDocNo();
 
-        // ----------------------------------------------------------------
-        // [ISU #3 FIX] Pantau Firebase Auth state -- bukan localStorage
-        // onAuthStateChanged memastikan session sah setiap kali halaman dibuka
-        // ----------------------------------------------------------------
         onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                // Pengguna log masuk -- ambil metadata dari Firestore
                 try {
                     const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
                     const userSnap = await getDoc(doc(db, "users", firebaseUser.uid));
@@ -1031,7 +990,6 @@ createApp({
                     this.isLoggedIn = false;
                 }
             } else {
-                // Pengguna tidak log masuk
                 this.isLoggedIn = false;
                 this.userProfile = { name: '', email: '', role: '', photo: '' };
                 this.unsubscribers.forEach(unsub => unsub && unsub());
