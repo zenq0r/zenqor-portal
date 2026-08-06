@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firebase-config.js (SECURE v2.3)
+// ZENQOR TECHNOLOGIES - firebase-config.js (APP CHECK SECURE v2.4)
 // ============================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -46,11 +46,22 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-const recaptchaKey = env.RECAPTCHA_SITE_KEY || '6LctvXctAAAAL4fS-SlNqbvCAFbGguGwwRY5HNk';
-initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(recaptchaKey),
-    isTokenAutoRefreshEnabled: true
-});
+// Inisialisasi Firebase App Check dengan reCAPTCHA v3
+try {
+    const recaptchaKey = env.RECAPTCHA_SITE_KEY || '6LfVnngtAAAAAGJdJnR99Vsm2pnJq2kLwKxvBGUV';
+    
+    // Dayakan Debug Token untuk ujian lokal (localhost / 127.0.0.1)
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    }
+
+    initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(recaptchaKey),
+        isTokenAutoRefreshEnabled: true
+    });
+} catch (err) {
+    console.warn("App Check Initialization Warning:", err);
+}
 
 const db = initializeFirestore(app, {
     localCache: persistentLocalCache()

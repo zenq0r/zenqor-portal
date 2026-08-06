@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE CLAIMS & AUTO-WIPE v2.8)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE CLAIMS & AUTO-WIPE v2.9)
 // ============================================================
 
 import {
@@ -250,7 +250,8 @@ createApp({
         filteredRecentActivities() {
             const combined = [
                 ...this.docHistory.map(d => ({ ...d, tagClass: d.type === 'Invoice' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200', isDoc: true })),
-                ...this.payslipHistory.map(p => ({ ...p, tagClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200', isPay: true }))
+                ...this.payslipHistory.map(p => ({ ...p, tagClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200', isPay: true })),
+                ...this.claimsHistory.map(c => ({ ...c, tagClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200', isClaim: true, docNo: c.receiptNo, amount: c.amount, date: c.expenseDate }))
             ];
             let list = combined.sort((a, b) => new Date(b.date) - new Date(a.date));
             if (this.searchQuery) {
@@ -938,6 +939,9 @@ createApp({
             if (emp) this.selectEmployeeFromTable(emp);
         },
 
+        // ==========================================
+        // FUNGSI PENGURUSAN CLAIMS (TUNTUTAN PEKERJA)
+        // ==========================================
         selectEmployeeForClaim(e) {
             const emp = this.employees.find(x => x.empNo === e.target.value);
             if (emp) {
@@ -1148,6 +1152,8 @@ createApp({
                 if (item.raw) this.payForm = JSON.parse(JSON.stringify(item.raw));
                 this.autoCalculatePayroll();
                 this.currentTab = 'payslip-generator';
+            } else if (item.isClaim) {
+                this.editClaimRecord(item);
             }
         },
         async confirmDeleteRecord(item) {
@@ -1155,6 +1161,7 @@ createApp({
                 try {
                     if (item.isDoc) await deleteDoc(doc(db, "docs", item.id));
                     else if (item.isPay) await deleteDoc(doc(db, "payslips", item.id));
+                    else if (item.isClaim) await deleteDoc(doc(db, "claims", item.id));
                     this.logAudit('DELETE', `Deleted record ${item.docNo}`);
                     this.showNotify('Rekod dipadam.');
                 } catch (error) {
@@ -1214,6 +1221,7 @@ createApp({
                         uid: firebaseUser.uid,
                         photo: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`
                     };
+                    this.resetAllForms();
                     this.isLoggedIn = true;
                     this.initFirebaseRealtime();
                     this.$nextTick(() => { this.renderCharts(); });
