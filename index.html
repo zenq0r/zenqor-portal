@@ -112,6 +112,9 @@
                     <button v-if="hasAccess('payslip-generator')" @click="switchTab('payslip-generator')" :class="{'sidebar-item-active': currentTab === 'payslip-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'payslip-generator'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-money-check-dollar w-5 text-center"></i><span>Payslip Generator</span>
                     </button>
+                    <button v-if="hasAccess('claims')" @click="switchTab('claims')" :class="{'sidebar-item-active': currentTab === 'claims', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'claims'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                        <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i><span>Claims Management</span>
+                    </button>
                     <button v-if="hasAccess('client-directory')" @click="switchTab('client-directory')" :class="{'sidebar-item-active': currentTab === 'client-directory', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-directory'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-address-book w-5 text-center"></i><span>Client Directory</span>
                     </button>
@@ -168,6 +171,7 @@
                         <div class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-600">
                             <button @click="switchTab('doc-generator')" :class="currentTab === 'doc-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Documents</button>
                             <button @click="switchTab('payslip-generator')" :class="currentTab === 'payslip-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Payroll</button>
+                            <button @click="switchTab('claims')" :class="currentTab === 'claims' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Claims</button>
                         </div>
 
                         <button @click="toggleDarkMode" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-amber-400 hover:bg-slate-200 transition" title="Tukar Tema Dark/Light">
@@ -183,7 +187,7 @@
                 </header>
 
                 <!-- ================================================================= -->
-                <!-- MODUL 1: DOCUMENT GENERATOR (REKA LETAK BERSIH & TIDAK SERABUT) -->
+                <!-- MODUL 1: DOCUMENT GENERATOR                                       -->
                 <!-- ================================================================= -->
                 <div v-show="currentTab === 'doc-generator'" class="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
                     
@@ -210,7 +214,6 @@
 
                     <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
                         
-                        <!-- HEADER BORANG: PEMILIHAN PELANGGAN -->
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
                             <div>
                                 <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
@@ -229,7 +232,6 @@
                             </div>
                         </div>
 
-                        <!-- INPUT PELANGGAN -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Pelanggan / Syarikat *</label><input type="text" v-model="docForm.clientName" required placeholder="Nama Syarikat Sdn. Bhd." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
                             <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. Telefon *</label><input type="text" v-model="docForm.clientPhone" required placeholder="+60 13-XXXX XXX" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
@@ -240,7 +242,6 @@
                             <div class="md:col-span-3"><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Alamat Penuh Pelanggan *</label><input type="text" v-model="docForm.clientAddress" required placeholder="No. Bangunan, Jalan, Bandar, Negeri..." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
                         </div>
 
-                        <!-- PARAMETER DOKUMEN & METOD BAYARAN -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 border-t border-slate-100 dark:border-slate-700 pt-5">
                             <div>
                                 <label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">JENIS DOKUMEN</label>
@@ -281,7 +282,6 @@
                             </div>
                         </div>
 
-                        <!-- PARAMETER BAYARAN & LAMPIRAN KEMAS -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-slate-50 dark:bg-slate-700/40 p-4 rounded-xl border border-slate-200 dark:border-slate-600 items-center">
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PILIHAN BANK</label>
@@ -315,7 +315,6 @@
                                        class="w-full p-2 border rounded-xl text-xs font-semibold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
                             </div>
 
-                            <!-- KOTAK MUAT NAIK LAMPIRAN KEMAS -->
                             <div class="p-2.5 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500 rounded-xl flex items-center justify-between gap-2">
                                 <div class="overflow-hidden">
                                     <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight truncate">LAMPIRAN / RESIT (MAX 2MB)</p>
@@ -333,7 +332,6 @@
                             </div>
                         </div>
 
-                        <!-- JADUAL BARANGAN & PERKHIDMATAN -->
                         <div class="border-t border-slate-100 dark:border-slate-700 pt-4">
                             <div class="flex justify-between items-center mb-3">
                                 <h3 class="text-xs font-extrabold uppercase tracking-wider text-brand-gold">SENARAI BARANGAN & PERKHIDMATAN</h3>
@@ -368,7 +366,6 @@
                             </div>
                         </div>
 
-                        <!-- TOTAL & DISKAUN -->
                         <div class="flex flex-col sm:flex-row items-end justify-between border-t border-slate-100 dark:border-slate-700 pt-5 gap-4">
                             <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                                 <button @click="printDocumentModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
@@ -391,7 +388,7 @@
                 </div>
 
                 <!-- ================================================================= -->
-                <!-- MODUL 2: PAYSLIP GENERATOR (REKA LETAK BERSIH & AUTO-CALCULATED)  -->
+                <!-- MODUL 2: PAYSLIP GENERATOR                                        -->
                 <!-- ================================================================= -->
                 <div v-show="currentTab === 'payslip-generator'" class="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
                     
@@ -418,7 +415,6 @@
 
                     <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
                         
-                        <!-- HEADER BORANG: PEMILIHAN PEKERJA -->
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
                             <div>
                                 <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
@@ -432,7 +428,6 @@
                             </select>
                         </div>
 
-                        <!-- MAKLUMAT PEKERJA -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Pekerja *</label><input type="text" v-model="payForm.name" required placeholder="Ahmad Azziem" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
                             <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. K/P *</label><input type="text" v-model="payForm.ic" placeholder="000000-00-0000" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
@@ -444,10 +439,7 @@
                             <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. KWSP / SOCSO</label><input type="text" v-model="payForm.epfSocso" placeholder="No. KWSP / SOCSO" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
                         </div>
 
-                        <!-- PECAHAN GAJI -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 border-t border-slate-100 dark:border-slate-700 pt-5">
-                            
-                            <!-- EARNINGS -->
                             <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
                                 <h4 class="text-xs font-extrabold uppercase tracking-wider text-brand-blue dark:text-blue-400 border-b border-slate-200 dark:border-slate-600 pb-2">PENDAPATAN (EARNINGS) - RM</h4>
                                 <div class="grid grid-cols-2 gap-3 text-xs">
@@ -462,7 +454,6 @@
                                 </div>
                             </div>
 
-                            <!-- DEDUCTIONS -->
                             <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
                                 <h4 class="text-xs font-extrabold uppercase tracking-wider text-red-600 border-b border-slate-200 dark:border-slate-600 pb-2">POTONGAN BERKANUN (DEDUCTIONS) - RM</h4>
                                 <div class="grid grid-cols-2 gap-3 text-xs">
@@ -476,7 +467,6 @@
                             </div>
                         </div>
 
-                        <!-- RINGKASAN & FOOTER PAYSLIP -->
                         <div class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-5 gap-4">
                             <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                                 <button @click="printPayslipModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
@@ -494,6 +484,160 @@
                             </div>
                         </div>
 
+                    </div>
+                </div>
+
+                <!-- ================================================================= -->
+                <!-- MODUL 3: CLAIMS MANAGEMENT (TUNTUTAN PERBELANJAAN & RESIT)        -->
+                <!-- ================================================================= -->
+                <div v-show="currentTab === 'claims'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+                    
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Claims & Expense Management</h2>
+                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Urus permohonan tuntutan perbelanjaan pekerja mengikut kategori & bukti resit.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button v-if="editingClaimId" @click="cancelEditClaim" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                                Batal Suntingan
+                            </button>
+                            <button @click="saveClaimRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                                <i class="fa-solid fa-floppy-disk"></i><span>Hantar Tuntutan</span>
+                            </button>
+                            <button @click="resetClaimForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Kosongkan Borang">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
+                            <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
+                                <i class="fa-solid fa-file-circle-plus text-brand-gold mr-2 text-base"></i>
+                                BORANG PERMOHONAN TUNTUTAN BAHARU
+                            </h3>
+                            <select @change="selectEmployeeForClaim($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
+                                <option value="">-- Auto-Isi Pekerja --</option>
+                                <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Pemohon *</label><input type="text" v-model="claimForm.name" required placeholder="Nama Pekerja" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. Pekerja *</label><input type="text" v-model="claimForm.empNo" placeholder="ZEN-HR08001" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Jabatan</label><input type="text" v-model="claimForm.dept" placeholder="OPERATION DEPARTMENT" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Tarikh Perbelanjaan *</label><input type="date" v-model="claimForm.expenseDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">KATEGORI TUNTUTAN *</label>
+                                <select v-model="claimForm.category" @change="claimForm.subCategory = claimSubCategories[claimForm.category][0]" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-xs">
+                                    <option v-for="(subList, catName) in claimSubCategories" :key="catName" :value="catName">{{ catName }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">SUB-KATEGORI *</label>
+                                <select v-model="claimForm.subCategory" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-xs">
+                                    <option v-for="(sub, sIdx) in claimSubCategories[claimForm.category]" :key="sIdx" :value="sub">{{ sub }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">JUMLAH TUNTUTAN (RM) *</label>
+                                <input type="number" v-model="claimForm.amount" step="0.01" min="1" placeholder="0.00" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-extrabold text-brand-dark">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">NO. RESIT / RUJUKAN *</label>
+                                <input type="text" v-model="claimForm.receiptNo" placeholder="REC-8823901" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4 items-center">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">KETERANGAN PERBELANJAAN</label>
+                                <input type="text" v-model="claimForm.description" placeholder="Contoh: Makan tengah hari bersama pelanggan dari Syarikat XYZ" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-medium">
+                            </div>
+
+                            <div class="p-2.5 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500 rounded-xl flex items-center justify-between gap-2">
+                                <div class="overflow-hidden">
+                                    <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight truncate">LAMPIRAN RESIT (MAX 2MB)</p>
+                                    <p class="text-[10px] text-slate-400 truncate">{{ claimForm.receiptAttachment ? 'Resit Dilampirkan' : 'Tiada fail dipilih' }}</p>
+                                </div>
+                                <div class="flex items-center space-x-1 shrink-0">
+                                    <label class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
+                                        <span>Pilih</span>
+                                        <input type="file" @change="handleClaimAttachmentUpload" accept=".pdf,image/*" class="hidden">
+                                    </label>
+                                    <a v-if="claimForm.receiptAttachment" :href="claimForm.receiptAttachment" download="Resit_Tuntutan" target="_blank" class="bg-emerald-600 text-white px-2 py-1.5 rounded-lg text-[11px] font-bold" title="Lihat">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-extrabold text-brand-dark dark:text-white tracking-wide"><i class="fa-solid fa-list-check text-brand-blue mr-2"></i>REKOD & STATUS KELULUSAN TUNTUTAN</h3>
+                            <span class="text-xs text-slate-400 font-bold">Jumlah Rekod: {{ claimsHistory.length }}</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-100 dark:border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-400">
+                                        <th class="py-3 px-3">Tarikh & No. Resit</th>
+                                        <th class="py-3 px-3">Pekerja</th>
+                                        <th class="py-3 px-3">Kategori & Sub-Kategori</th>
+                                        <th class="py-3 px-3 text-right">Jumlah (RM)</th>
+                                        <th class="py-3 px-3 text-center">Status</th>
+                                        <th class="py-3 px-3 text-center w-36">Tindakan</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
+                                    <tr v-for="clm in claimsHistory" :key="clm.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                        <td class="py-3 px-3">
+                                            <span class="font-bold text-slate-800 dark:text-slate-200 block">{{ clm.expenseDate }}</span>
+                                            <span class="text-slate-400 font-mono text-[10px] block">REF: {{ clm.receiptNo }}</span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <span class="font-bold text-brand-dark dark:text-white block">{{ clm.name }}</span>
+                                            <span class="text-slate-400 text-[10px] block">{{ clm.empNo }}</span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <span class="font-bold text-brand-blue dark:text-blue-400 block">{{ clm.category }}</span>
+                                            <span class="text-slate-500 dark:text-slate-300 block">{{ clm.subCategory }}</span>
+                                        </td>
+                                        <td class="py-3 px-3 text-right font-extrabold text-sm text-brand-dark dark:text-slate-100">
+                                            {{ formatCurrency(clm.amount) }}
+                                        </td>
+                                        <td class="py-3 px-3 text-center">
+                                            <span :class="{
+                                                'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300': clm.status === 'Pending',
+                                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300': clm.status === 'Approved',
+                                                'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': clm.status === 'Rejected'
+                                            }" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase">{{ clm.status }}</span>
+                                        </td>
+                                        <td class="py-3 px-3 text-center space-x-1">
+                                            <button v-if="canCreateEdit && clm.status === 'Pending'" @click="updateClaimStatus(clm.id, 'Approved')" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 p-1.5 rounded" title="Luluskan">
+                                                <i class="fa-solid fa-check"></i>
+                                            </button>
+                                            <button v-if="canCreateEdit && clm.status === 'Pending'" @click="updateClaimStatus(clm.id, 'Rejected')" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Tolak">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                            <button v-if="canCreateEdit" @click="editClaimRecord(clm)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                            <button v-if="canDelete" @click="deleteClaimRecord(clm.id)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Padam">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="claimsHistory.length === 0">
+                                        <td colspan="6" class="py-8 text-center text-slate-400">Tiada rekod tuntutan perbelanjaan dijumpai.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 

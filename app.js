@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (CLEAN STATE & AUTO-WIPE v2.7)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE CLAIMS & AUTO-WIPE v2.8)
 // ============================================================
 
 import {
@@ -38,12 +38,12 @@ const STATUTORY_RATES = {
 };
 
 const RBAC_ROLES = {
-    'Superadmin': ['dashboard', 'doc-generator', 'payslip-generator', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
-    'HR': ['dashboard', 'doc-generator', 'payslip-generator', 'client-directory', 'hr-employees', 'reports', 'profile'],
-    'Account': ['dashboard', 'doc-generator', 'payslip-generator', 'client-directory', 'hr-employees', 'reports', 'profile'],
+    'Superadmin': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
+    'HR': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
+    'Account': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
     'IT': ['dashboard', 'hr-employees', 'audit-logs', 'settings'],
     'Client': ['dashboard', 'client-portal', 'profile'],
-    'Staff': ['dashboard', 'client-portal', 'profile']
+    'Staff': ['dashboard', 'claims', 'client-portal', 'profile']
 };
 
 createApp({
@@ -55,7 +55,7 @@ createApp({
             loginError: '',
             currentTab: 'doc-generator',
             mobileMenuOpen: false,
-            desktopSidebarOpen: false, // Ditutup secara lalai / terkawal
+            desktopSidebarOpen: false,
             chartTimeFilter: 'monthly',
             isDarkMode: true,
             searchQuery: '',
@@ -96,6 +96,7 @@ createApp({
 
             docHistory: [],
             payslipHistory: [],
+            claimsHistory: [],
             employees: [],
             customers: [],
             users: [],
@@ -103,6 +104,7 @@ createApp({
 
             editingDocId: null,
             editingPayId: null,
+            editingClaimId: null,
 
             employeeModal: {
                 show: false,
@@ -122,7 +124,29 @@ createApp({
                 form: { name: '', email: '', role: 'Staff' }
             },
 
-            // BORANG DOKUMEN BERMULA KOSONG SEPENUHNYA
+            claimSubCategories: {
+                'Perubatan (Medical)': [
+                    'Rawatan Klinik / Hospital',
+                    'Ubat-ubatan (Preskripsi)',
+                    'Pemeriksaan Gigi & Mata'
+                ],
+                'Perjalanan & Pengangkutan': [
+                    'Tuntutan Mileage (Kilometer)',
+                    'Tol & Parkir',
+                    'Grab / E-Hailing / Teksi',
+                    'Penginapan Hotel'
+                ],
+                'Keraian & Pelanggan': [
+                    'Belanja Makan Pelanggan',
+                    'Jamuan Jabatan / Syarikat'
+                ],
+                'Lain-Lain (Miscellaneous)': [
+                    'Alat Tulis & Pejabat',
+                    'Elaun Komunikasi / Telefon',
+                    'Kurier & Pos'
+                ]
+            },
+
             docForm: {
                 type: 'Invoice',
                 docNo: 'INV-2026-000001',
@@ -149,12 +173,11 @@ createApp({
                 discount: 0
             },
 
-            // BORANG PAYSLIP BERMULA KOSONG SEPENUHNYA (TERMASUK empEmail UNTUK RBAC STAFF)
             payForm: {
                 name: '',
                 ic: '',
                 empNo: '',
-                empEmail: '', // Ditambah untuk pematuhan security rules Staff
+                empEmail: '',
                 position: '',
                 dept: '',
                 isSenior: false,
@@ -176,6 +199,22 @@ createApp({
                 dedAdvance: 0,
                 dedOther: 0
             },
+
+            claimForm: {
+                name: '',
+                empNo: '',
+                empEmail: '',
+                dept: '',
+                expenseDate: new Date().toISOString().substr(0, 10),
+                category: 'Perubatan (Medical)',
+                subCategory: 'Rawatan Klinik / Hospital',
+                amount: 0,
+                receiptNo: '',
+                description: '',
+                receiptAttachment: '',
+                status: 'Pending'
+            },
+
             payCalc: { gross: 0, deduct: 0, net: 0, epfEmpr: 0, socsoEmpr: 0, eisEmpr: 0 }
         };
     },
@@ -233,7 +272,6 @@ createApp({
         }
     },
     methods: {
-        // PEMBERSIHAN TOTAL MEMORI BORANG (LOG MASUK / LOG KELUAR)
         resetAllForms() {
             this.docForm = {
                 type: 'Invoice',
@@ -261,8 +299,17 @@ createApp({
                 basic: 0, ot: 0, phone: 0, transport: 0, meal: 0, bonus: 0,
                 dedEpf: 0, dedSocso: 0, dedEis: 0, dedPcb: 0, dedAdvance: 0, dedOther: 0
             };
+            this.claimForm = {
+                name: '', empNo: '', empEmail: '', dept: '',
+                expenseDate: new Date().toISOString().substr(0, 10),
+                category: 'Perubatan (Medical)',
+                subCategory: 'Rawatan Klinik / Hospital',
+                amount: 0, receiptNo: '', description: '',
+                receiptAttachment: '', status: 'Pending'
+            };
             this.editingDocId = null;
             this.editingPayId = null;
+            this.editingClaimId = null;
             this.autoCalculatePayroll();
             this.generateDocNo();
         },
@@ -283,6 +330,21 @@ createApp({
             const reader = new FileReader();
             reader.onload = (uploadEvent) => {
                 this.docForm.paymentAttachment = uploadEvent.target.result;
+                this.showNotify(`Lampiran resit "${file.name}" sedia dimuat naik.`);
+            };
+            reader.readAsDataURL(file);
+        },
+        handleClaimAttachmentUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                alert("Saiz lampiran melebihi had maksimum 2MB. Sila pilih fail yang lebih kecil.");
+                e.target.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (uploadEvent) => {
+                this.claimForm.receiptAttachment = uploadEvent.target.result;
                 this.showNotify(`Lampiran resit "${file.name}" sedia dimuat naik.`);
             };
             reader.readAsDataURL(file);
@@ -314,6 +376,17 @@ createApp({
                 this.autoCalculatePayroll();
                 this.showNotify("Ruangan borang slip gaji telah dikosongkan.");
             }
+        },
+        resetClaimForm() {
+            this.claimForm = {
+                name: '', empNo: '', empEmail: '', dept: '',
+                expenseDate: new Date().toISOString().substr(0, 10),
+                category: 'Perubatan (Medical)',
+                subCategory: 'Rawatan Klinik / Hospital',
+                amount: 0, receiptNo: '', description: '',
+                receiptAttachment: '', status: 'Pending'
+            };
+            this.editingClaimId = null;
         },
 
         maskIC(val) {
@@ -451,10 +524,9 @@ createApp({
                     photo: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`
                 };
 
-                // KOSONGKAN BORANG SEBAIK SAHAJA LOGIN BERJAYA
                 this.resetAllForms();
                 this.isLoggedIn = true;
-                this.desktopSidebarOpen = false; // Terkawal (tidak terbuka paksa)
+                this.desktopSidebarOpen = false;
                 this.mobileMenuOpen = false;
                 localStorage.setItem('zenqor_theme', this.isDarkMode ? 'dark' : 'light');
                 this.logAudit('LOGIN', `User logged in with role ${role}`);
@@ -476,14 +548,13 @@ createApp({
             }
         },
 
-        // LOG-OUT: PADAM SEMUA MEMORI SEMENTARA TERUS
         async handleLogout() {
             try {
                 this.logAudit('LOGOUT', 'User logged out');
                 await signOut(auth);
                 this.isLoggedIn = false;
                 this.userProfile = { name: '', email: '', role: '', photo: '' };
-                this.resetAllForms(); // Wajib bersihkan borang & rekod suntingan
+                this.resetAllForms();
                 this.currentTab = 'doc-generator';
                 this.loginForm = { email: '', password: '' };
                 this.searchQuery = '';
@@ -570,6 +641,7 @@ createApp({
                 customers: this.customers,
                 docHistory: this.docHistory,
                 payslipHistory: this.payslipHistory,
+                claimsHistory: this.claimsHistory,
                 users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })),
                 exportDate: new Date().toISOString()
             };
@@ -849,7 +921,7 @@ createApp({
         selectEmployeeFromTable(emp) {
             this.payForm.empNo = emp.empNo || '';
             this.payForm.name = emp.name || '';
-            this.payForm.empEmail = emp.email || ''; // Disimpan agar sekatan fail firestore.rules lulus
+            this.payForm.empEmail = emp.email || '';
             this.payForm.ic = emp.ic || '';
             this.payForm.dept = emp.dept || '';
             this.payForm.position = emp.position || '';
@@ -864,6 +936,80 @@ createApp({
         selectEmployeeForPayslip(e) {
             const emp = this.employees.find(x => x.empNo === e.target.value);
             if (emp) this.selectEmployeeFromTable(emp);
+        },
+
+        selectEmployeeForClaim(e) {
+            const emp = this.employees.find(x => x.empNo === e.target.value);
+            if (emp) {
+                this.claimForm.name = emp.name || '';
+                this.claimForm.empNo = emp.empNo || '';
+                this.claimForm.empEmail = emp.email || '';
+                this.claimForm.dept = emp.dept || '';
+                this.showNotify(`Maklumat pemohon ${emp.name} dimuatkan.`);
+            }
+        },
+        async saveClaimRecord() {
+            if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo) {
+                alert("Sila isi Nama, No. Pekerja, Jumlah (RM) dan No. Resit.");
+                return;
+            }
+            try {
+                const claimId = String(this.editingClaimId || Date.now());
+                const payload = {
+                    id: claimId,
+                    type: 'Claim',
+                    date: this.claimForm.expenseDate,
+                    expenseDate: this.claimForm.expenseDate,
+                    name: this.claimForm.name,
+                    empNo: this.claimForm.empNo,
+                    empEmail: this.claimForm.empEmail || this.userProfile.email,
+                    dept: this.claimForm.dept,
+                    category: this.claimForm.category,
+                    subCategory: this.claimForm.subCategory,
+                    amount: Number(this.claimForm.amount),
+                    receiptNo: this.claimForm.receiptNo,
+                    description: this.claimForm.description,
+                    receiptAttachment: this.claimForm.receiptAttachment,
+                    status: this.claimForm.status || 'Pending'
+                };
+                await setDoc(doc(db, "claims", claimId), payload);
+                this.logAudit(this.editingClaimId ? 'UPDATE' : 'CREATE', `Saved claim ${this.claimForm.receiptNo} for ${this.claimForm.name}`);
+                this.editingClaimId = null;
+                this.showNotify(`Tuntutan (${this.claimForm.receiptNo}) berjaya dihantar.`);
+                this.resetClaimForm();
+            } catch (error) {
+                console.error("Ralat simpan tuntutan:", error);
+            }
+        },
+        async updateClaimStatus(claimId, newStatus) {
+            try {
+                await updateDoc(doc(db, "claims", claimId), { status: newStatus });
+                this.logAudit('UPDATE', `Updated claim ${claimId} status to ${newStatus}`);
+                this.showNotify(`Status tuntutan dikemaskini kepada: ${newStatus}`);
+            } catch (error) {
+                console.error("Ralat kemaskini status tuntutan:", error);
+            }
+        },
+        editClaimRecord(clm) {
+            this.editingClaimId = clm.id;
+            this.claimForm = JSON.parse(JSON.stringify(clm));
+            this.currentTab = 'claims';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        cancelEditClaim() {
+            this.editingClaimId = null;
+            this.resetClaimForm();
+        },
+        async deleteClaimRecord(claimId) {
+            if (confirm("Adakah anda pasti mahu memadam rekod tuntutan ini?")) {
+                try {
+                    await deleteDoc(doc(db, "claims", claimId));
+                    this.logAudit('DELETE', `Deleted claim ${claimId}`);
+                    this.showNotify("Rekod tuntutan berjaya dipadam.");
+                } catch (error) {
+                    console.error("Ralat padam tuntutan:", error);
+                }
+            }
         },
 
         setPrintOrientation(orientation, margin) {
@@ -1035,13 +1181,16 @@ createApp({
             const unsubPayslips = onSnapshot(collection(db, "payslips"), (snapshot) => {
                 this.payslipHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             });
+            const unsubClaims = onSnapshot(collection(db, "claims"), (snapshot) => {
+                this.claimsHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            });
             const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
                 this.users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             });
             const unsubAudit = onSnapshot(collection(db, "audit_logs"), (snapshot) => {
                 this.auditLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.id - a.id);
             });
-            this.unsubscribers.push(unsubSettings, unsubEmployees, unsubCustomers, unsubDocs, unsubPayslips, unsubUsers, unsubAudit);
+            this.unsubscribers.push(unsubSettings, unsubEmployees, unsubCustomers, unsubDocs, unsubPayslips, unsubClaims, unsubUsers, unsubAudit);
         }
     },
     mounted() {

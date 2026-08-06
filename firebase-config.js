@@ -31,9 +31,6 @@ import {
     ReCaptchaV3Provider
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
 
-// ----------------------------------------------------------------
-// MEMBACA DARI window.__ENV__ DENGAN FALLBACK KUNCI PROJEK
-// ----------------------------------------------------------------
 const env = window.__ENV__ || {};
 
 const firebaseConfig = {
@@ -49,7 +46,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// App Check menggunakan ReCaptcha Site Key daripada env-config.js atau nilai asal
 const recaptchaKey = env.RECAPTCHA_SITE_KEY || '6LctvXctAAAAL4fS-SlNqbvCAFbGguGwwRY5HNk';
 initializeAppCheck(app, {
     provider: new ReCaptchaV3Provider(recaptchaKey),

@@ -4,10 +4,8 @@ body {
     font-family: 'Inter', sans-serif; 
 }
 
-/* Elak raw "{{ }}" terpapar sementara Vue memuatkan template */
 [v-cloak] { display: none !important; }
 
-/* KORPORAT DARK SIDEBAR ITEM ACTIVE */
 .sidebar-item-active {
     background-color: #1E3A8A;
     color: #FFFFFF;
@@ -16,7 +14,6 @@ body {
     border-left: 4px solid #D4AF37;
 }
 
-/* CUSTOM SCROLLBAR UNTUK ENTERPRISE LOOK */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -32,9 +29,6 @@ body {
     background: #D4AF37;
 }
 
-/* =========================================================
-   PRINT ENGINE (ISOLATED CSS UNTUK CETAKAN SAHAJA)
-   ========================================================= */
 @media print {
     body { 
         background-color: white !important; 
@@ -96,9 +90,6 @@ body {
     }
 }
 
-/* =========================================================
-   PAYSLIP STYLING (A4 LANDSCAPE - PERFECT ALIGNMENT)
-   ========================================================= */
 .payslip-paper {
     background: white; color: black; width: 297mm; min-height: 205mm; max-height: 209mm;
     padding: 10mm 14mm; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
