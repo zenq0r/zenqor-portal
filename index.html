@@ -372,7 +372,7 @@
                             <div class="md:col-span-3"><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Alamat Penuh Pelanggan *</label><input type="text" v-model="docForm.clientAddress" required placeholder="No, Jalan, Taman, Bangunan" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm bg-slate-50"></div>
                         </div>
 
-                        <!-- 6-COLUMN ROW: STATUS & PEMBAYARAN + REFERENCE NO & ATTACHMENTS -->
+                        <!-- 6-COLUMN ROW: STATUS & PEMBAYARAN + BANK, PENERIMAAN, REFERENCE NO & ATTACHMENTS -->
                         <div class="space-y-4 border-t border-slate-100 dark:border-slate-700 pt-4">
                             <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                                 <div>
@@ -414,7 +414,41 @@
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-700/40 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <!-- BARIS TAMBAHAN: PILIHAN BANK, PENERIMAAN, NO RUJUKAN & LAMPIRAN BUKTI BAYARAN -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-slate-50 dark:bg-slate-700/40 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                                <!-- Pilihan Bank -->
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PILIHAN BANK</label>
+                                    <select v-model="docForm.paymentBank" class="w-full p-2.5 border rounded-xl text-sm font-bold bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue">
+                                        <option value="">-- Pilih Bank --</option>
+                                        <option value="Maybank">Maybank (Malayan Banking Berhad)</option>
+                                        <option value="CIMB Bank">CIMB Bank Berhad</option>
+                                        <option value="Public Bank">Public Bank Berhad</option>
+                                        <option value="RHB Bank">RHB Bank Berhad</option>
+                                        <option value="Hong Leong Bank">Hong Leong Bank Berhad</option>
+                                        <option value="Bank Islam">Bank Islam Malaysia Berhad</option>
+                                        <option value="Bank Rakyat">Bank Rakyat</option>
+                                        <option value="AmBank">AmBank (M) Berhad</option>
+                                        <option value="Alliance Bank">Alliance Bank Malaysia Berhad</option>
+                                        <option value="GXBank">GXBank Berhad</option>
+                                        <option value="Lain-lain / Tiada">Lain-lain / Tiada</option>
+                                    </select>
+                                </div>
+
+                                <!-- Penerimaan Pembayaran (Akaun Terima) -->
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PENERIMAAN PEMBAYARAN</label>
+                                    <select v-model="docForm.paymentReceiver" class="w-full p-2.5 border rounded-xl text-sm font-bold bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue">
+                                        <option value="">-- Pilih Akaun Terima --</option>
+                                        <option value="Akaun Maybank Syarikat">Akaun Maybank Syarikat (562982057309)</option>
+                                        <option value="DuitNow QR Syarikat">DuitNow QR Syarikat</option>
+                                        <option value="Tunai / Petty Cash">Tunai / Petty Cash</option>
+                                        <option value="Akaun Pengarah">Akaun Pengarah</option>
+                                        <option value="Lain-lain">Lain-lain</option>
+                                    </select>
+                                </div>
+
+                                <!-- Input No Rujukan (Ditandakan Wajib apabila status Paid / Partial) -->
                                 <div>
                                     <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                                         NO. RUJUKAN BAYARAN (REF NO) 
@@ -422,16 +456,17 @@
                                     </label>
                                     <input type="text" v-model="docForm.paymentRefNo" 
                                            :required="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status)"
-                                           :placeholder="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status) ? 'WAJIB ISI: No. Resit / Transaksi Bank / Cek' : 'Pilihan: No. Resit / Rujukan Bayaran'" 
+                                           :placeholder="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status) ? 'WAJIB ISI: No. Resit / Transaksi' : 'Pilihan: No. Resit / Rujukan'" 
                                            class="w-full p-2.5 border rounded-xl text-sm font-bold bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue"
                                            :class="{'border-red-500 ring-1 ring-red-400': ['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status) && !docForm.paymentRefNo}">
-                                    <p v-if="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status)" class="text-[11px] text-red-600 font-semibold mt-1">
-                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>Sistem mewajibkan No. Rujukan Bayaran untuk status Selesai / Separa Dibayar.
+                                    <p v-if="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status)" class="text-[10px] text-red-600 font-semibold mt-1">
+                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>Wajib isi untuk status Selesai / Separa.
                                     </p>
                                 </div>
 
+                                <!-- Input Muat Naik Lampiran / Dokumen -->
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">LAMPIRAN DOKUMEN / RESIT (MAX 2MB)</label>
+                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">LAMPIRAN / RESIT (MAX 2MB)</label>
                                     <div class="flex items-center space-x-2">
                                         <input type="file" @change="handleAttachmentUpload" accept=".pdf,image/*" class="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-dark file:text-white hover:file:bg-brand-blue cursor-pointer bg-white dark:bg-slate-700 p-1 rounded-xl border border-slate-200 dark:border-slate-600">
                                         <a v-if="docForm.paymentAttachment" :href="docForm.paymentAttachment" download="Lampiran_Dokumen" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-xl text-xs font-bold shrink-0 flex items-center space-x-1" title="Lihat Lampiran Tersimpan">
@@ -441,7 +476,7 @@
                                             <i class="fa-solid fa-xmark"></i>
                                         </button>
                                     </div>
-                                    <p class="text-[11px] text-slate-400 mt-1">Sokongan format: PDF, PNG, JPG (Disimpan automatik ke dalam Firebase).</p>
+                                    <p class="text-[10px] text-slate-400 mt-1">Sokongan: PDF, PNG, JPG (Disimpan ke Firebase).</p>
                                 </div>
                             </div>
                         </div>
@@ -1100,7 +1135,9 @@
                     <p class="font-bold text-slate-800">No. Invois: {{ docForm.docNo }}</p>
                     <p class="text-xs text-slate-600">Tarikh Invois: {{ docForm.date }}</p>
                     <p class="text-xs text-slate-600">Tarikh Matang (Due Date): {{ docForm.dueDate }}</p>
-                    <p class="text-xs text-slate-600 font-bold text-brand-dark mt-0.5">Pembayaran: {{ docForm.paymentMethod || 'Bank Transfer' }}</p>
+                    <!-- PAPARAN SALURAN BAYARAN, BANK, PENERIMAAN & NO RUJUKAN PADA CETAKAN -->
+                    <p class="text-xs text-slate-600 font-bold text-brand-dark mt-0.5">Pembayaran: {{ docForm.paymentMethod || 'Bank Transfer' }} <span v-if="docForm.paymentBank">({{ docForm.paymentBank }})</span></p>
+                    <p v-if="docForm.paymentReceiver" class="text-xs text-slate-600 font-semibold">Penerimaan: {{ docForm.paymentReceiver }}</p>
                     <p v-if="docForm.paymentRefNo" class="text-xs text-emerald-700 font-extrabold">No. Rujukan Bayaran: {{ docForm.paymentRefNo }}</p>
                 </div>
             </div>

@@ -127,6 +127,8 @@ createApp({
                 docNo: 'QT-2026-000001',
                 status: 'Open',
                 paymentMethod: 'Bank Transfer',
+                paymentBank: '',       // BAHARU: Pilihan Bank (Maybank, CIMB, dsb.)
+                paymentReceiver: '',   // BAHARU: Penerimaan Pembayaran (Akaun Maybank Syarikat, DuitNow QR, dsb.)
                 paymentRefNo: '',      // WAJIB apabila status Paid / Partial
                 paymentAttachment: '', // LAMPIRAN Base64 Bukti Bayaran
                 date: new Date().toISOString().substr(0, 10),
@@ -236,6 +238,8 @@ createApp({
                     docNo: this.docForm.docNo,
                     status: 'Open',
                     paymentMethod: 'Bank Transfer',
+                    paymentBank: '',
+                    paymentReceiver: '',
                     paymentRefNo: '',
                     paymentAttachment: '',
                     date: new Date().toISOString().substr(0, 10),
@@ -483,9 +487,9 @@ createApp({
                     csvContent += `"${e.empNo}","${e.name}","${e.ic}","${e.position}","${e.dept}","${e.status}","${e.basicSalary}"\n`;
                 });
             } else if (type === 'docs') {
-                csvContent += "Type,DocNo,Date,ClientName,Amount,Status,PaymentMethod,RefNo\n";
+                csvContent += "Type,DocNo,Date,ClientName,Amount,Status,PaymentMethod,Bank,Receiver,RefNo\n";
                 this.docHistory.forEach(d => {
-                    csvContent += `"${d.type}","${d.docNo}","${d.date}","${d.name}","${d.amount}","${d.status || 'N/A'}","${d.paymentMethod||'-'}","${d.paymentRefNo||'-'}"\n`;
+                    csvContent += `"${d.type}","${d.docNo}","${d.date}","${d.name}","${d.amount}","${d.status || 'N/A'}","${d.paymentMethod||'-'}","${d.paymentBank||'-'}","${d.paymentReceiver||'-'}","${d.paymentRefNo||'-'}"\n`;
                 });
             } else if (type === 'payroll') {
                 csvContent += "EmpNo,Name,Month,PayDate,GrossSalary,TotalDeduction,NetSalary\n";
@@ -848,6 +852,8 @@ createApp({
                     docNo: this.docForm.docNo,
                     status: this.docForm.status || (this.docForm.type === 'Invoice' ? 'Unpaid' : 'Open'),
                     paymentMethod: this.docForm.paymentMethod || 'Bank Transfer',
+                    paymentBank: this.docForm.paymentBank || '',           // BAHARU
+                    paymentReceiver: this.docForm.paymentReceiver || '',   // BAHARU
                     paymentRefNo: this.docForm.paymentRefNo || '',
                     paymentAttachment: this.docForm.paymentAttachment || '',
                     date: this.docForm.date,
