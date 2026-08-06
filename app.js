@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE WORKSPACE v2.5)
+// ZENQOR TECHNOLOGIES - app.js (MODERN CLEAN ENTERPRISE v2.5)
 // ============================================================
 
 import {
@@ -53,11 +53,11 @@ createApp({
             authLoading: true,
             loginForm: { email: '', password: '' },
             loginError: '',
-            currentTab: 'doc-generator', // Buka terus di modul utama korporat
+            currentTab: 'doc-generator', // Mula terus di Document Generator
             mobileMenuOpen: false,
             desktopSidebarOpen: true,
             chartTimeFilter: 'monthly',
-            isDarkMode: true, // Pilihan lalai Korporat Dark
+            isDarkMode: true, // Lalai kepada gaya Korporat Gelap yang elegan
             searchQuery: '',
             currentPage: 1,
             itemsPerPage: 6,
@@ -125,7 +125,7 @@ createApp({
             docForm: {
                 type: 'Invoice',
                 docNo: 'INV-2026-000001',
-                status: 'Selesai Dibayar',
+                status: 'Selesai Dibayar / Paid',
                 paymentMethod: 'Bank Transfer (EFT)',
                 paymentBank: 'Maybank (Malayan Banking Berhad)',
                 paymentReceiver: 'Akaun Maybank Syarikat (562982057309)',
