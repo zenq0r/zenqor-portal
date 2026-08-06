@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE CLAIMS & AUTO-WIPE v3.0)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE RBAC & CLAIMS v3.1)
 // ============================================================
 
 import {
@@ -222,7 +222,11 @@ createApp({
         canCreateEdit() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
         canEditDocs() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
         canDelete() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
-        canManageRBAC() { return ['Superadmin'].includes(this.userProfile.role); },
+        
+        // HANYA SUPERADMIN & HR SAHAJA BOLEH URUS & NAMPAK JADUAL PENGURUSAN AKSES PORTAL
+        canManageRBAC() { 
+            return ['Superadmin', 'HR'].includes(this.userProfile.role); 
+        },
 
         docSubtotal() { return this.docForm.items.reduce((s, i) => s + (i.qty * i.price), 0); },
         docSST() { return this.docSubtotal * 0.08; },
@@ -517,7 +521,7 @@ createApp({
                     name = userSnap.data().name || name;
                 }
 
-                // OVERRIDE KESELAMATAN MUTLAK SUPERADMIN
+                // OVERRIDE MUTLAK UNTUK SUPERADMIN
                 if (firebaseUser.email === 'admin@zenq0r.com') {
                     role = 'Superadmin';
                 }
@@ -603,6 +607,58 @@ createApp({
             } finally {
                 this.changePasswordModal.loading = false;
             }
+        },
+
+        // FUNGSI SIMPAN PROFIL ATAS (4 RUANGAN - UNTUK SEMUA USER BIASA)
+        async saveMyProfile() {
+            try {
+                if (!this.userProfile.email) return;
+                const userRef = doc(db, "users", this.userProfile.email);
+                await setDoc(userRef, {
+                    name: this.userProfile.name,
+                    email: this.userProfile.email,
+                    role: this.userProfile.role,
+                    photo: this.userProfile.photo
+                }, { merge: true });
+                this.logAudit('UPDATE', `User updated own profile: ${this.userProfile.email}`);
+                this.showNotify('Profil anda berjaya dikemaskini!');
+            } catch (error) {
+                console.error("Ralat simpan profil:", error);
+                this.showNotify('Ralat mengemaskini profil.');
+            }
+        },
+
+        // FUNGSI JANA & HANTAR E-MEL RASMI DARI admin@zenq0r.com
+        sendWelcomeEmail(userForm) {
+            const originEmail = "admin@zenq0r.com";
+            const recipientEmail = userForm.email;
+            const subject = encodeURIComponent(`[ZENQOR ENTERPRISE] Maklumat Akaun & Akses Portal Rasmi (${userForm.role})`);
+            
+            const emailBody = encodeURIComponent(
+`Salam Sejahtera ${userForm.name},
+
+Akaun pengguna anda bagi sistem ZENQOR TECHNOLOGIES Enterprise Portal v2.0 telah berjaya dicipta dan diaktifkan.
+
+Berikut adalah maklumat log masuk anda:
+--------------------------------------------------
+• Emel Log Masuk : ${userForm.email}
+• Peranan (Role) : ${userForm.role}
+• Kata Laluan     : ${userForm.password}
+• Pautan Portal   : https://hrms-portal.zenq0r.com
+--------------------------------------------------
+
+Sila log masuk dan tukar kata laluan anda dengan kadar segera di bahagian 'Profile & RBAC' demi keselamatan akaun anda.
+
+Sekian, terima kasih.
+
+Pentadbir Sistem Enterprise
+ZENQOR TECHNOLOGIES
+Origin: ${originEmail}`
+            );
+
+            const mailtoUrl = `mailto:${recipientEmail}?from=${originEmail}&subject=${subject}&body=${emailBody}`;
+            window.open(mailtoUrl, '_blank');
+            this.showNotify(`E-mel makluman akses portal telah dijana untuk dihantar kepada ${recipientEmail}.`);
         },
 
         exportCSV(type) {
@@ -796,17 +852,27 @@ createApp({
                     alert(`Emel mesti menggunakan domain rasmi (@${this.officialEmailDomain}).`);
                     return;
                 }
+
+                const isNewUser = !this.userModal.isEdit;
                 const userRef = doc(db, "users", this.userModal.form.email);
+                
                 await setDoc(userRef, {
                     name: this.userModal.form.name,
                     email: this.userModal.form.email,
                     role: this.userModal.form.role
                 }, { merge: true });
+
                 this.userModal.show = false;
-                this.logAudit(this.userModal.isEdit ? 'UPDATE' : 'CREATE', `User role/metadata for ${this.userModal.form.email}`);
-                this.showNotify('Maklumat pengguna berjaya dikemaskini!');
+                this.logAudit(isNewUser ? 'CREATE' : 'UPDATE', `User role/metadata for ${this.userModal.form.email} by ${this.userProfile.email}`);
+                
+                if (isNewUser) {
+                    this.sendWelcomeEmail(this.userModal.form);
+                } else {
+                    this.showNotify('Maklumat pengguna berjaya dikemaskini!');
+                }
             } catch (error) {
                 console.error("Ralat simpan pengguna:", error);
+                alert("Berlaku ralat semasa menyimpan maklumat pengguna.");
             }
         },
         async deletePortalUser(email) {

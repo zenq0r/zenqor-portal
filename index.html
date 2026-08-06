@@ -113,7 +113,7 @@
                         <i class="fa-solid fa-money-check-dollar w-5 text-center"></i><span>Payslip Generator</span>
                     </button>
                     <button v-if="hasAccess('claims')" @click="switchTab('claims')" :class="{'sidebar-item-active': currentTab === 'claims', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'claims'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
-                        <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i><span>Claims Management</span>
+                        <i class="fa-solid fa-receipt w-5 text-center"></i><span>Claims Management</span>
                     </button>
                     <button v-if="hasAccess('client-directory')" @click="switchTab('client-directory')" :class="{'sidebar-item-active': currentTab === 'client-directory', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-directory'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-address-book w-5 text-center"></i><span>Client Directory</span>
@@ -167,7 +167,6 @@
                     </div>
 
                     <div class="flex items-center space-x-3 shrink-0">
-                        <!-- TAB SWITCHER PANTAS DI NAVBAR -->
                         <div class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-600">
                             <button @click="switchTab('doc-generator')" :class="currentTab === 'doc-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Documents</button>
                             <button @click="switchTab('payslip-generator')" :class="currentTab === 'payslip-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Payroll</button>
@@ -190,7 +189,6 @@
                 <!-- MODUL 1: DOCUMENT GENERATOR                                       -->
                 <!-- ================================================================= -->
                 <div v-show="currentTab === 'doc-generator'" class="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
-                    
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Document Generator</h2>
@@ -213,7 +211,6 @@
                     </div>
 
                     <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
-                        
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
                             <div>
                                 <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
@@ -391,7 +388,6 @@
                 <!-- MODUL 2: PAYSLIP GENERATOR                                        -->
                 <!-- ================================================================= -->
                 <div v-show="currentTab === 'payslip-generator'" class="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
-                    
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Payslip Generator (v1.0.0 Engine)</h2>
@@ -414,7 +410,6 @@
                     </div>
 
                     <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
-                        
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
                             <div>
                                 <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
@@ -491,7 +486,6 @@
                 <!-- MODUL 3: CLAIMS MANAGEMENT (TUNTUTAN PERBELANJAAN & RESIT)        -->
                 <!-- ================================================================= -->
                 <div v-show="currentTab === 'claims'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
-                    
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Claims & Expense Management</h2>
@@ -653,7 +647,7 @@
                             <div>
                                 <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Employees</p>
                                 <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ employees.length }}</h3>
-                                <p class="text-[10px] text-emerald-600 font-bold mt-1"><i class="fa-solid fa-check-circle"></i> {{ activeEmployeesCount }} Aktif</p>
+                                <p class="text-[10px] text-emerald-600 font-bold mt-1"><i class="fa-solid fa-circle-check mr-1"></i>{{ activeEmployeesCount }} Aktif</p>
                             </div>
                             <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-brand-blue dark:text-blue-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-users"></i></div>
                         </div>
@@ -673,7 +667,7 @@
                                 <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ totalQuotations }}</h3>
                                 <p class="text-[10px] text-indigo-600 font-bold mt-1">{{ formatCurrency(totalQuotationValue) }}</p>
                             </div>
-                            <div class="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-file-signature"></i></div>
+                            <div class="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-file-pen"></i></div>
                         </div>
 
                         <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
@@ -700,7 +694,7 @@
                                 <h3 class="text-base font-extrabold text-brand-dark dark:text-white mt-1">{{ formatCurrency(totalPayrollNet) }}</h3>
                                 <p class="text-[10px] text-purple-600 font-bold mt-1">{{ payslipHistory.length }} Payslips Generated</p>
                             </div>
-                            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-building-columns"></i></div>
+                            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-money-bill-transfer"></i></div>
                         </div>
                     </div>
 
@@ -1042,12 +1036,13 @@
                         </template>
 
                         <template v-else>
-                            <div class="grid grid-cols-2 gap-4 pb-6 border-b border-slate-100 dark:border-slate-700">
+                            <!-- BAHAGIAN ATAS: 4 RUANGAN PROFIL (NAMPAK KEPADA SEMUA ROLE) -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
                                 <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Nama Pengguna Sedia Ada</label><input type="text" v-model="userProfile.name" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold"></div>
-                                <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Emel Log Masuk</label><input type="email" v-model="userProfile.email" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Emel Log Masuk</label><input type="email" v-model="userProfile.email" disabled class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-400 rounded-xl text-xs cursor-not-allowed"></div>
                                 <div>
                                     <label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Role Pengguna (RBAC)</label>
-                                    <select v-model="userProfile.role" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold bg-slate-50">
+                                    <select v-model="userProfile.role" :disabled="!canManageRBAC" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold bg-slate-50 disabled:bg-slate-100 dark:disabled:bg-slate-700/50 disabled:cursor-not-allowed">
                                         <option value="Superadmin">Superadmin</option>
                                         <option value="HR">HR</option>
                                         <option value="Account">Account</option>
@@ -1057,12 +1052,20 @@
                                     </select>
                                 </div>
                                 <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">URL Avatar / Foto</label><input type="text" v-model="userProfile.photo" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                
+                                <!-- BUTANG SIMPAN PROFIL ATAS -->
+                                <div class="sm:col-span-2 flex justify-end pt-1">
+                                    <button @click="saveMyProfile" type="button" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-user-check"></i><span>Simpan Profil Saya</span>
+                                    </button>
+                                </div>
                             </div>
 
-                            <div class="pt-2 space-y-4">
+                            <!-- BAHAGIAN BAWAH: JADUAL PENGURUSAN AKSES (HANYA SUPERADMIN & HR SAHAJA AKAN NAMPAK) -->
+                            <div v-if="canManageRBAC" class="pt-6 space-y-4 border-t border-slate-200 dark:border-slate-700">
                                 <div class="flex justify-between items-center">
-                                    <h3 class="text-sm font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-users-viewfinder text-brand-blue mr-2"></i>PENGURUSAN AKSES PORTAL</h3>
-                                    <button v-if="canManageRBAC" @click="openUserAccessModal()" type="button" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                                    <h3 class="text-sm font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-users-viewfinder text-brand-blue mr-2"></i>PENGURUSAN AKSES PORTAL (SUPERADMIN & HR)</h3>
+                                    <button @click="openUserAccessModal()" type="button" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                         <i class="fa-solid fa-user-plus"></i><span>Tambah Akses</span>
                                     </button>
                                 </div>
@@ -1085,10 +1088,10 @@
                                                     <span class="bg-brand-gold/20 text-brand-dark dark:text-brand-gold font-extrabold px-2 py-0.5 rounded text-[10px] uppercase">{{ usr.role }}</span>
                                                 </td>
                                                 <td class="p-3 text-center space-x-1">
-                                                    <button v-if="canManageRBAC" @click="openUserAccessModal(usr)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit Akses">
+                                                    <button @click="openUserAccessModal(usr)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit Akses">
                                                         <i class="fa-solid fa-pen"></i>
                                                     </button>
-                                                    <button v-if="canManageRBAC && usr.email !== 'admin@zenq0r.com'" @click="deletePortalUser(usr.email)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Padam Akses">
+                                                    <button v-if="usr.email !== 'admin@zenq0r.com'" @click="deletePortalUser(usr.email)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Padam Akses">
                                                         <i class="fa-solid fa-trash"></i>
                                                     </button>
                                                 </td>
