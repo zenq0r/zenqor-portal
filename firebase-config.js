@@ -1,7 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firebase-config.js (SECURE v2.2)
-// App Check AKTIF dengan reCAPTCHA v3 Site Key
-// Domain: zenq0r.com
+// ZENQOR TECHNOLOGIES - firebase-config.js (SECURE v2.3)
 // ============================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -34,45 +32,34 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
 
 // ----------------------------------------------------------------
-// KONFIGURASI FIREBASE (appId dikemaskini dari Firebase Console)
+// MEMBACA DARI window.__ENV__ DENGAN FALLBACK KUNCI PROJEK
 // ----------------------------------------------------------------
+const env = window.__ENV__ || {};
+
 const firebaseConfig = {
-    apiKey: "AIzaSyCJyjvlm8jG-mT_1mDYsyF562L6XuskFxU",
-    authDomain: "zenqor-web.firebaseapp.com",
-    projectId: "zenqor-web",
-    storageBucket: "zenqor-web.firebasestorage.app",
-    messagingSenderId: "785478368719",
-    appId: "1:785478368719:web:c20d5c3ecc891c692566ba",
-    measurementId: "G-NLFPW2ECR9"
+    apiKey: env.FIREBASE_API_KEY || "AIzaSyCJyjvlm8jG-mT_1mDYsyF562L6XuskFxU",
+    authDomain: env.FIREBASE_AUTH_DOMAIN || "zenqor-web.firebaseapp.com",
+    projectId: env.FIREBASE_PROJECT_ID || "zenqor-web",
+    storageBucket: env.FIREBASE_STORAGE_BUCKET || "zenqor-web.firebasestorage.app",
+    messagingSenderId: env.FIREBASE_MESSAGING_ID || "785478368719",
+    appId: env.FIREBASE_APP_ID || "1:785478368719:web:c20d5c3ecc891c692566ba",
+    measurementId: env.FIREBASE_MEASUREMENT_ID || "G-NLFPW2ECR9"
 };
 
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// ----------------------------------------------------------------
-// [ISU #4 SELESAI] Firebase App Check dengan reCAPTCHA v3
-// Site Key: 6LctvXctAAAAL4fS-SlNqbvCAFbGguGwwRY5HNk
-// Domain berdaftar: zenq0r.com
-//
-// NOTA PENTING - Secret Key (6LctvXctAAAAHwux5H4-pOKka3SQD74ob61uss0)
-// JANGAN letak Secret Key di sini (frontend) -- ini untuk server sahaja!
-// Secret Key hanya digunakan jika anda ada backend/Cloud Functions.
-// ----------------------------------------------------------------
+// App Check menggunakan ReCaptcha Site Key daripada env-config.js atau nilai asal
+const recaptchaKey = env.RECAPTCHA_SITE_KEY || '6LctvXctAAAAL4fS-SlNqbvCAFbGguGwwRY5HNk';
 initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('6LctvXctAAAAL4fS-SlNqbvCAFbGguGwwRY5HNk'),
+    provider: new ReCaptchaV3Provider(recaptchaKey),
     isTokenAutoRefreshEnabled: true
 });
 
-// ----------------------------------------------------------------
-// Firestore dengan Persistent Cache (offline support)
-// ----------------------------------------------------------------
 const db = initializeFirestore(app, {
     localCache: persistentLocalCache()
 });
 
-// ----------------------------------------------------------------
-// Firebase Authentication
-// ----------------------------------------------------------------
 const auth = getAuth(app);
 
 export {

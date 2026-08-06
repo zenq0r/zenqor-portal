@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (MODERN CLEAN ENTERPRISE v2.5)
+// ZENQOR TECHNOLOGIES - app.js (CLEAN STATE & AUTO-WIPE v2.7)
 // ============================================================
 
 import {
@@ -53,11 +53,11 @@ createApp({
             authLoading: true,
             loginForm: { email: '', password: '' },
             loginError: '',
-            currentTab: 'doc-generator', // Mula terus di Document Generator
+            currentTab: 'doc-generator',
             mobileMenuOpen: false,
-            desktopSidebarOpen: true,
+            desktopSidebarOpen: false, // Ditutup secara lalai / terkawal
             chartTimeFilter: 'monthly',
-            isDarkMode: true, // Lalai kepada gaya Korporat Gelap yang elegan
+            isDarkMode: true,
             searchQuery: '',
             currentPage: 1,
             itemsPerPage: 6,
@@ -122,62 +122,61 @@ createApp({
                 form: { name: '', email: '', role: 'Staff' }
             },
 
+            // BORANG DOKUMEN BERMULA KOSONG SEPENUHNYA
             docForm: {
                 type: 'Invoice',
                 docNo: 'INV-2026-000001',
-                status: 'Selesai Dibayar / Paid',
+                status: 'Unpaid',
                 paymentMethod: 'Bank Transfer (EFT)',
-                paymentBank: 'Maybank (Malayan Banking Berhad)',
-                paymentReceiver: 'Akaun Maybank Syarikat (562982057309)',
-                paymentRefNo: 'IT280905CT833S',
+                paymentBank: '',
+                paymentReceiver: '',
+                paymentRefNo: '',
                 paymentAttachment: '',
                 date: new Date().toISOString().substr(0, 10),
                 dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
-                clientName: 'Monsta Studio Sdn. Bhd.',
-                clientPhone: '+60 13-958 2378',
-                clientSSM: '200901029271 (872376-W)',
-                clientAddress: 'L1-01, COPLACE3, BLOCK 3740 PERSIARAN APEC, CYBERJAYA, MALAYSIA',
-                clientCity: 'Cyberjaya',
-                clientState: 'Selangor',
-                clientPostcode: '63000',
+                clientName: '',
+                clientPhone: '',
+                clientSSM: '',
+                clientAddress: '',
+                clientCity: '',
+                clientState: '',
+                clientPostcode: '',
                 clientCountry: 'Malaysia',
-                clientEmail: 'azrul@monsta.com',
-                clientContactPerson: 'AZRUL HAMDAN',
-                clientPosition: 'EVENT & ACTIVATION EXECUTIVE',
-                items: [
-                    { desc: 'Fasa 1: Deposit & Pengesahan Perjanjian (50%) | (Bayaran semasa menandatangani perjanjian)', qty: 1, price: 600.00 },
-                    { desc: 'Fasa 2: Penyediaan & Penyerahan Fail / Submission (30%) | (Bayaran sebelum fail diserahkan)', qty: 1, price: 350.00 },
-                    { desc: 'Fasa 3: Selesai Tugas Perundingan / Keputusan PBT (20%) | (Bayaran selepas surat keputusan/lesen)', qty: 1, price: 350.00 }
-                ],
+                clientEmail: '',
+                clientContactPerson: '',
+                clientPosition: '',
+                items: [{ desc: '', qty: 1, price: 0 }],
                 discount: 0
             },
 
+            // BORANG PAYSLIP BERMULA KOSONG SEPENUHNYA (TERMASUK empEmail UNTUK RBAC STAFF)
             payForm: {
-                name: 'Ahmad Azziem Bin Ahmad Termizi',
-                ic: '021202-08-0831',
-                empNo: 'ZEN-HR08001',
-                position: 'ASSISTANT MANAGER HR',
-                dept: 'OPERATION DEPARTMENT',
+                name: '',
+                ic: '',
+                empNo: '',
+                empEmail: '', // Ditambah untuk pematuhan security rules Staff
+                position: '',
+                dept: '',
                 isSenior: false,
-                joinDate: '2026-08-01',
-                bankAcc: 'Maybank Islamic Berhad | 158435-181789',
-                epfSocso: 'KWSP: 600501 | PERKESO: 12503',
+                joinDate: '',
+                bankAcc: '',
+                epfSocso: '',
                 month: new Date().toISOString().slice(0, 7),
                 payDate: new Date().toISOString().slice(0, 10),
-                basic: 2500,
+                basic: 0,
                 ot: 0,
                 phone: 0,
                 transport: 0,
                 meal: 0,
                 bonus: 0,
-                dedEpf: 275,
-                dedSocso: 12.5,
-                dedEis: 5,
+                dedEpf: 0,
+                dedSocso: 0,
+                dedEis: 0,
                 dedPcb: 0,
                 dedAdvance: 0,
                 dedOther: 0
             },
-            payCalc: { gross: 2500, deduct: 292.5, net: 2207.50, epfEmpr: 325, socsoEmpr: 43.75, eisEmpr: 5.0 }
+            payCalc: { gross: 0, deduct: 0, net: 0, epfEmpr: 0, socsoEmpr: 0, eisEmpr: 0 }
         };
     },
     computed: {
@@ -234,6 +233,40 @@ createApp({
         }
     },
     methods: {
+        // PEMBERSIHAN TOTAL MEMORI BORANG (LOG MASUK / LOG KELUAR)
+        resetAllForms() {
+            this.docForm = {
+                type: 'Invoice',
+                docNo: '',
+                status: 'Unpaid',
+                paymentMethod: 'Bank Transfer (EFT)',
+                paymentBank: '',
+                paymentReceiver: '',
+                paymentRefNo: '',
+                paymentAttachment: '',
+                date: new Date().toISOString().substr(0, 10),
+                dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
+                clientName: '', clientPhone: '', clientSSM: '', clientAddress: '',
+                clientCity: '', clientState: '', clientPostcode: '', clientCountry: 'Malaysia',
+                clientEmail: '', clientContactPerson: '', clientPosition: '',
+                items: [{ desc: '', qty: 1, price: 0 }],
+                discount: 0
+            };
+            this.payForm = {
+                name: '', ic: '', empNo: '', empEmail: '',
+                position: '', dept: '', isSenior: false,
+                joinDate: '', bankAcc: '', epfSocso: '',
+                month: new Date().toISOString().slice(0, 7),
+                payDate: new Date().toISOString().slice(0, 10),
+                basic: 0, ot: 0, phone: 0, transport: 0, meal: 0, bonus: 0,
+                dedEpf: 0, dedSocso: 0, dedEis: 0, dedPcb: 0, dedAdvance: 0, dedOther: 0
+            };
+            this.editingDocId = null;
+            this.editingPayId = null;
+            this.autoCalculatePayroll();
+            this.generateDocNo();
+        },
+
         isOfficialEmail(email) {
             if (!email) return false;
             const domain = '@' + this.officialEmailDomain;
@@ -262,24 +295,7 @@ createApp({
         },
         resetDocForm() {
             if (confirm("Adakah anda pasti mahu mengosongkan keseluruhan borang dokumen?")) {
-                this.docForm = {
-                    type: 'Quotation',
-                    docNo: this.docForm.docNo,
-                    status: 'Open',
-                    paymentMethod: 'Bank Transfer (EFT)',
-                    paymentBank: '',
-                    paymentReceiver: '',
-                    paymentRefNo: '',
-                    paymentAttachment: '',
-                    date: new Date().toISOString().substr(0, 10),
-                    dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
-                    clientName: '', clientPhone: '', clientSSM: '', clientAddress: '',
-                    clientCity: '', clientState: '', clientPostcode: '', clientCountry: 'Malaysia',
-                    clientEmail: '', clientContactPerson: '', clientPosition: '',
-                    items: [{ desc: '', qty: 1, price: 0 }],
-                    discount: 0
-                };
-                this.generateDocNo();
+                this.resetAllForms();
                 this.showNotify("Seluruh ruangan borang dokumen telah dikosongkan.");
             }
         },
@@ -287,7 +303,7 @@ createApp({
             if (confirm("Adakah anda pasti mahu mengosongkan keseluruhan borang slip gaji?")) {
                 this.editingPayId = null;
                 this.payForm = {
-                    name: '', ic: '', empNo: '',
+                    name: '', ic: '', empNo: '', empEmail: '',
                     position: '', dept: '', isSenior: false,
                     joinDate: '', bankAcc: '', epfSocso: '',
                     month: new Date().toISOString().slice(0, 7),
@@ -435,8 +451,10 @@ createApp({
                     photo: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`
                 };
 
+                // KOSONGKAN BORANG SEBAIK SAHAJA LOGIN BERJAYA
+                this.resetAllForms();
                 this.isLoggedIn = true;
-                this.desktopSidebarOpen = true;
+                this.desktopSidebarOpen = false; // Terkawal (tidak terbuka paksa)
                 this.mobileMenuOpen = false;
                 localStorage.setItem('zenqor_theme', this.isDarkMode ? 'dark' : 'light');
                 this.logAudit('LOGIN', `User logged in with role ${role}`);
@@ -458,13 +476,17 @@ createApp({
             }
         },
 
+        // LOG-OUT: PADAM SEMUA MEMORI SEMENTARA TERUS
         async handleLogout() {
             try {
                 this.logAudit('LOGOUT', 'User logged out');
                 await signOut(auth);
                 this.isLoggedIn = false;
                 this.userProfile = { name: '', email: '', role: '', photo: '' };
+                this.resetAllForms(); // Wajib bersihkan borang & rekod suntingan
                 this.currentTab = 'doc-generator';
+                this.loginForm = { email: '', password: '' };
+                this.searchQuery = '';
             } catch (error) {
                 console.error("Logout error:", error);
             }
@@ -827,6 +849,7 @@ createApp({
         selectEmployeeFromTable(emp) {
             this.payForm.empNo = emp.empNo || '';
             this.payForm.name = emp.name || '';
+            this.payForm.empEmail = emp.email || ''; // Disimpan agar sekatan fail firestore.rules lulus
             this.payForm.ic = emp.ic || '';
             this.payForm.dept = emp.dept || '';
             this.payForm.position = emp.position || '';
