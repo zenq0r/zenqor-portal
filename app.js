@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE CLAIMS & AUTO-WIPE v2.9)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE CLAIMS & AUTO-WIPE v3.0)
 // ============================================================
 
 import {
@@ -515,6 +515,11 @@ createApp({
                 if (userSnap.exists()) {
                     role = userSnap.data().role || 'Staff';
                     name = userSnap.data().name || name;
+                }
+
+                // OVERRIDE KESELAMATAN MUTLAK SUPERADMIN
+                if (firebaseUser.email === 'admin@zenq0r.com') {
+                    role = 'Superadmin';
                 }
 
                 this.userProfile = {
@@ -1215,6 +1220,9 @@ createApp({
                     if (userSnap.exists()) {
                         role = userSnap.data().role || 'Staff';
                         name = userSnap.data().name || name;
+                    }
+                    if (firebaseUser.email === 'admin@zenq0r.com') {
+                        role = 'Superadmin';
                     }
                     this.userProfile = {
                         name, email: firebaseUser.email, role,
