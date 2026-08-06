@@ -20,7 +20,9 @@
                             blue: '#1E3A8A',
                             gold: '#D4AF37',
                             light: '#F8FAFC',
-                            card: '#112240'
+                            card: '#112240',
+                            border: '#1E293B',
+                            bg: '#0D172A'
                         }
                     }
                 }
@@ -30,7 +32,7 @@
     <link rel="stylesheet" href="./custom.css">
     <style id="dynamic-print-orientation"></style>
 </head>
-<body class="bg-brand-light text-slate-800 antialiased selection:bg-brand-gold selection:text-brand-dark transition-colors duration-200" :class="{'dark bg-slate-900 text-slate-100': isDarkMode}">
+<body class="bg-brand-light text-slate-800 antialiased selection:bg-brand-gold selection:text-brand-dark transition-colors duration-200" :class="{'dark bg-brand-bg text-slate-100': isDarkMode}">
     <div id="app" v-cloak class="min-h-screen flex flex-col">
 
         <!-- NOTIFICATION BAR -->
@@ -73,12 +75,12 @@
             
             <div v-if="mobileMenuOpen" @click="mobileMenuOpen = false" class="fixed inset-0 bg-black/50 z-40 md:hidden"></div>
 
-            <!-- SIDEBAR -->
+            <!-- SIDEBAR PROFESSIONAL -->
             <aside :class="[
                        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
                        desktopSidebarOpen ? 'md:w-64 md:block' : 'md:w-0 md:hidden md:overflow-hidden'
                    ]" 
-                   class="w-64 bg-brand-dark text-white flex flex-col no-print shrink-0 shadow-2xl fixed inset-y-0 left-0 z-50 md:relative transition-all duration-300 ease-in-out">
+                   class="w-64 bg-brand-dark text-white flex flex-col no-print shrink-0 shadow-2xl fixed inset-y-0 left-0 z-50 md:relative transition-all duration-300 ease-in-out border-r border-slate-800">
                 
                 <div class="p-5 border-b border-slate-800 flex items-center justify-between">
                     <div class="flex items-center space-x-3 overflow-hidden">
@@ -95,40 +97,45 @@
                     </button>
                 </div>
 
-                <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
-                    <button v-if="hasAccess('dashboard')" @click="switchTab('dashboard')" :class="{'bg-brand-blue text-white shadow-lg': currentTab === 'dashboard', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'dashboard'}" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition flex items-center space-x-3">
+                <nav class="flex-1 p-4 space-y-1 overflow-y-auto text-xs font-semibold">
+                    <button v-if="hasAccess('dashboard')" @click="switchTab('dashboard')" :class="{'sidebar-item-active': currentTab === 'dashboard', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'dashboard'}" class="w-full text-left px-4 py-3 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-chart-pie w-5 text-center"></i><span>Dashboard</span>
                     </button>
-                    <button v-if="hasAccess('doc-generator')" @click="switchTab('doc-generator')" :class="{'bg-brand-blue text-white shadow-lg': currentTab === 'doc-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'doc-generator'}" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition flex items-center space-x-3">
+
+                    <div class="pt-3 pb-1">
+                        <p class="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Operation Center</p>
+                    </div>
+
+                    <button v-if="hasAccess('doc-generator')" @click="switchTab('doc-generator')" :class="{'sidebar-item-active': currentTab === 'doc-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'doc-generator'}" class="w-full text-left px-4 py-3 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i><span>Document Generator</span>
                     </button>
-                    <button v-if="hasAccess('client-directory')" @click="switchTab('client-directory')" :class="{'bg-brand-blue text-white shadow-lg': currentTab === 'client-directory', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-directory'}" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition flex items-center space-x-3">
-                        <i class="fa-solid fa-address-book w-5 text-center"></i><span>Client Directory</span>
-                    </button>
-                    <button v-if="hasAccess('payslip-generator')" @click="switchTab('payslip-generator')" :class="{'bg-brand-blue text-white shadow-lg': currentTab === 'payslip-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'payslip-generator'}" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition flex items-center space-x-3">
+                    <button v-if="hasAccess('payslip-generator')" @click="switchTab('payslip-generator')" :class="{'sidebar-item-active': currentTab === 'payslip-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'payslip-generator'}" class="w-full text-left px-4 py-3 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-money-check-dollar w-5 text-center"></i><span>Payslip Generator</span>
                     </button>
-                    <button v-if="hasAccess('hr-employees')" @click="switchTab('hr-employees')" :class="{'bg-brand-blue text-white shadow-lg': currentTab === 'hr-employees', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'hr-employees'}" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition flex items-center space-x-3">
+                    <button v-if="hasAccess('client-directory')" @click="switchTab('client-directory')" :class="{'sidebar-item-active': currentTab === 'client-directory', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-directory'}" class="w-full text-left px-4 py-3 rounded-xl transition flex items-center space-x-3">
+                        <i class="fa-solid fa-address-book w-5 text-center"></i><span>Client Directory</span>
+                    </button>
+                    <button v-if="hasAccess('hr-employees')" @click="switchTab('hr-employees')" :class="{'sidebar-item-active': currentTab === 'hr-employees', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'hr-employees'}" class="w-full text-left px-4 py-3 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-users-gear w-5 text-center"></i><span>HR Employees</span>
                     </button>
-                    <button v-if="hasAccess('reports')" @click="switchTab('reports')" :class="{'bg-brand-blue text-white shadow-lg': currentTab === 'reports', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'reports'}" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition flex items-center space-x-3">
+                    <button v-if="hasAccess('reports')" @click="switchTab('reports')" :class="{'sidebar-item-active': currentTab === 'reports', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'reports'}" class="w-full text-left px-4 py-3 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-chart-line w-5 text-center"></i><span>Reports & Analytics</span>
                     </button>
-                    <button v-if="hasAccess('client-portal')" @click="switchTab('client-portal')" :class="{'bg-brand-blue text-white shadow-lg': currentTab === 'client-portal', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-portal'}" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition flex items-center space-x-3">
+                    <button v-if="hasAccess('client-portal')" @click="switchTab('client-portal')" :class="{'sidebar-item-active': currentTab === 'client-portal', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-portal'}" class="w-full text-left px-4 py-3 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-user-tie w-5 text-center"></i><span>Client Portal</span>
                     </button>
 
-                    <div v-if="hasAccess('settings') || hasAccess('profile') || hasAccess('audit-logs')" class="pt-4 pb-2">
+                    <div v-if="hasAccess('settings') || hasAccess('profile') || hasAccess('audit-logs')" class="pt-3 pb-1">
                         <p class="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">System & Admin</p>
                     </div>
 
-                    <button v-if="hasAccess('audit-logs')" @click="switchTab('audit-logs')" :class="{'bg-brand-blue text-white shadow-lg': currentTab === 'audit-logs', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'audit-logs'}" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition flex items-center space-x-3">
+                    <button v-if="hasAccess('audit-logs')" @click="switchTab('audit-logs')" :class="{'sidebar-item-active': currentTab === 'audit-logs', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'audit-logs'}" class="w-full text-left px-4 py-3 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-shield-halved w-5 text-center"></i><span>Audit & Security Log</span>
                     </button>
-                    <button v-if="hasAccess('settings')" @click="switchTab('settings')" :class="{'bg-brand-blue text-white shadow-lg': currentTab === 'settings', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'settings'}" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition flex items-center space-x-3">
+                    <button v-if="hasAccess('settings')" @click="switchTab('settings')" :class="{'sidebar-item-active': currentTab === 'settings', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'settings'}" class="w-full text-left px-4 py-3 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-gear w-5 text-center"></i><span>Settings</span>
                     </button>
-                    <button v-if="hasAccess('profile')" @click="switchTab('profile')" :class="{'bg-brand-blue text-white shadow-lg': currentTab === 'profile', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'profile'}" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition flex items-center space-x-3">
+                    <button v-if="hasAccess('profile')" @click="switchTab('profile')" :class="{'sidebar-item-active': currentTab === 'profile', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'profile'}" class="w-full text-left px-4 py-3 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-user-shield w-5 text-center"></i><span>Profile & RBAC</span>
                     </button>
                 </nav>
@@ -141,39 +148,349 @@
             </aside>
 
             <!-- MAIN WORKING AREA -->
-            <main class="flex-1 overflow-y-auto no-print bg-slate-50 dark:bg-slate-900 flex flex-col w-full">
+            <main class="flex-1 overflow-y-auto no-print bg-slate-50 dark:bg-brand-bg flex flex-col w-full">
                 
                 <!-- TOP NAVBAR -->
-                <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-30 gap-4">
+                <header class="bg-white dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/80 px-4 md:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30 gap-4 backdrop-blur-md">
                     <div class="flex items-center space-x-3 flex-1">
                         <button @click="toggleSidebar" class="text-slate-600 dark:text-slate-300 hover:text-brand-dark p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-lg transition" title="Tutup / Buka Sidebar">
                             <i class="fa-solid fa-bars"></i>
                         </button>
 
-                        <div class="relative w-full max-w-sm">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
-                            <input type="text" v-model="searchQuery" placeholder="Global Search: Dokumen, Pekerja, SSM, IC..." class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-xl text-sm focus:bg-white dark:focus:bg-slate-600 focus:ring-2 focus:ring-brand-blue focus:outline-none transition">
+                        <div class="relative w-full max-w-md">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                            <input type="text" v-model="searchQuery" placeholder="Global Search: Dokumen, Pekerja, SSM, IC..." class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-semibold focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-brand-gold focus:outline-none transition">
                         </div>
                     </div>
 
                     <div class="flex items-center space-x-3 shrink-0">
-                        <button @click="toggleDarkMode" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-amber-400 hover:bg-slate-200 transition" title="Tukar Tema Dark/Light">
+                        <!-- TAB SWITCHER PANTAS DI NAVBAR -->
+                        <div class="hidden lg:flex items-center bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-600 mr-2">
+                            <button @click="switchTab('doc-generator')" :class="currentTab === 'doc-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1.5 rounded-lg transition">Documents</button>
+                            <button @click="switchTab('payslip-generator')" :class="currentTab === 'payslip-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1.5 rounded-lg transition">Payroll</button>
+                        </div>
+
+                        <button @click="toggleDarkMode" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-amber-400 hover:bg-slate-200 transition" title="Tukar Tema Dark/Light">
                             <i :class="isDarkMode ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"></i>
                         </button>
 
                         <div class="text-right hidden sm:block">
                             <p class="text-xs font-bold text-slate-800 dark:text-slate-100">{{ userProfile.name }}</p>
-                            <span class="inline-block bg-brand-gold/20 text-brand-dark dark:text-brand-gold text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">{{ userProfile.role }}</span>
+                            <span class="inline-block bg-brand-gold/20 text-brand-dark dark:text-brand-gold text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase">{{ userProfile.role }}</span>
                         </div>
-                        <img :src="userProfile.photo" class="w-9 h-9 rounded-full object-cover border-2 border-brand-gold shrink-0">
+                        <img :src="userProfile.photo" class="w-9 h-9 rounded-full object-cover border-2 border-brand-gold shrink-0 shadow-md">
                     </div>
                 </header>
 
+                <!-- ================================================================= -->
+                <!-- MODUL 1 & 2: WORKSPACE BERSEPADU (DOKUMEN & PAYSLIP SIDE-BY-SIDE / TABBED) -->
+                <!-- ================================================================= -->
+                <div v-show="currentTab === 'doc-generator' || currentTab === 'payslip-generator'" class="p-4 md:p-8 max-w-[1700px] mx-auto w-full space-y-6">
+                    
+                    <!-- TAB BAR ATAS KORPORAT -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-800/60 p-2 md:p-3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center space-x-1 sm:space-x-2">
+                            <button @click="switchTab('doc-generator')" :class="currentTab === 'doc-generator' ? 'bg-brand-gold text-brand-dark font-extrabold shadow-md' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold'" class="px-4 py-2.5 rounded-xl text-xs transition flex items-center space-x-2">
+                                <i class="fa-solid fa-file-invoice"></i><span>[Generate Documents]</span>
+                            </button>
+                            <button @click="switchTab('payslip-generator')" :class="currentTab === 'payslip-generator' ? 'bg-brand-gold text-brand-dark font-extrabold shadow-md' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold'" class="px-4 py-2.5 rounded-xl text-xs transition flex items-center space-x-2">
+                                <i class="fa-solid fa-money-check-dollar"></i><span>[Payslip Generator]</span>
+                            </button>
+                            <button @click="switchTab('dashboard')" class="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-1">
+                                <i class="fa-solid fa-archive"></i><span>[Registry]</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            <span>Mod Kerja Aktif:</span>
+                            <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 font-bold uppercase">{{ currentTab === 'doc-generator' ? 'Document Center' : 'Payroll Center' }}</span>
+                        </div>
+                    </div>
+
+                    <!-- GRID 2 KOLUM UNTUK PAPARAN SEPERTI DALAM GAMBAR REKA BENTUK -->
+                    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+
+                        <!-- KOLUM KIRI (7/12): BORANG GENERATOR DOKUMEN -->
+                        <div v-show="currentTab === 'doc-generator'" class="xl:col-span-12 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-lg p-6 space-y-6">
+                            
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700 pb-4">
+                                <div>
+                                    <h3 class="text-base font-extrabold text-brand-dark dark:text-white tracking-wide uppercase flex items-center">
+                                        <i class="fa-solid fa-building-user text-brand-gold mr-2 text-lg"></i>
+                                        CUSTOMER INFORMATION (BILL TO)
+                                    </h3>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Pilih pelanggan sedia ada atau isi maklumat baharu.</p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <select @change="selectCustomerForDoc($event)" class="p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full md:w-64 focus:ring-2 focus:ring-brand-gold focus:outline-none">
+                                        <option value="">-- Pilih Pelanggan / Auto-Isi --</option>
+                                        <option v-for="(cust, cIdx) in customers" :key="cIdx" :value="cust.clientName">{{ cust.clientName }}</option>
+                                    </select>
+                                    <button v-if="canCreateEdit" @click="saveCustomerToDatabase" type="button" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-3.5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1 shrink-0">
+                                        <i class="fa-solid fa-database"></i><span>Simpan</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- INPUT PELANGGAN (3 KOLUM KORPORAT) -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Pelanggan / Syarikat *</label><input type="text" v-model="docForm.clientName" required placeholder="Contoh: Monsta Studio Sdn. Bhd." class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. Telefon *</label><input type="text" v-model="docForm.clientPhone" required placeholder="+60 13-958 2378" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. SSM / Cukai (TIN)</label><input type="text" v-model="docForm.clientSSM" placeholder="200901029271 (872376-W)" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Alamat Emel</label><input type="email" v-model="docForm.clientEmail" placeholder="azrul@monsta.com" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Contact Person</label><input type="text" v-model="docForm.clientContactPerson" placeholder="AZRUL HAMDAN" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50 font-semibold"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Jawatan</label><input type="text" v-model="docForm.clientPosition" placeholder="EVENT & ACTIVATION EXECUTIVE" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                <div class="md:col-span-3"><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Alamat Penuh Pelanggan *</label><input type="text" v-model="docForm.clientAddress" required placeholder="L1-01, COPLACE3, BLOCK 3740 PERSIARAN APEC, CYBERJAYA..." class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50 font-medium"></div>
+                            </div>
+
+                            <!-- 6 KOLUM STATUS & TARIKH -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 border-t border-slate-200 dark:border-slate-700 pt-5">
+                                <div>
+                                    <label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1.5">JENIS DOKUMEN</label>
+                                    <select v-model="docForm.type" @change="generateDocNo" :disabled="!!editingDocId" class="w-full p-2.5 border rounded-xl text-xs font-extrabold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
+                                        <option value="Quotation">Quotation</option>
+                                        <option value="Invoice">Invoice</option>
+                                    </select>
+                                </div>
+                                <div><label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1.5">NO. DOKUMEN</label><input type="text" v-model="docForm.docNo" readonly class="w-full p-2.5 border rounded-xl bg-slate-100 dark:bg-slate-700 dark:text-white font-extrabold text-xs text-brand-dark"></div>
+                                <div><label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1.5">TARIKH DOKUMEN</label><input type="date" v-model="docForm.date" class="w-full p-2.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div><label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1.5">{{ docForm.type === 'Invoice' ? 'DUE DATE' : 'VALID UNTIL' }}</label><input type="date" v-model="docForm.dueDate" class="w-full p-2.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div>
+                                    <label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1.5">STATUS</label>
+                                    <select v-model="docForm.status" class="w-full p-2.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-extrabold text-xs">
+                                        <template v-if="docForm.type === 'Quotation'">
+                                            <option value="Open">Sah / Open</option>
+                                            <option value="Accepted">Dipersetujui / Accepted</option>
+                                            <option value="Rejected">Ditolak / Rejected</option>
+                                            <option value="Invoiced">Telah Di-invois</option>
+                                        </template>
+                                        <template v-else>
+                                            <option value="Unpaid">Belum Dibayar / Unpaid</option>
+                                            <option value="Paid">Selesai Dibayar / Paid</option>
+                                            <option value="Partial">Bayaran Separa / Partial</option>
+                                            <option value="Cancelled">Dibatalkan / Cancelled</option>
+                                        </template>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1.5">PEMBAYARAN</label>
+                                    <select v-model="docForm.paymentMethod" class="w-full p-2.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-extrabold text-xs">
+                                        <option value="Bank Transfer">Bank Transfer (EFT)</option>
+                                        <option value="DuitNow QR">DuitNow QR</option>
+                                        <option value="Cheque">Cek (Cheque)</option>
+                                        <option value="Cash">Tunai (Cash)</option>
+                                        <option value="E-Wallet">E-Wallet</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- BARIS BAYARAN & RESIT BERTANDA KORPORAT (SEPERTI DALAM GAMBAR KE-3) -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-slate-50 dark:bg-slate-700/40 p-4 rounded-xl border border-slate-200 dark:border-slate-600 items-end">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PILIHAN BANK</label>
+                                    <select v-model="docForm.paymentBank" class="w-full p-2 border rounded-xl text-xs font-bold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
+                                        <option value="">-- Pilih Bank --</option>
+                                        <option value="Maybank (Malayan Banking Berhad)">Maybank (Malayan Banking Berhad)</option>
+                                        <option value="CIMB Bank">CIMB Bank Berhad</option>
+                                        <option value="Public Bank">Public Bank Berhad</option>
+                                        <option value="RHB Bank">RHB Bank Berhad</option>
+                                        <option value="Bank Islam">Bank Islam Malaysia Berhad</option>
+                                        <option value="GXBank">GXBank Berhad</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PENERIMAAN PEMBAYARAN</label>
+                                    <select v-model="docForm.paymentReceiver" class="w-full p-2 border rounded-xl text-xs font-bold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
+                                        <option value="">-- Pilih Akaun Terima --</option>
+                                        <option value="Akaun Maybank Syarikat (562982057309)">Akaun Maybank Syarikat (56298...)</option>
+                                        <option value="DuitNow QR Syarikat">DuitNow QR Syarikat</option>
+                                        <option value="Petty Cash">Tunai / Petty Cash</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
+                                        NO. RUJUKAN BAYARAN (REF NO) 
+                                        <span class="text-red-500 font-extrabold ml-1">* WAJIB</span>
+                                    </label>
+                                    <input type="text" v-model="docForm.paymentRefNo" placeholder="IT280905CT833S" 
+                                           class="w-full p-2 border rounded-xl text-xs font-bold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
+                                </div>
+
+                                <!-- KOTAK LAMPIRAN DENGAN BINGKAI HIJAU SEPERTI GAMBAR (HIGHLIGHTED RESIT BOX) -->
+                                <div class="p-2 bg-emerald-500/10 dark:bg-emerald-950/40 border-2 border-emerald-500 rounded-xl flex items-center justify-between gap-2">
+                                    <div class="overflow-hidden">
+                                        <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight truncate">LAMPIRAN / RESIT (MAX 2MB)</p>
+                                        <p class="text-[10px] text-slate-400 truncate">{{ docForm.paymentAttachment ? 'Resit Didaftarkan' : 'Tiada fail dipilih' }}</p>
+                                    </div>
+                                    <div class="flex items-center space-x-1 shrink-0">
+                                        <label class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
+                                            <span>Pilih</span>
+                                            <input type="file" @change="handleAttachmentUpload" accept=".pdf,image/*" class="hidden">
+                                        </label>
+                                        <a v-if="docForm.paymentAttachment" :href="docForm.paymentAttachment" download="Bukti_Resit" target="_blank" class="bg-emerald-600 text-white px-2 py-1.5 rounded-lg text-[11px] font-bold" title="Lihat">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- JADUAL ITEM KORPORAT -->
+                            <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h3 class="text-xs font-extrabold uppercase tracking-wider text-brand-gold">SENARAI BARANGAN & PERKHIDMATAN</h3>
+                                    <button type="button" @click="clearAllDocItems" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center space-x-1">
+                                        <i class="fa-solid fa-trash-can"></i><span>Padam Semua Item</span>
+                                    </button>
+                                </div>
+
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 text-[11px] uppercase tracking-wider font-extrabold">
+                                            <th class="p-3 border border-slate-200 dark:border-slate-600">Keterangan / Produk</th>
+                                            <th class="p-3 border border-slate-200 dark:border-slate-600 w-24 text-center">Kuantiti</th>
+                                            <th class="p-3 border border-slate-200 dark:border-slate-600 w-36 text-right">Harga Unit (RM)</th>
+                                            <th class="p-3 border border-slate-200 dark:border-slate-600 w-36 text-right">Jumlah (RM)</th>
+                                            <th class="p-3 border border-slate-200 dark:border-slate-600 w-12 text-center"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(item, idx) in docForm.items" :key="idx" class="border-b dark:border-slate-700">
+                                            <td class="p-2 border dark:border-slate-600"><input type="text" v-model="item.desc" placeholder="Keterangan perkhidmatan / bayaran Fasa..." class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-xs font-semibold"></td>
+                                            <td class="p-2 border dark:border-slate-600"><input type="number" v-model="item.qty" min="1" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-center text-xs font-bold"></td>
+                                            <td class="p-2 border dark:border-slate-600"><input type="number" v-model="item.price" step="0.01" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right text-xs font-semibold"></td>
+                                            <td class="p-2 border dark:border-slate-600 text-right font-extrabold text-xs bg-slate-50 dark:bg-slate-700/50 dark:text-white">{{ formatCurrency(item.qty * item.price) }}</td>
+                                            <td class="p-2 border dark:border-slate-600 text-center"><button @click="removeDocItem(idx)" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash text-xs"></i></button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                
+                                <div class="flex justify-between items-center mt-3">
+                                    <button @click="addDocItem" class="bg-slate-100 dark:bg-slate-700 dark:text-white hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition">+ Tambah Item</button>
+                                </div>
+                            </div>
+
+                            <!-- RINGKASAN & ACTION BAR BAWAH DOKUMEN -->
+                            <div class="flex flex-col sm:flex-row items-end justify-between border-t border-slate-200 dark:border-slate-700 pt-5 gap-4">
+                                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                                    <button @click="printDocumentModule" class="bg-brand-dark hover:bg-brand-blue text-white font-extrabold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-file-pdf"></i><span>Preview / Cetak PDF</span>
+                                    </button>
+                                    <button @click="saveDocRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-floppy-disk"></i><span>Simpan Dokumen</span>
+                                    </button>
+                                    <button @click="showNotify('Dokumen dihantar ke emel pelanggan rasmi.')" class="bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-envelope"></i><span>Hantar Melalui Emel</span>
+                                    </button>
+                                </div>
+
+                                <div class="w-full sm:w-72 space-y-1.5 text-xs font-semibold">
+                                    <div class="flex justify-between text-slate-600 dark:text-slate-300"><span>Subtotal:</span><span class="font-bold">RM {{ docSubtotal.toFixed(2) }}</span></div>
+                                    <div class="flex justify-between items-center text-slate-600 dark:text-slate-300"><span>Diskaun (-):</span><input type="number" v-model="docForm.discount" step="0.01" class="w-20 p-1 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right text-xs"></div>
+                                    <div class="flex justify-between text-slate-600 dark:text-slate-300"><span>SST (8%):</span><span class="font-bold">RM {{ docSST.toFixed(2) }}</span></div>
+                                    <div class="flex justify-between text-base font-extrabold text-brand-dark dark:text-white border-t border-slate-300 dark:border-slate-600 pt-2"><span>Grand Total:</span><span class="text-brand-gold">RM {{ docGrandTotal.toFixed(2) }}</span></div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- ========================================================= -->
+                        <!-- KOLUM KANAN (12/12): PAYSLIP GENERATOR v1.0.0 ENGINE      -->
+                        <!-- ========================================================= -->
+                        <div v-show="currentTab === 'payslip-generator'" class="xl:col-span-12 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-lg p-6 space-y-6">
+                            
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
+                                <div>
+                                    <h3 class="text-base font-extrabold text-brand-dark dark:text-white tracking-wide uppercase flex items-center">
+                                        <i class="fa-solid fa-money-check-dollar text-emerald-500 mr-2 text-lg"></i>
+                                        Payslip Generator (v1.0.0 Engine)
+                                    </h3>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Sistem caruman berkanun auto-kira (KWSP, SOCSO, EIS, PCB) & MTD/YTD.</p>
+                                </div>
+                                <select @change="selectEmployeeForPayslip($event)" class="p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
+                                    <option value="">-- Auto-Isi Pekerja HR --</option>
+                                    <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
+                                </select>
+                            </div>
+
+                            <!-- MAKLUMAT PEKERJA (4 KOLUM KORPORAT) -->
+                            <div>
+                                <h4 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2.5">EMPLOYEE INFORMATION</h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee Name</label><input type="text" v-model="payForm.name" required placeholder="Ahmad Azziem" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
+                                    <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">IC No.</label><input type="text" v-model="payForm.ic" placeholder="000000-00-0000" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee No.</label><input type="text" v-model="payForm.empNo" placeholder="ZEN-HR08001" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
+                                    <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Position</label><input type="text" v-model="payForm.position" placeholder="ASSISTANT MANAGER HR" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input type="text" v-model="payForm.dept" placeholder="OPERATION DEPARTMENT" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Join Date</label><input type="date" v-model="payForm.joinDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Bank / Account</label><input type="text" v-model="payForm.bankAcc" placeholder="Maybank Islamic (56298...)" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. KWSP / SOCSO</label><input type="text" v-model="payForm.epfSocso" placeholder="No. KWSP / SOCSO" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                </div>
+                            </div>
+
+                            <!-- SALARY BREAKDOWN (2 KOLUM: EARNINGS & DEDUCTIONS) -->
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 border-t border-slate-200 dark:border-slate-700 pt-5">
+                                
+                                <!-- EARNINGS -->
+                                <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                                    <h4 class="text-xs font-extrabold uppercase tracking-wider text-brand-blue dark:text-blue-400 border-b border-slate-200 dark:border-slate-600 pb-2">EARNINGS (PENDAPATAN)</h4>
+                                    <div class="grid grid-cols-2 gap-3 text-xs">
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Bulan Gaji</label><input type="month" v-model="payForm.month" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Tarikh Bayaran</label><input type="date" v-model="payForm.payDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Gaji Pokok (RM) *</label><input type="number" v-model="payForm.basic" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">OT (Overtime)</label><input type="number" v-model="payForm.ot" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Elaun Telefon</label><input type="number" v-model="payForm.phone" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Elaun Pengangkutan</label><input type="number" v-model="payForm.transport" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Elaun Makan</label><input type="number" v-model="payForm.meal" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Bonus & Komisen</label><input type="number" v-model="payForm.bonus" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                    </div>
+                                </div>
+
+                                <!-- DEDUCTIONS -->
+                                <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                                    <h4 class="text-xs font-extrabold uppercase tracking-wider text-red-600 border-b border-slate-200 dark:border-slate-600 pb-2">DEDUCTIONS (POTONGAN BERKANUN)</h4>
+                                    <div class="grid grid-cols-2 gap-3 text-xs">
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">KWSP Pekerja (11%)</label><input type="number" v-model="payForm.dedEpf" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">PERKESO (0.5%)</label><input type="number" v-model="payForm.dedSocso" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">EIS Pekerja (0.2%)</label><input type="number" v-model="payForm.dedEis" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">PCB (LHDN)</label><input type="number" v-model="payForm.dedPcb" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Advance / Loan</label><input type="number" v-model="payForm.dedAdvance" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                        <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Potongan Lain</label><input type="number" v-model="payForm.dedOther" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- RINGKASAN PAYSLIP & ACTION BUTTONS -->
+                            <div class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-5 gap-4">
+                                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                                    <button @click="printPayslipModule" class="bg-brand-dark hover:bg-brand-blue text-white font-extrabold px-6 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-print"></i><span>Cetak Payslip (A4 Landscape)</span>
+                                    </button>
+                                    <button @click="savePayslipRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-floppy-disk"></i><span>Simpan Payslip</span>
+                                    </button>
+                                    <button @click="resetPayForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-4 py-2.5 rounded-xl transition text-xs">
+                                        <span>Reset</span>
+                                    </button>
+                                </div>
+
+                                <div class="bg-brand-dark text-white p-4 rounded-xl w-full sm:w-72 space-y-1 text-xs">
+                                    <div class="flex justify-between"><span>Gross Salary:</span><strong class="font-bold">RM {{ payCalc.gross.toFixed(2) }}</strong></div>
+                                    <div class="flex justify-between text-red-400"><span>Total Deductions:</span><strong class="font-bold">RM {{ payCalc.deduct.toFixed(2) }}</strong></div>
+                                    <div class="flex justify-between text-base font-extrabold border-t border-slate-700 pt-1.5 mt-1 text-brand-gold"><span>Net Salary:</span><span>RM {{ payCalc.net.toFixed(2) }}</span></div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+
                 <!-- DASHBOARD MODULE -->
-                <div v-show="currentTab === 'dashboard'" class="p-8 max-w-7xl mx-auto w-full space-y-8">
+                <div v-show="currentTab === 'dashboard'" class="p-8 max-w-[1600px] mx-auto w-full space-y-8">
                     <div>
                         <h2 class="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">Enterprise Executive Dashboard</h2>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Pemantauan KPI kewangan, HR, dokumen korporat dan aktiviti sistem secara masa nyata (100% Real Firebase Data).</p>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Pemantauan KPI kewangan, HR, dokumen korporat dan aktiviti sistem secara masa nyata.</p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -232,7 +549,7 @@
                         </div>
                     </div>
 
-                    <!-- REAL DATA CHARTS WITH TIMEFRAME FILTERS -->
+                    <!-- REAL DATA CHARTS -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
@@ -251,29 +568,10 @@
                             </div>
                         </div>
                         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-                            <h3 class="text-base font-extrabold text-brand-dark dark:text-white mb-4"><i class="fa-solid fa-chart-pie text-brand-gold mr-2"></i>Agihan Status Dokumen & Invois (Real Data)</h3>
+                            <h3 class="text-base font-extrabold text-brand-dark dark:text-white mb-4"><i class="fa-solid fa-chart-pie text-brand-gold mr-2"></i>Agihan Status Dokumen & Invois</h3>
                             <div class="h-64 relative flex items-center justify-center">
                                 <canvas id="statusChart"></canvas>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- QUICK ACTIONS -->
-                    <div class="bg-brand-dark text-white p-8 rounded-2xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                        <div>
-                            <h3 class="text-lg font-bold">Tindakan Pantas (Quick Actions)</h3>
-                            <p class="text-xs text-slate-300 mt-1">Jana sebut harga, invois rasmi, slip gaji atau daftarkan pekerja baharu dengan pantas.</p>
-                        </div>
-                        <div class="flex flex-wrap gap-3">
-                            <button v-if="hasAccess('doc-generator') && canEditDocs" @click="switchTab('doc-generator')" class="bg-brand-gold text-brand-dark font-extrabold px-5 py-2.5 rounded-xl hover:bg-yellow-400 transition text-sm flex items-center space-x-2">
-                                <i class="fa-solid fa-plus"></i><span>Buat Dokumen</span>
-                            </button>
-                            <button v-if="hasAccess('payslip-generator') && canCreateEdit" @click="switchTab('payslip-generator')" class="bg-white/10 hover:bg-white/20 text-white font-bold px-5 py-2.5 rounded-xl transition text-sm flex items-center space-x-2">
-                                <i class="fa-solid fa-money-bill-transfer"></i><span>Jana Payslip</span>
-                            </button>
-                            <button v-if="hasAccess('hr-employees') && canCreateEdit" @click="switchTab('hr-employees')" class="bg-white/10 hover:bg-white/20 text-white font-bold px-5 py-2.5 rounded-xl transition text-sm flex items-center space-x-2">
-                                <i class="fa-solid fa-user-plus"></i><span>Tambah Pekerja</span>
-                            </button>
                         </div>
                     </div>
 
@@ -321,216 +619,8 @@
                     </div>
                 </div>
 
-                <!-- DOCUMENT GENERATOR FORM -->
-                <div v-show="currentTab === 'doc-generator'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ editingDocId ? 'Edit Dokumen: ' + docForm.docNo : 'Document Generator' }}</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Jana Quotation (A4 Portrait) dan Invoice (A4 Portrait) mengikut format khusus.</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-3">
-                            <button v-if="editingDocId" @click="cancelEditDoc" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-sm">
-                                Batal Suntingan
-                            </button>
-                            <button @click="downloadPDFDirect('print-template-' + docForm.type.toLowerCase(), docForm.docNo)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl shadow transition text-sm flex items-center space-x-1.5 shrink-0">
-                                <i class="fa-solid fa-file-pdf"></i><span>Muat Turun PDF Direct</span>
-                            </button>
-                            <button @click="printDocumentModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-2 text-sm shrink-0">
-                                <i class="fa-solid fa-print"></i><span>{{ editingDocId ? 'Kemaskini & Cetak ' + docForm.type : 'Simpan & Cetak ' + docForm.type + ' (A4 Portrait)' }}</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-6">
-                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
-                            <div>
-                                <h3 class="text-base font-extrabold text-brand-dark dark:text-white tracking-wide uppercase"><i class="fa-solid fa-building-user text-brand-gold mr-2"></i>CUSTOMER INFORMATION (BILL TO)</h3>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Pilih pelanggan sedia ada atau isi maklumat baharu.</p>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-2.5">
-                                <select @change="selectCustomerForDoc($event)" class="p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full md:w-56 focus:ring-2 focus:ring-brand-gold focus:outline-none">
-                                    <option value="">-- Auto-Isi Pelanggan --</option>
-                                    <option v-for="(cust, cIdx) in customers" :key="cIdx" :value="cust.clientName">{{ cust.clientName }}</option>
-                                </select>
-                                <button v-if="canCreateEdit" @click="saveCustomerToDatabase" type="button" class="bg-brand-gold hover:bg-yellow-400 text-brand-dark font-extrabold px-3.5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1 shrink-0">
-                                    <i class="fa-solid fa-database"></i><span>Simpan Pelanggan</span>
-                                </button>
-                                <button @click="resetDocForm" type="button" class="bg-red-100 hover:bg-red-200 text-red-700 font-bold px-3 py-2.5 rounded-xl text-xs transition flex items-center space-x-1 shrink-0" title="Kosongkan Borang Dokumen">
-                                    <i class="fa-solid fa-rotate-left"></i><span>Kosongkan Borang</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- CUSTOMER FORM LAYOUT -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Pelanggan / Syarikat *</label><input type="text" v-model="docForm.clientName" required placeholder="Contoh: Nama Syarikat Sdn Bhd" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. Telefon *</label><input type="text" v-model="docForm.clientPhone" required placeholder="+60 11-XXXX XXXX" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. SSM / Cukai (TIN)</label><input type="text" v-model="docForm.clientSSM" placeholder="202601001234 / C12345678" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Alamat Emel</label><input type="email" v-model="docForm.clientEmail" placeholder="email@syarikat.com" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Contact Person</label><input type="text" v-model="docForm.clientContactPerson" placeholder="Nama Pegawai Rujukan" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Jawatan</label><input type="text" v-model="docForm.clientPosition" placeholder="Contoh: Pengarah Perolehan" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm bg-slate-50"></div>
-                            <div class="md:col-span-3"><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Alamat Penuh Pelanggan *</label><input type="text" v-model="docForm.clientAddress" required placeholder="No, Jalan, Taman, Bangunan" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm bg-slate-50"></div>
-                        </div>
-
-                        <!-- 6-COLUMN ROW: STATUS & PEMBAYARAN + BANK, PENERIMAAN, REFERENCE NO & ATTACHMENTS -->
-                        <div class="space-y-4 border-t border-slate-100 dark:border-slate-700 pt-4">
-                            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">JENIS DOKUMEN</label>
-                                    <select v-model="docForm.type" @change="generateDocNo" :disabled="!!editingDocId" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-brand-dark">
-                                        <option value="Quotation">Quotation</option>
-                                        <option value="Invoice">Invoice</option>
-                                    </select>
-                                </div>
-                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">NO. DOKUMEN</label><input type="text" v-model="docForm.docNo" readonly class="w-full p-2.5 border rounded-xl bg-slate-100 dark:bg-slate-700 dark:text-white font-bold text-brand-dark"></div>
-                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">TARIKH DOKUMEN</label><input type="date" v-model="docForm.date" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">{{ docForm.type === 'Invoice' ? 'DUE DATE' : 'VALID UNTIL' }}</label><input type="date" v-model="docForm.dueDate" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">STATUS</label>
-                                    <select v-model="docForm.status" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-brand-dark">
-                                        <template v-if="docForm.type === 'Quotation'">
-                                            <option value="Open">Sah / Open</option>
-                                            <option value="Accepted">Dipersetujui / Accepted</option>
-                                            <option value="Rejected">Ditolak / Rejected</option>
-                                            <option value="Invoiced">Telah Di-invois</option>
-                                        </template>
-                                        <template v-else>
-                                            <option value="Unpaid">Belum Dibayar / Unpaid</option>
-                                            <option value="Paid">Selesai Dibayar / Paid</option>
-                                            <option value="Partial">Bayaran Separa / Partial</option>
-                                            <option value="Cancelled">Dibatalkan / Cancelled</option>
-                                        </template>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">PEMBAYARAN</label>
-                                    <select v-model="docForm.paymentMethod" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-brand-dark">
-                                        <option value="Bank Transfer">Bank Transfer (EFT)</option>
-                                        <option value="DuitNow QR">DuitNow QR</option>
-                                        <option value="Cheque">Cek (Cheque)</option>
-                                        <option value="Cash">Tunai (Cash)</option>
-                                        <option value="E-Wallet">E-Wallet</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- BARIS TAMBAHAN: PILIHAN BANK, PENERIMAAN, NO RUJUKAN & LAMPIRAN BUKTI BAYARAN -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-slate-50 dark:bg-slate-700/40 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
-                                <!-- Pilihan Bank -->
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PILIHAN BANK</label>
-                                    <select v-model="docForm.paymentBank" class="w-full p-2.5 border rounded-xl text-sm font-bold bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue">
-                                        <option value="">-- Pilih Bank --</option>
-                                        <option value="Maybank">Maybank (Malayan Banking Berhad)</option>
-                                        <option value="CIMB Bank">CIMB Bank Berhad</option>
-                                        <option value="Public Bank">Public Bank Berhad</option>
-                                        <option value="RHB Bank">RHB Bank Berhad</option>
-                                        <option value="Hong Leong Bank">Hong Leong Bank Berhad</option>
-                                        <option value="Bank Islam">Bank Islam Malaysia Berhad</option>
-                                        <option value="Bank Rakyat">Bank Rakyat</option>
-                                        <option value="AmBank">AmBank (M) Berhad</option>
-                                        <option value="Alliance Bank">Alliance Bank Malaysia Berhad</option>
-                                        <option value="GXBank">GXBank Berhad</option>
-                                        <option value="Lain-lain / Tiada">Lain-lain / Tiada</option>
-                                    </select>
-                                </div>
-
-                                <!-- Penerimaan Pembayaran (Akaun Terima) -->
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PENERIMAAN PEMBAYARAN</label>
-                                    <select v-model="docForm.paymentReceiver" class="w-full p-2.5 border rounded-xl text-sm font-bold bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue">
-                                        <option value="">-- Pilih Akaun Terima --</option>
-                                        <option value="Akaun Maybank Syarikat">Akaun Maybank Syarikat (562982057309)</option>
-                                        <option value="DuitNow QR Syarikat">DuitNow QR Syarikat</option>
-                                        <option value="Tunai / Petty Cash">Tunai / Petty Cash</option>
-                                        <option value="Akaun Pengarah">Akaun Pengarah</option>
-                                        <option value="Lain-lain">Lain-lain</option>
-                                    </select>
-                                </div>
-
-                                <!-- Input No Rujukan (Ditandakan Wajib apabila status Paid / Partial) -->
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
-                                        NO. RUJUKAN BAYARAN (REF NO) 
-                                        <span v-if="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status)" class="text-red-500 font-extrabold ml-1">* WAJIB</span>
-                                    </label>
-                                    <input type="text" v-model="docForm.paymentRefNo" 
-                                           :required="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status)"
-                                           :placeholder="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status) ? 'WAJIB ISI: No. Resit / Transaksi' : 'Pilihan: No. Resit / Rujukan'" 
-                                           class="w-full p-2.5 border rounded-xl text-sm font-bold bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue"
-                                           :class="{'border-red-500 ring-1 ring-red-400': ['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status) && !docForm.paymentRefNo}">
-                                    <p v-if="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status)" class="text-[10px] text-red-600 font-semibold mt-1">
-                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>Wajib isi untuk status Selesai / Separa.
-                                    </p>
-                                </div>
-
-                                <!-- Input Muat Naik Lampiran / Dokumen -->
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">LAMPIRAN / RESIT (MAX 2MB)</label>
-                                    <div class="flex items-center space-x-2">
-                                        <input type="file" @change="handleAttachmentUpload" accept=".pdf,image/*" class="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-dark file:text-white hover:file:bg-brand-blue cursor-pointer bg-white dark:bg-slate-700 p-1 rounded-xl border border-slate-200 dark:border-slate-600">
-                                        <a v-if="docForm.paymentAttachment" :href="docForm.paymentAttachment" download="Lampiran_Dokumen" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-xl text-xs font-bold shrink-0 flex items-center space-x-1" title="Lihat Lampiran Tersimpan">
-                                            <i class="fa-solid fa-paperclip"></i><span>Lihat</span>
-                                        </a>
-                                        <button v-if="docForm.paymentAttachment" type="button" @click="docForm.paymentAttachment = ''" class="bg-red-100 hover:bg-red-200 text-red-600 p-2.5 rounded-xl text-xs font-bold shrink-0" title="Padam Lampiran">
-                                            <i class="fa-solid fa-xmark"></i>
-                                        </button>
-                                    </div>
-                                    <p class="text-[10px] text-slate-400 mt-1">Sokongan: PDF, PNG, JPG (Disimpan ke Firebase).</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="border-t border-slate-100 dark:border-slate-700 pt-4">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-brand-gold">Senarai Barangan & Perkhidmatan</h3>
-                                <button type="button" @click="clearAllDocItems" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center space-x-1" title="Padam Semua Item Sekaligus">
-                                    <i class="fa-solid fa-trash-can"></i><span>Padam Semua Item</span>
-                                </button>
-                            </div>
-
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs uppercase">
-                                        <th class="p-3 border dark:border-slate-600">Keterangan / Produk</th>
-                                        <th class="p-3 border dark:border-slate-600 w-24 text-center">Kuantiti</th>
-                                        <th class="p-3 border dark:border-slate-600 w-36 text-right">Harga Unit (RM)</th>
-                                        <th class="p-3 border dark:border-slate-600 w-36 text-right">Jumlah (RM)</th>
-                                        <th class="p-3 border dark:border-slate-600 w-12 text-center"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="(item, idx) in docForm.items" :key="idx" class="border-b dark:border-slate-700">
-                                        <td class="p-2 border dark:border-slate-600"><input type="text" v-model="item.desc" placeholder="Keterangan perkhidmatan..." class="w-full p-1.5 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-sm"></td>
-                                        <td class="p-2 border dark:border-slate-600"><input type="number" v-model="item.qty" min="1" class="w-full p-1.5 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-center text-sm font-bold"></td>
-                                        <td class="p-2 border dark:border-slate-600"><input type="number" v-model="item.price" step="0.01" class="w-full p-1.5 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right text-sm font-semibold"></td>
-                                        <td class="p-2 border dark:border-slate-600 text-right font-extrabold text-sm bg-slate-50 dark:bg-slate-700/50 dark:text-white">{{ formatCurrency(item.qty * item.price) }}</td>
-                                        <td class="p-2 border dark:border-slate-600 text-center"><button @click="removeDocItem(idx)" class="text-red-500 hover:text-red-700" title="Padam Item Ini"><i class="fa-solid fa-trash"></i></button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            
-                            <div class="flex justify-between items-center mt-3">
-                                <button @click="addDocItem" class="bg-slate-100 dark:bg-slate-700 dark:text-white hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition">+ Tambah Item</button>
-                                <button type="button" @click="clearAllDocItems" class="text-red-500 hover:text-red-700 text-xs font-bold transition flex items-center space-x-1">
-                                    <i class="fa-solid fa-trash-can text-xs"></i><span>Padam Semua Item (Reset)</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-end border-t border-slate-100 dark:border-slate-700 pt-4">
-                            <div class="w-80 space-y-2 text-sm">
-                                <div class="flex justify-between text-slate-600 dark:text-slate-300"><span>Subtotal:</span><span class="font-bold">RM {{ docSubtotal.toFixed(2) }}</span></div>
-                                <div class="flex justify-between items-center text-slate-600 dark:text-slate-300"><span>Diskaun (-):</span><input type="number" v-model="docForm.discount" step="0.01" class="w-24 p-1 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right"></div>
-                                <div class="flex justify-between text-slate-600 dark:text-slate-300"><span>SST (8%):</span><span class="font-bold">RM {{ docSST.toFixed(2) }}</span></div>
-                                <div class="flex justify-between text-lg font-extrabold text-brand-dark dark:text-white border-t border-slate-200 dark:border-slate-600 pt-2"><span>Grand Total:</span><span>RM {{ docGrandTotal.toFixed(2) }}</span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- CLIENT DIRECTORY MODULE -->
-                <div v-show="currentTab === 'client-directory'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
+                <div v-show="currentTab === 'client-directory'" class="p-8 max-w-[1600px] mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div>
                             <h2 class="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Directory (Senarai Pelanggan)</h2>
@@ -593,97 +683,12 @@
                     </div>
                 </div>
 
-                <!-- PAYSLIP GENERATOR -->
-                <div v-show="currentTab === 'payslip-generator'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ editingPayId ? 'Edit Payslip: ' + payForm.empNo : 'Payslip Generator (v1.0.0 Engine)' }}</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Sistem caruman berkanun auto-kira (KWSP, SOCSO, EIS, PCB) & MTD/YTD.</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-3">
-                            <button v-if="editingPayId" @click="cancelEditPay" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-sm">
-                                Batal Suntingan
-                            </button>
-                            <button @click="resetPayForm" type="button" class="bg-red-100 hover:bg-red-200 text-red-700 font-bold px-3 py-2.5 rounded-xl text-xs transition flex items-center space-x-1 shrink-0" title="Kosongkan Borang Payslip">
-                                <i class="fa-solid fa-rotate-left"></i><span>Kosongkan Borang</span>
-                            </button>
-                            <button @click="downloadPDFDirect('print-template-payslip', 'PS-2026-' + payForm.empNo)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl shadow transition text-sm flex items-center space-x-1.5 shrink-0">
-                                <i class="fa-solid fa-file-pdf"></i><span>Muat Turun PDF Direct</span>
-                            </button>
-                            <button @click="printPayslipModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-2 text-sm shrink-0">
-                                <i class="fa-solid fa-file-export"></i><span>{{ editingPayId ? 'Kemaskini & Cetak Payslip' : 'Jana & Cetak Payslip (A4 Landscape)' }}</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-6">
-                        <div class="p-4 bg-blue-50/50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                            <span class="text-xs font-bold text-brand-blue dark:text-blue-400 uppercase tracking-wider"><i class="fa-solid fa-user-check mr-1.5"></i> AUTO-ISI DARI PANGKALAN DATA HR:</span>
-                            <div class="flex items-center space-x-2">
-                                <select @change="selectEmployeeForPayslip($event)" class="p-2 border rounded-xl text-xs font-bold bg-white dark:bg-slate-700 dark:text-white text-brand-dark w-full md:w-80">
-                                    <option value="">-- Pilih Pekerja --</option>
-                                    <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
-                                </select>
-                                <button @click="resetPayForm" type="button" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition shrink-0" title="Kosongkan Borang">
-                                    <i class="fa-solid fa-rotate-left mr-1"></i><span>Kosongkan</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-brand-gold mb-3">Maklumat Pekerja & Bank</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nama Pekerja *</label><input type="text" v-model="payForm.name" required placeholder="Nama Penuh Pekerja" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm font-semibold"></div>
-                                <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">No. K/P *</label><input type="text" v-model="payForm.ic" required placeholder="000000-00-0000" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">No. Pekerja * (ZEN-XXXXXXX)</label><input type="text" v-model="payForm.empNo" placeholder="ZEN-HR08001" class="w-full p-2 border rounded-xl text-sm font-bold text-brand-dark dark:text-white bg-slate-50 dark:bg-slate-700"></div>
-                                <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Jawatan</label><input type="text" v-model="payForm.position" placeholder="Jawatan" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Jabatan</label><input type="text" v-model="payForm.dept" placeholder="Jabatan" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Tarikh Masuk</label><input type="date" v-model="payForm.joinDate" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Bank / Akaun</label><input type="text" v-model="payForm.bankAcc" placeholder="Maybank / 5642xxxx" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">No. KWSP / SOCSO</label><input type="text" v-model="payForm.epfSocso" placeholder="1234567 / 800825xxxx" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-100 dark:border-slate-700 pt-4">
-                            <div>
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-brand-blue dark:text-blue-400 mb-3">Pendapatan (Earnings) - RM</h3>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Bulan Gaji</label><input type="month" v-model="payForm.month" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Tarikh Bayaran</label><input type="date" v-model="payForm.payDate" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Gaji Pokok *</label><input type="number" v-model="payForm.basic" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm font-bold"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">OT (Overtime)</label><input type="number" v-model="payForm.ot" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Elaun Telefon</label><input type="number" v-model="payForm.phone" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Elaun Pengangkutan</label><input type="number" v-model="payForm.transport" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Elaun Makan</label><input type="number" v-model="payForm.meal" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Bonus & Komisen</label><input type="number" v-model="payForm.bonus" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-red-600 mb-3">Potongan (Deductions) - RM (Auto-Calculated)</h3>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">KWSP Pekerja (11%)</label><input type="number" v-model="payForm.dedEpf" readonly class="w-full p-2 border rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">PERKESO (0.5%)</label><input type="number" v-model="payForm.dedSocso" readonly class="w-full p-2 border rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">EIS Pekerja (0.2%)</label><input type="number" v-model="payForm.dedEis" readonly class="w-full p-2 border rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">PCB (LHDN)</label><input type="number" v-model="payForm.dedPcb" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm font-bold"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Advance / Loan</label><input type="number" v-model="payForm.dedAdvance" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                    <div><label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Potongan Lain</label><input type="number" v-model="payForm.dedOther" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
-                                </div>
-                                <div class="mt-4 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 space-y-1 text-sm">
-                                    <div class="flex justify-between text-slate-600 dark:text-slate-300"><span>Gross Salary:</span><strong class="text-brand-dark dark:text-white">RM {{ payCalc.gross.toFixed(2) }}</strong></div>
-                                    <div class="flex justify-between text-slate-600 dark:text-slate-300"><span>Total Deductions:</span><strong class="text-red-600">RM {{ payCalc.deduct.toFixed(2) }}</strong></div>
-                                    <div class="flex justify-between text-lg font-extrabold text-brand-dark dark:text-white border-t border-slate-200 dark:border-slate-600 pt-2"><span>Net Salary:</span><span>RM {{ payCalc.net.toFixed(2) }}</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- HR EMPLOYEES MODULE -->
-                <div v-show="currentTab === 'hr-employees'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
+                <div v-show="currentTab === 'hr-employees'" class="p-8 max-w-[1600px] mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div>
                             <h2 class="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">HR Employee Management</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Urus maklumat peribadi, caruman dan status pekerjaan staf syarikat (Firebase Realtime Database).</p>
+                            <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Urus maklumat peribadi, caruman dan status pekerjaan staf syarikat.</p>
                         </div>
                         <button v-if="canCreateEdit" @click="openEmployeeModal()" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl shadow-lg transition text-sm flex items-center space-x-2">
                             <i class="fa-solid fa-user-plus"></i><span>Tambah Pekerja Baharu</span>
@@ -743,7 +748,7 @@
                                         </td>
                                     </tr>
                                     <tr v-if="employees.length === 0">
-                                        <td colspan="6" class="py-8 text-center text-slate-400">Tiada pekerja berdaftar dalam pangkalan data. Sila klik "Tambah Pekerja Baharu".</td>
+                                        <td colspan="6" class="py-8 text-center text-slate-400">Tiada pekerja berdaftar dalam pangkalan data.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -752,7 +757,7 @@
                 </div>
 
                 <!-- REPORTS MODULE -->
-                <div v-show="currentTab === 'reports'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
+                <div v-show="currentTab === 'reports'" class="p-8 max-w-[1600px] mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div>
                             <h2 class="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">Enterprise Reports & Data Export</h2>
@@ -786,7 +791,7 @@
                 </div>
 
                 <!-- CLIENT PORTAL MODULE -->
-                <div v-show="currentTab === 'client-portal'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
+                <div v-show="currentTab === 'client-portal'" class="p-8 max-w-[1600px] mx-auto w-full space-y-6">
                     <div>
                         <h2 class="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Self-Service Portal</h2>
                         <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Portal khas untuk pelanggan menyemak dokumen dan status bayaran.</p>
@@ -825,7 +830,7 @@
                 </div>
 
                 <!-- AUDIT LOGS MODULE -->
-                <div v-show="currentTab === 'audit-logs'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
+                <div v-show="currentTab === 'audit-logs'" class="p-8 max-w-[1600px] mx-auto w-full space-y-6">
                     <div>
                         <h2 class="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">System Audit & Security Logs</h2>
                         <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Rekod keselamatan aktiviti pengguna secara langsung dari Firebase.</p>
@@ -866,7 +871,7 @@
 
                 <!-- SETTINGS & PROFILE MODULE -->
                 <div v-show="['settings', 'profile'].includes(currentTab)" class="p-8 max-w-5xl mx-auto w-full space-y-6">
-                    <h2 class="text-2xl font-extrabold text-brand-dark dark:text-white capitalize">{{ currentTab === 'settings' ? 'Global Company Settings' : 'Admin Profile & Pengurusan Akses Portal (RBAC 6 Roles)' }}</h2>
+                    <h2 class="text-2xl font-extrabold text-brand-dark dark:text-white capitalize">{{ currentTab === 'settings' ? 'Global Company Settings' : 'Admin Profile & Pengurusan Akses Portal' }}</h2>
                     
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
                         <template v-if="currentTab === 'settings'">
@@ -886,14 +891,14 @@
                                 <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Nama Pengguna Sedia Ada</label><input type="text" v-model="userProfile.name" class="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm font-bold"></div>
                                 <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Emel Log Masuk</label><input type="email" v-model="userProfile.email" class="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
                                 <div>
-                                    <label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Role Pengguna (RBAC 6 Peranan Rasmi)</label>
+                                    <label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Role Pengguna (RBAC)</label>
                                     <select v-model="userProfile.role" class="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm font-bold bg-slate-50">
-                                        <option value="Superadmin">Superadmin (Full Access)</option>
-                                        <option value="HR">HR (Full Access HR, Docs, Clients, Reports, RBAC)</option>
-                                        <option value="Account">Account (View Clients, HR, RBAC + Reports)</option>
-                                        <option value="IT">IT (View HR + Audit & Settings)</option>
-                                        <option value="Client">Client (Dashboard & Profile View)</option>
-                                        <option value="Staff">Staff (Dashboard, Client Portal View & Profile View)</option>
+                                        <option value="Superadmin">Superadmin</option>
+                                        <option value="HR">HR</option>
+                                        <option value="Account">Account</option>
+                                        <option value="IT">IT</option>
+                                        <option value="Client">Client</option>
+                                        <option value="Staff">Staff</option>
                                     </select>
                                 </div>
                                 <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">URL Avatar / Foto</label><input type="text" v-model="userProfile.photo" class="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm"></div>
@@ -901,9 +906,9 @@
 
                             <div class="pt-2 space-y-4">
                                 <div class="flex justify-between items-center">
-                                    <h3 class="text-base font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-users-viewfinder text-brand-blue mr-2"></i>PENGURUSAN AKSES PORTAL (6 PERANAN RASMI)</h3>
+                                    <h3 class="text-base font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-users-viewfinder text-brand-blue mr-2"></i>PENGURUSAN AKSES PORTAL</h3>
                                     <button v-if="canManageRBAC" @click="openUserAccessModal()" type="button" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
-                                        <i class="fa-solid fa-user-plus"></i><span>Tambah Akses Pengguna</span>
+                                        <i class="fa-solid fa-user-plus"></i><span>Tambah Akses</span>
                                     </button>
                                 </div>
 
@@ -931,7 +936,6 @@
                                                     <button v-if="canManageRBAC && usr.email !== 'admin@zenq0r.com'" @click="deletePortalUser(usr.email)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Padam Akses">
                                                         <i class="fa-solid fa-trash"></i>
                                                     </button>
-                                                    <span v-else-if="!canManageRBAC" class="text-[10px] text-slate-400 font-bold">View Only</span>
                                                 </td>
                                             </tr>
                                         </tbody>
@@ -945,7 +949,7 @@
             </main>
         </div>
 
-        <!-- MODALS -->
+        <!-- MODAL PEKERJA & AKSES -->
         <div v-if="employeeModal.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4">
                 <div class="flex justify-between items-center border-b pb-3 dark:border-slate-700">
@@ -970,40 +974,11 @@
             </div>
         </div>
 
-        <div v-if="userModal.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
-                <div class="flex justify-between items-center border-b pb-3 dark:border-slate-700">
-                    <h3 class="text-base font-extrabold text-brand-dark dark:text-white">{{ userModal.isEdit ? 'Kemaskini Akses Portal' : 'Tambah Akses Portal' }}</h3>
-                    <button @click="userModal.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-                </div>
-                <form @submit.prevent="savePortalUser" class="space-y-4 text-xs">
-                    <div><label class="font-bold mb-1 block dark:text-slate-300">Nama Pengguna *</label><input v-model="userModal.form.name" required class="w-full p-2.5 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
-                    <div><label class="font-bold mb-1 block dark:text-slate-300">Emel Log Masuk *</label><input type="email" v-model="userModal.form.email" :disabled="userModal.isEdit" required placeholder="nama@zenq0r.com" pattern="^[a-zA-Z0-9._%+-]+@zenq0r\.com$" title="Emel mesti menggunakan domain rasmi @zenq0r.com" class="w-full p-2.5 border rounded-xl dark:bg-slate-700 dark:text-white"><p class="text-[11px] text-slate-400 mt-1">Wajib guna emel rasmi syarikat (@zenq0r.com). Akaun demo tidak dibenarkan.</p></div>
-                    <div><label class="font-bold mb-1 block dark:text-slate-300">Kata Laluan *</label><input type="text" v-model="userModal.form.password" required class="w-full p-2.5 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
-                    <div>
-                        <label class="font-bold mb-1 block dark:text-slate-300">Peranan (6 Role Rasmi) *</label>
-                        <select v-model="userModal.form.role" class="w-full p-2.5 border rounded-xl font-bold dark:bg-slate-700 dark:text-white">
-                            <option value="Superadmin">Superadmin</option>
-                            <option value="HR">HR</option>
-                            <option value="Account">Account</option>
-                            <option value="IT">IT</option>
-                            <option value="Client">Client</option>
-                            <option value="Staff">Staff</option>
-                        </select>
-                    </div>
-                    <div class="flex justify-end space-x-2 pt-3 border-t dark:border-slate-700">
-                        <button type="button" @click="userModal.show = false" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-xl font-bold">Batal</button>
-                        <button type="submit" class="px-5 py-2 bg-brand-dark text-white rounded-xl font-bold hover:bg-brand-blue">Simpan Akses</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
         <!-- =================================================================== -->
         <!-- TEMPLATES CETAKAN                                                   -->
         <!-- =================================================================== -->
 
-        <!-- TEMPLATE CETAKAN 1: QUOTATION SAHAJA (A4 PORTRAIT) -->
+        <!-- TEMPLATE CETAKAN 1: QUOTATION (A4 PORTRAIT) -->
         <div v-if="activePrintModule === 'QUOTATION'" id="print-template-quotation" class="print-only p-8 text-sm print-container">
             <div class="flex justify-between items-start print-header-border pb-4 mb-6">
                 <div class="flex items-center space-x-4">
@@ -1107,7 +1082,7 @@
             </div>
         </div>
 
-        <!-- TEMPLATE CETAKAN 2: INVOICE SAHAJA (A4 PORTRAIT) -->
+        <!-- TEMPLATE CETAKAN 2: INVOICE (A4 PORTRAIT) -->
         <div v-if="activePrintModule === 'INVOICE'" id="print-template-invoice" class="print-only p-8 text-sm print-container">
             <div class="flex justify-between items-start print-header-border pb-4 mb-6">
                 <div class="flex items-center space-x-4">
@@ -1135,7 +1110,6 @@
                     <p class="font-bold text-slate-800">No. Invois: {{ docForm.docNo }}</p>
                     <p class="text-xs text-slate-600">Tarikh Invois: {{ docForm.date }}</p>
                     <p class="text-xs text-slate-600">Tarikh Matang (Due Date): {{ docForm.dueDate }}</p>
-                    <!-- PAPARAN SALURAN BAYARAN, BANK, PENERIMAAN & NO RUJUKAN PADA CETAKAN -->
                     <p class="text-xs text-slate-600 font-bold text-brand-dark mt-0.5">Pembayaran: {{ docForm.paymentMethod || 'Bank Transfer' }} <span v-if="docForm.paymentBank">({{ docForm.paymentBank }})</span></p>
                     <p v-if="docForm.paymentReceiver" class="text-xs text-slate-600 font-semibold">Penerimaan: {{ docForm.paymentReceiver }}</p>
                     <p v-if="docForm.paymentRefNo" class="text-xs text-emerald-700 font-extrabold">No. Rujukan Bayaran: {{ docForm.paymentRefNo }}</p>
@@ -1213,7 +1187,7 @@
             </div>
         </div>
 
-        <!-- TEMPLATE CETAKAN 3: PAYSLIP SAHAJA (A4 LANDSCAPE) -->
+        <!-- TEMPLATE CETAKAN 3: PAYSLIP (A4 LANDSCAPE) -->
         <div v-if="activePrintModule === 'PAYSLIP'" id="print-template-payslip" class="print-only print-container">
             <div class="payslip-paper">
                 <div class="payslip-header">

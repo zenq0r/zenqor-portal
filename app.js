@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (SECURE v2.1)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE WORKSPACE v2.5)
 // ============================================================
 
 import {
@@ -38,9 +38,9 @@ const STATUTORY_RATES = {
 };
 
 const RBAC_ROLES = {
-    'Superadmin': ['dashboard', 'doc-generator', 'client-directory', 'payslip-generator', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
-    'HR': ['dashboard', 'doc-generator', 'client-directory', 'hr-employees', 'reports', 'profile'],
-    'Account': ['dashboard', 'doc-generator', 'client-directory', 'payslip-generator', 'hr-employees', 'reports', 'profile'],
+    'Superadmin': ['dashboard', 'doc-generator', 'payslip-generator', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
+    'HR': ['dashboard', 'doc-generator', 'payslip-generator', 'client-directory', 'hr-employees', 'reports', 'profile'],
+    'Account': ['dashboard', 'doc-generator', 'payslip-generator', 'client-directory', 'hr-employees', 'reports', 'profile'],
     'IT': ['dashboard', 'hr-employees', 'audit-logs', 'settings'],
     'Client': ['dashboard', 'client-portal', 'profile'],
     'Staff': ['dashboard', 'client-portal', 'profile']
@@ -53,11 +53,11 @@ createApp({
             authLoading: true,
             loginForm: { email: '', password: '' },
             loginError: '',
-            currentTab: 'dashboard',
+            currentTab: 'doc-generator', // Buka terus di modul utama korporat
             mobileMenuOpen: false,
-            desktopSidebarOpen: false,
+            desktopSidebarOpen: true,
             chartTimeFilter: 'monthly',
-            isDarkMode: localStorage.getItem('zenqor_theme') === 'dark',
+            isDarkMode: true, // Pilihan lalai Korporat Dark
             searchQuery: '',
             currentPage: 1,
             itemsPerPage: 6,
@@ -123,32 +123,61 @@ createApp({
             },
 
             docForm: {
-                type: 'Quotation',
-                docNo: 'QT-2026-000001',
-                status: 'Open',
-                paymentMethod: 'Bank Transfer',
-                paymentBank: '',       // BAHARU: Pilihan Bank (Maybank, CIMB, dsb.)
-                paymentReceiver: '',   // BAHARU: Penerimaan Pembayaran (Akaun Maybank Syarikat, DuitNow QR, dsb.)
-                paymentRefNo: '',      // WAJIB apabila status Paid / Partial
-                paymentAttachment: '', // LAMPIRAN Base64 Bukti Bayaran
+                type: 'Invoice',
+                docNo: 'INV-2026-000001',
+                status: 'Selesai Dibayar',
+                paymentMethod: 'Bank Transfer (EFT)',
+                paymentBank: 'Maybank (Malayan Banking Berhad)',
+                paymentReceiver: 'Akaun Maybank Syarikat (562982057309)',
+                paymentRefNo: 'IT280905CT833S',
+                paymentAttachment: '',
                 date: new Date().toISOString().substr(0, 10),
                 dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
-                clientName: '', clientPhone: '', clientSSM: '', clientAddress: '',
-                clientCity: '', clientState: '', clientPostcode: '', clientCountry: 'Malaysia',
-                clientEmail: '', clientContactPerson: '', clientPosition: '',
-                items: [{ desc: '', qty: 1, price: 0 }],
+                clientName: 'Monsta Studio Sdn. Bhd.',
+                clientPhone: '+60 13-958 2378',
+                clientSSM: '200901029271 (872376-W)',
+                clientAddress: 'L1-01, COPLACE3, BLOCK 3740 PERSIARAN APEC, CYBERJAYA, MALAYSIA',
+                clientCity: 'Cyberjaya',
+                clientState: 'Selangor',
+                clientPostcode: '63000',
+                clientCountry: 'Malaysia',
+                clientEmail: 'azrul@monsta.com',
+                clientContactPerson: 'AZRUL HAMDAN',
+                clientPosition: 'EVENT & ACTIVATION EXECUTIVE',
+                items: [
+                    { desc: 'Fasa 1: Deposit & Pengesahan Perjanjian (50%) | (Bayaran semasa menandatangani perjanjian)', qty: 1, price: 600.00 },
+                    { desc: 'Fasa 2: Penyediaan & Penyerahan Fail / Submission (30%) | (Bayaran sebelum fail diserahkan)', qty: 1, price: 350.00 },
+                    { desc: 'Fasa 3: Selesai Tugas Perundingan / Keputusan PBT (20%) | (Bayaran selepas surat keputusan/lesen)', qty: 1, price: 350.00 }
+                ],
                 discount: 0
             },
 
             payForm: {
-                name: '', ic: '', empNo: '',
-                position: '', dept: '', isSenior: false,
-                joinDate: '', bankAcc: '', epfSocso: '',
-                month: new Date().toISOString().slice(0, 7), payDate: new Date().toISOString().slice(0, 10),
-                basic: 0, ot: 0, phone: 0, transport: 0, meal: 0, bonus: 0,
-                dedEpf: 0, dedSocso: 0, dedEis: 0, dedPcb: 0, dedAdvance: 0, dedOther: 0
+                name: 'Ahmad Azziem Bin Ahmad Termizi',
+                ic: '021202-08-0831',
+                empNo: 'ZEN-HR08001',
+                position: 'ASSISTANT MANAGER HR',
+                dept: 'OPERATION DEPARTMENT',
+                isSenior: false,
+                joinDate: '2026-08-01',
+                bankAcc: 'Maybank Islamic Berhad | 158435-181789',
+                epfSocso: 'KWSP: 600501 | PERKESO: 12503',
+                month: new Date().toISOString().slice(0, 7),
+                payDate: new Date().toISOString().slice(0, 10),
+                basic: 2500,
+                ot: 0,
+                phone: 0,
+                transport: 0,
+                meal: 0,
+                bonus: 0,
+                dedEpf: 275,
+                dedSocso: 12.5,
+                dedEis: 5,
+                dedPcb: 0,
+                dedAdvance: 0,
+                dedOther: 0
             },
-            payCalc: { gross: 0, deduct: 0, net: 0, epfEmpr: 0, socsoEmpr: 0, eisEmpr: 0 }
+            payCalc: { gross: 2500, deduct: 292.5, net: 2207.50, epfEmpr: 325, socsoEmpr: 43.75, eisEmpr: 5.0 }
         };
     },
     computed: {
@@ -221,7 +250,7 @@ createApp({
             const reader = new FileReader();
             reader.onload = (uploadEvent) => {
                 this.docForm.paymentAttachment = uploadEvent.target.result;
-                this.showNotify(`Lampiran "${file.name}" berjaya dimuat naik & sedia disimpan.`);
+                this.showNotify(`Lampiran resit "${file.name}" sedia dimuat naik.`);
             };
             reader.readAsDataURL(file);
         },
@@ -237,7 +266,7 @@ createApp({
                     type: 'Quotation',
                     docNo: this.docForm.docNo,
                     status: 'Open',
-                    paymentMethod: 'Bank Transfer',
+                    paymentMethod: 'Bank Transfer (EFT)',
                     paymentBank: '',
                     paymentReceiver: '',
                     paymentRefNo: '',
@@ -305,7 +334,7 @@ createApp({
             localStorage.setItem('zenqor_theme', this.isDarkMode ? 'dark' : 'light');
             this.applyThemeClass();
             this.$nextTick(() => { this.renderCharts(); });
-            this.showNotify(`Tema ditukar ke: ${this.isDarkMode ? 'Dark Mode' : 'Light Mode'}`);
+            this.showNotify(`Tema ditukar ke: ${this.isDarkMode ? 'Corporate Dark Mode' : 'Light Mode'}`);
         },
         applyThemeClass() {
             if (this.isDarkMode) {
@@ -407,12 +436,12 @@ createApp({
                 };
 
                 this.isLoggedIn = true;
-                this.desktopSidebarOpen = false;
+                this.desktopSidebarOpen = true;
                 this.mobileMenuOpen = false;
                 localStorage.setItem('zenqor_theme', this.isDarkMode ? 'dark' : 'light');
                 this.logAudit('LOGIN', `User logged in with role ${role}`);
                 this.showNotify(`Selamat kembali (${role}): ${name}`);
-                this.currentTab = 'dashboard';
+                this.currentTab = 'doc-generator';
                 this.$nextTick(() => { this.renderCharts(); });
 
             } catch (error) {
@@ -435,7 +464,7 @@ createApp({
                 await signOut(auth);
                 this.isLoggedIn = false;
                 this.userProfile = { name: '', email: '', role: '', photo: '' };
-                this.currentTab = 'dashboard';
+                this.currentTab = 'doc-generator';
             } catch (error) {
                 console.error("Logout error:", error);
             }
@@ -838,9 +867,9 @@ createApp({
         },
         async saveDocRecord() {
             try {
-                if (['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(this.docForm.status)) {
+                if (['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial', 'Selesai Dibayar'].includes(this.docForm.status)) {
                     if (!this.docForm.paymentRefNo || this.docForm.paymentRefNo.trim() === '') {
-                        alert("PERHATIAN: No. Rujukan Bayaran (Reference No.) adalah WAJIB diisi apabila status ialah Selesai Dibayar atau Bayaran Separa.");
+                        alert("PERHATIAN: No. Rujukan Bayaran (Reference No.) adalah WAJIB diisi apabila status ialah Selesai Dibayar.");
                         return false;
                     }
                 }
@@ -852,8 +881,8 @@ createApp({
                     docNo: this.docForm.docNo,
                     status: this.docForm.status || (this.docForm.type === 'Invoice' ? 'Unpaid' : 'Open'),
                     paymentMethod: this.docForm.paymentMethod || 'Bank Transfer',
-                    paymentBank: this.docForm.paymentBank || '',           // BAHARU
-                    paymentReceiver: this.docForm.paymentReceiver || '',   // BAHARU
+                    paymentBank: this.docForm.paymentBank || '',
+                    paymentReceiver: this.docForm.paymentReceiver || '',
                     paymentRefNo: this.docForm.paymentRefNo || '',
                     paymentAttachment: this.docForm.paymentAttachment || '',
                     date: this.docForm.date,
@@ -865,7 +894,7 @@ createApp({
                 await this.saveCustomerToDatabase();
                 this.logAudit(this.editingDocId ? 'UPDATE' : 'CREATE', `Saved document ${this.docForm.docNo}`);
                 this.editingDocId = null;
-                this.showNotify(`${this.docForm.type} (${this.docForm.docNo}) serta semua maklumat lampiran berjaya direkodkan.`);
+                this.showNotify(`${this.docForm.type} (${this.docForm.docNo}) berjaya disimpan dalam pangkalan.`);
                 this.generateDocNo();
                 return true;
             } catch (error) {
@@ -886,7 +915,7 @@ createApp({
                 await setDoc(doc(db, "payslips", docId), payload);
                 this.logAudit(this.editingPayId ? 'UPDATE' : 'CREATE', `Saved payslip for ${this.payForm.name}`);
                 this.editingPayId = null;
-                this.showNotify(`Payslip (${this.payForm.name}) direkodkan.`);
+                this.showNotify(`Payslip (${this.payForm.name}) berjaya direkodkan.`);
             } catch (error) {
                 console.error("Ralat simpan payslip:", error);
             }

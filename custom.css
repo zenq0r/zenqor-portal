@@ -4,8 +4,33 @@ body {
     font-family: 'Inter', sans-serif; 
 }
 
-/* Elak raw "{{ }}" terpapar sementara Vue masih memuatkan/compile template */
+/* Elak raw "{{ }}" terpapar sementara Vue memuatkan template */
 [v-cloak] { display: none !important; }
+
+/* KORPORAT DARK SIDEBAR ITEM ACTIVE */
+.sidebar-item-active {
+    background-color: #1E3A8A;
+    color: #FFFFFF;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.4);
+    border-left: 4px solid #D4AF37;
+}
+
+/* CUSTOM SCROLLBAR UNTUK ENTERPRISE LOOK */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #0D172A;
+}
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #D4AF37;
+}
 
 /* =========================================================
    PRINT ENGINE (ISOLATED CSS UNTUK CETAKAN SAHAJA)
