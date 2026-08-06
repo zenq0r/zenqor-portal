@@ -1,10 +1,5 @@
 // ============================================================
 // ZENQOR TECHNOLOGIES - app.js (SECURE v2.1)
-// PEMBAIKAN KESELAMATAN:
-//   [ISU #2] Password tidak disimpan plaintext -- Firebase Auth digunakan
-//   [ISU #3] Login guna signInWithEmailAndPassword (Firebase Auth)
-//            Password TIDAK PERNAH dibandingkan di frontend
-//   [ISU #4] Tiada akses data users[] untuk semak password
 // ============================================================
 
 import {
@@ -42,7 +37,6 @@ const STATUTORY_RATES = {
     }
 };
 
-// UNIFIED RBAC ACCESS MATRIX
 const RBAC_ROLES = {
     'Superadmin': ['dashboard', 'doc-generator', 'client-directory', 'payslip-generator', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'HR': ['dashboard', 'doc-generator', 'client-directory', 'hr-employees', 'reports', 'profile'],
@@ -131,8 +125,10 @@ createApp({
             docForm: {
                 type: 'Quotation',
                 docNo: 'QT-2026-000001',
-                status: 'Open',                 // BAHARU: Status penyelesaian
-                paymentMethod: 'Bank Transfer', // BAHARU: Cara penyelesaian / bayaran
+                status: 'Open',
+                paymentMethod: 'Bank Transfer',
+                paymentRefNo: '',      // WAJIB apabila status Paid / Partial
+                paymentAttachment: '', // LAMPIRAN Base64 Bukti Bayaran
                 date: new Date().toISOString().substr(0, 10),
                 dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
                 clientName: '', clientPhone: '', clientSSM: '', clientAddress: '',
@@ -212,6 +208,21 @@ createApp({
             const domain = '@' + this.officialEmailDomain;
             return email.toLowerCase().trim().endsWith(domain.toLowerCase());
         },
+        handleAttachmentUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                alert("Saiz lampiran melebihi had maksimum 2MB. Sila pilih fail yang lebih kecil.");
+                e.target.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (uploadEvent) => {
+                this.docForm.paymentAttachment = uploadEvent.target.result;
+                this.showNotify(`Lampiran "${file.name}" berjaya dimuat naik & sedia disimpan.`);
+            };
+            reader.readAsDataURL(file);
+        },
         clearAllDocItems() {
             if (confirm("Adakah anda pasti mahu memadam kesemua item barangan/perkhidmatan sekaligus?")) {
                 this.docForm.items = [{ desc: '', qty: 1, price: 0 }];
@@ -223,8 +234,10 @@ createApp({
                 this.docForm = {
                     type: 'Quotation',
                     docNo: this.docForm.docNo,
-                    status: 'Open',                 // BAHARU
-                    paymentMethod: 'Bank Transfer', // BAHARU
+                    status: 'Open',
+                    paymentMethod: 'Bank Transfer',
+                    paymentRefNo: '',
+                    paymentAttachment: '',
                     date: new Date().toISOString().substr(0, 10),
                     dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
                     clientName: '', clientPhone: '', clientSSM: '', clientAddress: '',
@@ -470,9 +483,9 @@ createApp({
                     csvContent += `"${e.empNo}","${e.name}","${e.ic}","${e.position}","${e.dept}","${e.status}","${e.basicSalary}"\n`;
                 });
             } else if (type === 'docs') {
-                csvContent += "Type,DocNo,Date,ClientName,Amount,Status\n";
+                csvContent += "Type,DocNo,Date,ClientName,Amount,Status,PaymentMethod,RefNo\n";
                 this.docHistory.forEach(d => {
-                    csvContent += `"${d.type}","${d.docNo}","${d.date}","${d.name}","${d.amount}","${d.status || 'N/A'}"\n`;
+                    csvContent += `"${d.type}","${d.docNo}","${d.date}","${d.name}","${d.amount}","${d.status || 'N/A'}","${d.paymentMethod||'-'}","${d.paymentRefNo||'-'}"\n`;
                 });
             } else if (type === 'payroll') {
                 csvContent += "EmpNo,Name,Month,PayDate,GrossSalary,TotalDeduction,NetSalary\n";
@@ -805,9 +818,10 @@ createApp({
         },
         async printDocumentModule() {
             if (!this.docForm.clientName) return alert('Sila masukkan nama pelanggan.');
+            const isSaved = await this.saveDocRecord();
+            if (!isSaved) return;
             this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE';
             this.setPrintOrientation('portrait', '15mm');
-            await this.saveDocRecord();
             setTimeout(() => { window.print(); }, 250);
         },
         async printPayslipModule() {
@@ -820,13 +834,22 @@ createApp({
         },
         async saveDocRecord() {
             try {
+                if (['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(this.docForm.status)) {
+                    if (!this.docForm.paymentRefNo || this.docForm.paymentRefNo.trim() === '') {
+                        alert("PERHATIAN: No. Rujukan Bayaran (Reference No.) adalah WAJIB diisi apabila status ialah Selesai Dibayar atau Bayaran Separa.");
+                        return false;
+                    }
+                }
+
                 const docId = String(this.editingDocId || Date.now());
                 const payload = {
                     id: docId, 
                     type: this.docForm.type, 
                     docNo: this.docForm.docNo,
-                    status: this.docForm.status || (this.docForm.type === 'Invoice' ? 'Unpaid' : 'Open'), // BAHARU
-                    paymentMethod: this.docForm.paymentMethod || 'Bank Transfer',                         // BAHARU
+                    status: this.docForm.status || (this.docForm.type === 'Invoice' ? 'Unpaid' : 'Open'),
+                    paymentMethod: this.docForm.paymentMethod || 'Bank Transfer',
+                    paymentRefNo: this.docForm.paymentRefNo || '',
+                    paymentAttachment: this.docForm.paymentAttachment || '',
                     date: this.docForm.date,
                     name: this.docForm.clientName, 
                     amount: this.docGrandTotal,
@@ -836,10 +859,12 @@ createApp({
                 await this.saveCustomerToDatabase();
                 this.logAudit(this.editingDocId ? 'UPDATE' : 'CREATE', `Saved document ${this.docForm.docNo}`);
                 this.editingDocId = null;
-                this.showNotify(`${this.docForm.type} (${this.docForm.docNo}) direkodkan.`);
+                this.showNotify(`${this.docForm.type} (${this.docForm.docNo}) serta semua maklumat lampiran berjaya direkodkan.`);
                 this.generateDocNo();
+                return true;
             } catch (error) {
                 console.error("Ralat simpan dokumen:", error);
+                return false;
             }
         },
         async savePayslipRecord() {

@@ -361,7 +361,7 @@
                             </div>
                         </div>
 
-                        <!-- EXACT ORIGINAL FORM LAYOUT FROM IMAGE -->
+                        <!-- CUSTOMER FORM LAYOUT -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Pelanggan / Syarikat *</label><input type="text" v-model="docForm.clientName" required placeholder="Contoh: Nama Syarikat Sdn Bhd" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm font-bold bg-slate-50"></div>
                             <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. Telefon *</label><input type="text" v-model="docForm.clientPhone" required placeholder="+60 11-XXXX XXXX" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm bg-slate-50"></div>
@@ -372,44 +372,77 @@
                             <div class="md:col-span-3"><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Alamat Penuh Pelanggan *</label><input type="text" v-model="docForm.clientAddress" required placeholder="No, Jalan, Taman, Bangunan" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-sm bg-slate-50"></div>
                         </div>
 
-                        <!-- 6-COLUMN ROW: TERMASUK STATUS PENYELESAIAN & CARA PENYELESAIAN -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">JENIS DOKUMEN</label>
-                                <select v-model="docForm.type" @change="generateDocNo" :disabled="!!editingDocId" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-brand-dark">
-                                    <option value="Quotation">Quotation</option>
-                                    <option value="Invoice">Invoice</option>
-                                </select>
+                        <!-- 6-COLUMN ROW: STATUS & PEMBAYARAN + REFERENCE NO & ATTACHMENTS -->
+                        <div class="space-y-4 border-t border-slate-100 dark:border-slate-700 pt-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">JENIS DOKUMEN</label>
+                                    <select v-model="docForm.type" @change="generateDocNo" :disabled="!!editingDocId" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-brand-dark">
+                                        <option value="Quotation">Quotation</option>
+                                        <option value="Invoice">Invoice</option>
+                                    </select>
+                                </div>
+                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">NO. DOKUMEN</label><input type="text" v-model="docForm.docNo" readonly class="w-full p-2.5 border rounded-xl bg-slate-100 dark:bg-slate-700 dark:text-white font-bold text-brand-dark"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">TARIKH DOKUMEN</label><input type="date" v-model="docForm.date" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">{{ docForm.type === 'Invoice' ? 'DUE DATE' : 'VALID UNTIL' }}</label><input type="date" v-model="docForm.dueDate" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">STATUS</label>
+                                    <select v-model="docForm.status" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-brand-dark">
+                                        <template v-if="docForm.type === 'Quotation'">
+                                            <option value="Open">Sah / Open</option>
+                                            <option value="Accepted">Dipersetujui / Accepted</option>
+                                            <option value="Rejected">Ditolak / Rejected</option>
+                                            <option value="Invoiced">Telah Di-invois</option>
+                                        </template>
+                                        <template v-else>
+                                            <option value="Unpaid">Belum Dibayar / Unpaid</option>
+                                            <option value="Paid">Selesai Dibayar / Paid</option>
+                                            <option value="Partial">Bayaran Separa / Partial</option>
+                                            <option value="Cancelled">Dibatalkan / Cancelled</option>
+                                        </template>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">PEMBAYARAN</label>
+                                    <select v-model="docForm.paymentMethod" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-brand-dark">
+                                        <option value="Bank Transfer">Bank Transfer (EFT)</option>
+                                        <option value="DuitNow QR">DuitNow QR</option>
+                                        <option value="Cheque">Cek (Cheque)</option>
+                                        <option value="Cash">Tunai (Cash)</option>
+                                        <option value="E-Wallet">E-Wallet</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">NO. DOKUMEN</label><input type="text" v-model="docForm.docNo" readonly class="w-full p-2.5 border rounded-xl bg-slate-100 dark:bg-slate-700 dark:text-white font-bold text-brand-dark"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">TARIKH DOKUMEN</label><input type="date" v-model="docForm.date" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">{{ docForm.type === 'Invoice' ? 'DUE DATE' : 'VALID UNTIL' }}</label><input type="date" v-model="docForm.dueDate" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">STATUS PENYELESAIAN</label>
-                                <select v-model="docForm.status" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-brand-dark">
-                                    <template v-if="docForm.type === 'Quotation'">
-                                        <option value="Open">Sah / Open</option>
-                                        <option value="Accepted">Dipersetujui / Accepted</option>
-                                        <option value="Rejected">Ditolak / Rejected</option>
-                                        <option value="Invoiced">Telah Di-invois</option>
-                                    </template>
-                                    <template v-else>
-                                        <option value="Unpaid">Belum Dibayar / Unpaid</option>
-                                        <option value="Paid">Selesai Dibayar / Paid</option>
-                                        <option value="Partial">Bayaran Separa / Partial</option>
-                                        <option value="Cancelled">Dibatalkan / Cancelled</option>
-                                    </template>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">CARA PENYELESAIAN</label>
-                                <select v-model="docForm.paymentMethod" class="w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-brand-dark">
-                                    <option value="Bank Transfer">Bank Transfer (EFT)</option>
-                                    <option value="DuitNow QR">DuitNow QR</option>
-                                    <option value="Cheque">Cek (Cheque)</option>
-                                    <option value="Cash">Tunai (Cash)</option>
-                                    <option value="E-Wallet">E-Wallet</option>
-                                </select>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-700/40 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
+                                        NO. RUJUKAN BAYARAN (REF NO) 
+                                        <span v-if="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status)" class="text-red-500 font-extrabold ml-1">* WAJIB</span>
+                                    </label>
+                                    <input type="text" v-model="docForm.paymentRefNo" 
+                                           :required="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status)"
+                                           :placeholder="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status) ? 'WAJIB ISI: No. Resit / Transaksi Bank / Cek' : 'Pilihan: No. Resit / Rujukan Bayaran'" 
+                                           class="w-full p-2.5 border rounded-xl text-sm font-bold bg-white dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue"
+                                           :class="{'border-red-500 ring-1 ring-red-400': ['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status) && !docForm.paymentRefNo}">
+                                    <p v-if="['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial'].includes(docForm.status)" class="text-[11px] text-red-600 font-semibold mt-1">
+                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>Sistem mewajibkan No. Rujukan Bayaran untuk status Selesai / Separa Dibayar.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">LAMPIRAN DOKUMEN / RESIT (MAX 2MB)</label>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="file" @change="handleAttachmentUpload" accept=".pdf,image/*" class="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-dark file:text-white hover:file:bg-brand-blue cursor-pointer bg-white dark:bg-slate-700 p-1 rounded-xl border border-slate-200 dark:border-slate-600">
+                                        <a v-if="docForm.paymentAttachment" :href="docForm.paymentAttachment" download="Lampiran_Dokumen" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-xl text-xs font-bold shrink-0 flex items-center space-x-1" title="Lihat Lampiran Tersimpan">
+                                            <i class="fa-solid fa-paperclip"></i><span>Lihat</span>
+                                        </a>
+                                        <button v-if="docForm.paymentAttachment" type="button" @click="docForm.paymentAttachment = ''" class="bg-red-100 hover:bg-red-200 text-red-600 p-2.5 rounded-xl text-xs font-bold shrink-0" title="Padam Lampiran">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 mt-1">Sokongan format: PDF, PNG, JPG (Disimpan automatik ke dalam Firebase).</p>
+                                </div>
                             </div>
                         </div>
 
@@ -950,7 +983,6 @@
                     </div>
                 </div>
                 <div class="text-right shrink-0">
-                    <!-- STATUS DINAMIK -->
                     <span :class="{
                               'bg-brand-gold text-brand-dark': ['Open', 'Sah / Open'].includes(docForm.status),
                               'bg-emerald-600 text-white': docForm.status === 'Accepted',
@@ -964,7 +996,7 @@
                     <p class="font-bold text-slate-800">No. Rujukan: {{ docForm.docNo }}</p>
                     <p class="text-xs text-slate-600">Tarikh Dikeluarkan: {{ docForm.date }}</p>
                     <p class="text-xs text-slate-600">Sah Sehingga: {{ docForm.dueDate }}</p>
-                    <p class="text-xs text-slate-600 font-bold text-brand-dark mt-0.5">Cara Penyelesaian: {{ docForm.paymentMethod || 'Bank Transfer' }}</p>
+                    <p class="text-xs text-slate-600 font-bold text-brand-dark mt-0.5">Pembayaran: {{ docForm.paymentMethod || 'Bank Transfer' }}</p>
                 </div>
             </div>
 
@@ -1055,12 +1087,11 @@
                     </div>
                 </div>
                 <div class="text-right shrink-0">
-                    <!-- STATUS DINAMIK -->
                     <span :class="{
-                              'bg-emerald-600': docForm.status === 'Paid',
+                              'bg-emerald-600': ['Paid', 'Selesai Dibayar / Paid'].includes(docForm.status),
                               'bg-red-600': ['Unpaid', 'Belum Dibayar / Unpaid'].includes(docForm.status),
-                              'bg-amber-500': docForm.status === 'Partial',
-                              'bg-slate-600': docForm.status === 'Cancelled'
+                              'bg-amber-500': ['Partial', 'Bayaran Separa / Partial'].includes(docForm.status),
+                              'bg-slate-600': ['Cancelled', 'Dibatalkan / Cancelled'].includes(docForm.status)
                           }" 
                           class="inline-block text-white font-extrabold px-3 py-1 rounded text-xs uppercase tracking-wider mb-2">
                         STATUS: {{ docForm.status || 'UNPAID' }}
@@ -1069,7 +1100,8 @@
                     <p class="font-bold text-slate-800">No. Invois: {{ docForm.docNo }}</p>
                     <p class="text-xs text-slate-600">Tarikh Invois: {{ docForm.date }}</p>
                     <p class="text-xs text-slate-600">Tarikh Matang (Due Date): {{ docForm.dueDate }}</p>
-                    <p class="text-xs text-slate-600 font-bold text-brand-dark mt-0.5">Kaedah Bayaran: {{ docForm.paymentMethod || 'Bank Transfer' }}</p>
+                    <p class="text-xs text-slate-600 font-bold text-brand-dark mt-0.5">Pembayaran: {{ docForm.paymentMethod || 'Bank Transfer' }}</p>
+                    <p v-if="docForm.paymentRefNo" class="text-xs text-emerald-700 font-extrabold">No. Rujukan Bayaran: {{ docForm.paymentRefNo }}</p>
                 </div>
             </div>
 
