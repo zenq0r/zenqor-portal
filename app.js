@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE RBAC & CLAIMS v3.1)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FIRESTORE SYNC v3.2)
 // ============================================================
 
 import {
@@ -121,7 +121,7 @@ createApp({
             userModal: {
                 show: false,
                 isEdit: false,
-                form: { name: '', email: '', role: 'Staff' }
+                form: { name: '', email: '', password: '', role: 'Staff' }
             },
 
             claimSubCategories: {
@@ -222,11 +222,7 @@ createApp({
         canCreateEdit() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
         canEditDocs() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
         canDelete() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
-        
-        // HANYA SUPERADMIN & HR SAHAJA BOLEH URUS & NAMPAK JADUAL PENGURUSAN AKSES PORTAL
-        canManageRBAC() { 
-            return ['Superadmin', 'HR'].includes(this.userProfile.role); 
-        },
+        canManageRBAC() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
 
         docSubtotal() { return this.docForm.items.reduce((s, i) => s + (i.qty * i.price), 0); },
         docSST() { return this.docSubtotal * 0.08; },
@@ -515,13 +511,14 @@ createApp({
 
                 let role = 'Staff';
                 let name = firebaseUser.displayName || firebaseUser.email;
+                let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
 
                 if (userSnap.exists()) {
                     role = userSnap.data().role || 'Staff';
                     name = userSnap.data().name || name;
+                    photo = userSnap.data().photo || photo;
                 }
 
-                // OVERRIDE MUTLAK UNTUK SUPERADMIN
                 if (firebaseUser.email === 'admin@zenq0r.com') {
                     role = 'Superadmin';
                 }
@@ -531,7 +528,7 @@ createApp({
                     email: firebaseUser.email,
                     role: role,
                     uid: firebaseUser.uid,
-                    photo: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`
+                    photo: photo
                 };
 
                 this.resetAllForms();
@@ -609,7 +606,6 @@ createApp({
             }
         },
 
-        // FUNGSI SIMPAN PROFIL ATAS (4 RUANGAN - UNTUK SEMUA USER BIASA)
         async saveMyProfile() {
             try {
                 if (!this.userProfile.email) return;
@@ -628,7 +624,22 @@ createApp({
             }
         },
 
-        // FUNGSI JANA & HANTAR E-MEL RASMI DARI admin@zenq0r.com
+        openUserAccessModal(usr = null) {
+            if (usr) {
+                this.userModal.isEdit = true;
+                this.userModal.form = { 
+                    name: usr.name || '', 
+                    email: usr.email || '', 
+                    password: usr.password || '',
+                    role: usr.role || 'Staff' 
+                };
+            } else {
+                this.userModal.isEdit = false;
+                this.userModal.form = { name: '', email: '', password: '', role: 'Staff' };
+            }
+            this.userModal.show = true;
+        },
+
         sendWelcomeEmail(userForm) {
             const originEmail = "admin@zenq0r.com";
             const recipientEmail = userForm.email;
@@ -643,7 +654,7 @@ Berikut adalah maklumat log masuk anda:
 --------------------------------------------------
 • Emel Log Masuk : ${userForm.email}
 • Peranan (Role) : ${userForm.role}
-• Kata Laluan     : ${userForm.password}
+• Kata Laluan     : ${userForm.password || 'Ditetapkan Pentadbir'}
 • Pautan Portal   : https://hrms-portal.zenq0r.com
 --------------------------------------------------
 
@@ -661,187 +672,7 @@ Origin: ${originEmail}`
             this.showNotify(`E-mel makluman akses portal telah dijana untuk dihantar kepada ${recipientEmail}.`);
         },
 
-        exportCSV(type) {
-            let csvContent = "data:text/csv;charset=utf-8,";
-            let filename = `${type}_export_${new Date().toISOString().substr(0,10)}.csv`;
-
-            if (type === 'employees') {
-                csvContent += "EmpNo,Name,IC,Position,Department,Status,BasicSalary\n";
-                this.employees.forEach(e => {
-                    csvContent += `"${e.empNo}","${e.name}","${e.ic}","${e.position}","${e.dept}","${e.status}","${e.basicSalary}"\n`;
-                });
-            } else if (type === 'docs') {
-                csvContent += "Type,DocNo,Date,ClientName,Amount,Status,PaymentMethod,Bank,Receiver,RefNo\n";
-                this.docHistory.forEach(d => {
-                    csvContent += `"${d.type}","${d.docNo}","${d.date}","${d.name}","${d.amount}","${d.status || 'N/A'}","${d.paymentMethod||'-'}","${d.paymentBank||'-'}","${d.paymentReceiver||'-'}","${d.paymentRefNo||'-'}"\n`;
-                });
-            } else if (type === 'payroll') {
-                csvContent += "EmpNo,Name,Month,PayDate,GrossSalary,TotalDeduction,NetSalary\n";
-                this.payslipHistory.forEach(p => {
-                    const gross = p.raw?.basic || 0;
-                    const net = p.amount || 0;
-                    const deduct = gross - net;
-                    csvContent += `"${p.docNo}","${p.name}","${p.raw?.month||''}","${p.date}","${gross}","${deduct}","${net}"\n`;
-                });
-            }
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", filename);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            this.logAudit('EXPORT', `Exported ${type} to CSV`);
-            this.showNotify(`Laporan ${type} berjaya dieksport!`);
-        },
-
-        backupDatabase() {
-            const data = {
-                company: this.company,
-                employees: this.employees,
-                customers: this.customers,
-                docHistory: this.docHistory,
-                payslipHistory: this.payslipHistory,
-                claimsHistory: this.claimsHistory,
-                users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })),
-                exportDate: new Date().toISOString()
-            };
-            const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", jsonStr);
-            dlAnchorElem.setAttribute("download", `zenqor_backup_${new Date().toISOString().substr(0,10)}.json`);
-            dlAnchorElem.click();
-            this.logAudit('BACKUP', 'Exported full JSON system backup');
-            this.showNotify("Sandaran data pangkalan (JSON Backup) berjaya dimuat turun!");
-        },
-
-        getFilteredRevenueData() {
-            const filter = this.chartTimeFilter;
-            const now = new Date();
-            let labels = [];
-            let revenueData = [];
-
-            if (filter === 'daily') {
-                for (let i = 6; i >= 0; i--) {
-                    const d = new Date(now);
-                    d.setDate(d.getDate() - i);
-                    const dateStr = d.toISOString().substr(0, 10);
-                    const dayLabel = d.toLocaleDateString('ms-MY', { weekday: 'short', day: 'numeric', month: 'short' });
-                    labels.push(dayLabel);
-                    let total = 0;
-                    this.docHistory.forEach(doc => {
-                        if (doc.type === 'Invoice' && doc.status === 'Paid' && doc.date === dateStr) {
-                            total += (Number(doc.amount) || 0);
-                        }
-                    });
-                    revenueData.push(total);
-                }
-            } else if (filter === 'weekly') {
-                for (let i = 3; i >= 0; i--) {
-                    labels.push(`Minggu ${4 - i}`);
-                    const weekStart = new Date(now);
-                    weekStart.setDate(weekStart.getDate() - (i * 7 + 7));
-                    const weekEnd = new Date(now);
-                    weekEnd.setDate(weekEnd.getDate() - (i * 7));
-                    let total = 0;
-                    this.docHistory.forEach(doc => {
-                        if (doc.type === 'Invoice' && doc.status === 'Paid' && doc.date) {
-                            const docDate = new Date(doc.date);
-                            if (docDate >= weekStart && docDate <= weekEnd) total += (Number(doc.amount) || 0);
-                        }
-                    });
-                    revenueData.push(total);
-                }
-            } else if (filter === 'monthly') {
-                labels = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogos', 'Sep', 'Okt', 'Nov', 'Dis'];
-                revenueData = new Array(12).fill(0);
-                this.docHistory.forEach(doc => {
-                    if (doc.type === 'Invoice' && doc.status === 'Paid' && doc.date) {
-                        const docDate = new Date(doc.date);
-                        if (!isNaN(docDate.getTime()) && docDate.getFullYear() === now.getFullYear()) {
-                            revenueData[docDate.getMonth()] += (Number(doc.amount) || 0);
-                        }
-                    }
-                });
-            } else if (filter === 'yearly') {
-                const currentYear = now.getFullYear();
-                for (let y = currentYear - 4; y <= currentYear; y++) {
-                    labels.push(String(y));
-                    let total = 0;
-                    this.docHistory.forEach(doc => {
-                        if (doc.type === 'Invoice' && doc.status === 'Paid' && doc.date) {
-                            const docDate = new Date(doc.date);
-                            if (docDate.getFullYear() === y) total += (Number(doc.amount) || 0);
-                        }
-                    });
-                    revenueData.push(total);
-                }
-            }
-            return { labels, data: revenueData };
-        },
-
-        renderCharts() {
-            if (typeof Chart === 'undefined') return;
-            const revData = this.getFilteredRevenueData();
-            const gridColor = this.isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
-            const textColor = this.isDarkMode ? '#CBD5E1' : '#475569';
-
-            const ctxRev = document.getElementById('revenueChart');
-            if (ctxRev) {
-                if (this.revenueChartInstance) this.revenueChartInstance.destroy();
-                this.revenueChartInstance = new Chart(ctxRev, {
-                    type: 'line',
-                    data: {
-                        labels: revData.labels,
-                        datasets: [{
-                            label: 'Revenue Paid (RM)',
-                            data: revData.data,
-                            borderColor: '#1E3A8A',
-                            backgroundColor: 'rgba(30, 58, 138, 0.15)',
-                            borderWidth: 3, fill: true, tension: 0.35,
-                            pointRadius: 4, pointBackgroundColor: '#D4AF37'
-                        }]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        scales: {
-                            x: { grid: { color: gridColor }, ticks: { color: textColor } },
-                            y: {
-                                beginAtZero: true, min: 0,
-                                grid: { color: gridColor },
-                                ticks: { color: textColor, callback: function(value) { return 'RM ' + value.toLocaleString(); } }
-                            }
-                        },
-                        plugins: { legend: { labels: { color: textColor } } }
-                    }
-                });
-            }
-
-            const ctxStatus = document.getElementById('statusChart');
-            if (ctxStatus) {
-                if (this.statusChartInstance) this.statusChartInstance.destroy();
-                this.statusChartInstance = new Chart(ctxStatus, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Paid Invoices', 'Unpaid Invoices', 'Quotations'],
-                        datasets: [{ data: [this.paidInvoicesCount, this.unpaidInvoicesCount, this.totalQuotations], backgroundColor: ['#10B981', '#EF4444', '#F59E0B'], borderWidth: 2 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
-                });
-            }
-        },
-
-        openUserAccessModal(usr = null) {
-            if (usr) {
-                this.userModal.isEdit = true;
-                this.userModal.form = { name: usr.name, email: usr.email, role: usr.role };
-            } else {
-                this.userModal.isEdit = false;
-                this.userModal.form = { name: '', email: '', role: 'Staff' };
-            }
-            this.userModal.show = true;
-        },
+        // MEMASTIKAN SIMPANAN STRUKTUR 5 MEDAN (email, name, password, photo, role) SEPERTI FIRESTORE
         async savePortalUser() {
             try {
                 if (!this.userModal.form.name || !this.userModal.form.email) {
@@ -855,10 +686,13 @@ Origin: ${originEmail}`
 
                 const isNewUser = !this.userModal.isEdit;
                 const userRef = doc(db, "users", this.userModal.form.email);
+                const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.userModal.form.name)}&background=0B1E36&color=D4AF37`;
                 
                 await setDoc(userRef, {
-                    name: this.userModal.form.name,
                     email: this.userModal.form.email,
+                    name: this.userModal.form.name,
+                    password: this.userModal.form.password || '',
+                    photo: photoUrl,
                     role: this.userModal.form.role
                 }, { merge: true });
 
@@ -875,6 +709,7 @@ Origin: ${originEmail}`
                 alert("Berlaku ralat semasa menyimpan maklumat pengguna.");
             }
         },
+
         async deletePortalUser(email) {
             if (confirm(`Adakah anda pasti mahu memadam akses portal bagi emel: ${email}?`)) {
                 try {
@@ -886,6 +721,7 @@ Origin: ${originEmail}`
                 }
             }
         },
+
         async saveSettings() {
             try {
                 await setDoc(doc(db, "settings", "company_profile"), { ...this.company });
@@ -1010,9 +846,6 @@ Origin: ${originEmail}`
             if (emp) this.selectEmployeeFromTable(emp);
         },
 
-        // ==========================================
-        // FUNGSI PENGURUSAN CLAIMS (TUNTUTAN PEKERJA)
-        // ==========================================
         selectEmployeeForClaim(e) {
             const emp = this.employees.find(x => x.empNo === e.target.value);
             if (emp) {
