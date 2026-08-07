@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZENQOR HRMS/CDTS - Dual System Human Resources Management System & Client Documents Tracking System</title>
+    <title>ZENQOR HRMS/CDTS</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -59,12 +59,12 @@
 
                 <form @submit.prevent="handleLogin" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Emel Pengguna</label>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Email</label>
                         <input type="email" v-model="loginForm.email" required placeholder="nama@zenq0r.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue focus:outline-none text-xs font-medium">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Kata Laluan</label>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Password</label>
                         <div class="relative">
                             <input :type="showPassword ? 'text' : 'password'" v-model="loginForm.password" required placeholder="••••••••" class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue focus:outline-none text-xs">
                             <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none" title="Papar / Sembunyi Kata Laluan">
@@ -86,7 +86,7 @@
                     <div v-if="loginError" class="text-red-500 text-xs font-semibold text-center bg-red-50 dark:bg-red-900/30 p-2.5 rounded-lg">{{ loginError }}</div>
                     
                     <button type="submit" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition duration-200 text-xs uppercase tracking-wider">
-                        Log Masuk Sistem
+                        Log In System
                     </button>
                 </form>
             </div>
@@ -111,7 +111,7 @@
                         </div>
                         <div class="truncate">
                             <h1 class="font-extrabold text-xs tracking-wide text-white truncate">ZENQOR HRMS/CDTS</h1>
-                            <p class="text-[9px] text-brand-gold uppercase tracking-widest font-semibold truncate">Enterprise v2.0</p>
+                            <p class="text-[9px] text-brand-gold uppercase tracking-widest font-semibold truncate">Welcome</p>
                         </div>
                     </div>
                     <button @click="mobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white text-lg">
@@ -167,7 +167,7 @@
 
                 <div class="p-3 border-t border-slate-800">
                     <button @click="handleLogout" class="w-full bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-right-from-bracket"></i><span>Log Keluar</span>
+                        <i class="fa-solid fa-right-from-bracket"></i><span>Log Out</span>
                     </button>
                 </div>
             </aside>
