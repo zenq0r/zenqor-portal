@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE DEVTOOLS FIX v5.2)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE EN-US SYNC v5.5)
 // ============================================================
 
 import {
@@ -1150,9 +1150,6 @@ Origin: ${originEmail}`
             }
         },
 
-        // =========================================================
-        // PERLINDUNGAN SAFE CHECK DALAM RENDERCHARTS
-        // =========================================================
         renderCharts() {
             if (typeof Chart === 'undefined' || this.currentTab !== 'dashboard') return;
             if (['Staff', 'Client'].includes(this.userProfile.role)) return;
