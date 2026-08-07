@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.4)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.5)
 // ============================================================
 
 import {
@@ -575,7 +575,6 @@ createApp({
             }
         },
 
-        // 1. KEMAS KINI PEMBACAAN FIRESTORE KEPADA `.email` DI SINI
         async handleLogin() {
             this.loginError = '';
 
@@ -592,7 +591,6 @@ createApp({
                 );
                 const firebaseUser = userCredential.user;
 
-                // Baca dokumen berdasarkan EMEL pengguna
                 const userDocRef = doc(db, "users", firebaseUser.email);
                 const userSnap = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
                     .then(m => m.getDoc(userDocRef));
@@ -1399,7 +1397,6 @@ Sender Reference: ${originEmail}`
             this.loginForm.rememberMe = true;
         }
 
-        // 2. KEMAS KINI PEMBACAAN FIRESTORE KEPADA `.email` DI SINI JUGAK
         onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 try {
