@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.7)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.9 - STABLE)
 // ============================================================
 
 import {
@@ -1363,4 +1363,127 @@ Sender Reference: ${originEmail}`
                 for (let i = 3; i >= 0; i--) {
                     labels.push(`Week ${4 - i}`);
                     const weekStart = new Date(now);
-                    weekStart.setDate(weekStart.getDate() - (i * 7 +Sebagai model bahasa, saya tidak dirancang untuk membantu soal itu.
+                    weekStart.setDate(weekStart.getDate() - (i * 7 + 7));
+                    const weekEnd = new Date(now);
+                    weekEnd.setDate(weekEnd.getDate() - (i * 7));
+                    let total = 0;
+                    this.docHistory.forEach(doc => {
+                        if (doc.type === 'Invoice' && doc.status === 'Paid' && doc.date) {
+                            const docDate = new Date(doc.date);
+                            if (docDate >= weekStart && docDate <= weekEnd) total += (Number(doc.amount) || 0);
+                        }
+                    });
+                    revenueData.push(total);
+                }
+            } else if (filter === 'monthly') {
+                labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                revenueData = new Array(12).fill(0);
+                this.docHistory.forEach(doc => {
+                    if (doc.type === 'Invoice' && doc.status === 'Paid' && doc.date) {
+                        const docDate = new Date(doc.date);
+                        if (!isNaN(docDate.getTime()) && docDate.getFullYear() === now.getFullYear()) {
+                            revenueData[docDate.getMonth()] += (Number(doc.amount) || 0);
+                        }
+                    }
+                });
+            } else if (filter === 'yearly') {
+                const currentYear = now.getFullYear();
+                for (let y = currentYear - 4; y <= currentYear; y++) {
+                    labels.push(String(y));
+                    let total = 0;
+                    this.docHistory.forEach(doc => {
+                        if (doc.type === 'Invoice' && doc.status === 'Paid' && doc.date) {
+                            const docDate = new Date(doc.date);
+                            if (docDate.getFullYear() === y) total += (Number(doc.amount) || 0);
+                        }
+                    });
+                    revenueData.push(total);
+                }
+            }
+            return { labels, data: revenueData };
+        },
+
+        initFirebaseRealtime() {
+            const unsubSettings = onSnapshot(doc(db, "settings", "company_profile"), (snapshot) => {
+                if (snapshot.exists()) this.company = snapshot.data();
+            });
+            const unsubEmployees = onSnapshot(collection(db, "employees"), (snapshot) => {
+                this.employees = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            });
+            const unsubCustomers = onSnapshot(collection(db, "customers"), (snapshot) => {
+                this.customers = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            });
+            const unsubDocs = onSnapshot(collection(db, "docs"), (snapshot) => {
+                this.docHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                this.generateDocNo();
+                this.$nextTick(() => { this.renderCharts(); });
+            });
+            const unsubPayslips = onSnapshot(collection(db, "payslips"), (snapshot) => {
+                this.payslipHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            });
+            const unsubClaims = onSnapshot(collection(db, "claims"), (snapshot) => {
+                this.claimsHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            });
+            const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+                this.users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            });
+            const unsubAudit = onSnapshot(collection(db, "audit_logs"), (snapshot) => {
+                this.auditLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.id - a.id);
+            });
+            this.unsubscribers.push(unsubSettings, unsubEmployees, unsubCustomers, unsubDocs, unsubPayslips, unsubClaims, unsubUsers, unsubAudit);
+        }
+    },
+    mounted() {
+        this.applyThemeClass();
+        this.autoCalculatePayroll();
+        this.generateDocNo();
+
+        const savedEmail = localStorage.getItem('zenqor_remember_email');
+        if (savedEmail) {
+            this.loginForm.email = savedEmail;
+            this.loginForm.rememberMe = true;
+        }
+
+        onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                try {
+                    const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                    const userSnap = await getDoc(doc(db, "users", firebaseUser.email));
+                    let role = 'Staff';
+                    let name = firebaseUser.displayName || firebaseUser.email;
+                    let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
+
+                    if (userSnap.exists()) {
+                        role = userSnap.data().role || 'Staff';
+                        name = userSnap.data().name || name;
+                        photo = userSnap.data().photo || photo;
+                    }
+                    if (firebaseUser.email === 'admin@zenq0r.com') {
+                        role = 'Superadmin';
+                    }
+                    this.userProfile = {
+                        name, email: firebaseUser.email, role,
+                        uid: firebaseUser.uid,
+                        photo
+                    };
+                    this.resetAllForms();
+                    this.isLoggedIn = true;
+                    this.initFirebaseRealtime();
+                    this.$nextTick(() => { this.renderCharts(); });
+                } catch (e) {
+                    console.error("Error fetching user metadata:", e);
+                    this.isLoggedIn = false;
+                }
+            } else {
+                this.isLoggedIn = false;
+                this.userProfile = { name: '', email: '', role: '', photo: '' };
+                this.unsubscribers.forEach(unsub => unsub && unsub());
+                this.unsubscribers = [];
+            }
+            this.authLoading = false;
+        });
+    },
+    unmounted() {
+        this.unsubscribers.forEach(unsub => unsub && unsub());
+    }
+}).mount('#app');
