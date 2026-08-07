@@ -843,73 +843,95 @@
                             <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Real-time executive monitoring of financial KPIs, HR, corporate documents, and system activities.</p>
                         </div>
 
-                        <!-- KAD KPI EKSEKUTIF (DIKEMASKINI SUPAYA IKON TIDAK BERTINDIH) -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between relative overflow-hidden">
-                                <div class="pr-8">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Employees</p>
-                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ employees.length }}</h3>
-                                    <p class="text-[10px] text-emerald-600 font-bold mt-1"><i class="fa-solid fa-circle-check mr-1"></i>{{ activeEmployeesCount }} Active</p>
+                        <!-- KAD KPI EKSEKUTIF (MODERN SAAS 3x2 GRID - BEBAS TINDIHAN) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                            
+                            <!-- 1. Total Employees -->
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Employees</p>
+                                    <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-brand-blue dark:text-blue-400 flex items-center justify-center text-base font-bold shrink-0">
+                                        <i class="fa-solid fa-users"></i>
+                                    </div>
                                 </div>
-                                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-brand-blue dark:text-blue-400 flex items-center justify-center text-lg font-bold shrink-0 absolute right-4 top-5">
-                                    <i class="fa-solid fa-users"></i>
-                                </div>
-                            </div>
-
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between relative overflow-hidden">
-                                <div class="pr-8">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Clients</p>
-                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ customers.length }}</h3>
-                                    <p class="text-[10px] text-brand-gold font-bold mt-1">Enterprise Directory</p>
-                                </div>
-                                <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg font-bold shrink-0 absolute right-4 top-5">
-                                    <i class="fa-solid fa-building"></i>
+                                <div class="mt-3">
+                                    <h3 class="text-3xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ employees.length }}</h3>
+                                    <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center">
+                                        <i class="fa-solid fa-circle-check mr-1.5"></i><span>{{ activeEmployeesCount }} Active</span>
+                                    </p>
                                 </div>
                             </div>
 
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between relative overflow-hidden">
-                                <div class="pr-8">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Quotations</p>
-                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ totalQuotations }}</h3>
-                                    <p class="text-[10px] text-indigo-600 font-bold mt-1 truncate">{{ formatCurrency(totalQuotationValue) }}</p>
+                            <!-- 2. Total Clients -->
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Clients</p>
+                                    <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base font-bold shrink-0">
+                                        <i class="fa-solid fa-building"></i>
+                                    </div>
                                 </div>
-                                <div class="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-lg font-bold shrink-0 absolute right-4 top-5">
-                                    <i class="fa-solid fa-file-pen"></i>
-                                </div>
-                            </div>
-
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between relative overflow-hidden">
-                                <div class="pr-8">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Invoices</p>
-                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ totalInvoices }}</h3>
-                                    <p class="text-[10px] text-emerald-600 font-bold mt-1 truncate">{{ paidInvoicesCount }} Paid / {{ unpaidInvoicesCount }} Unpaid</p>
-                                </div>
-                                <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg font-bold shrink-0 absolute right-4 top-5">
-                                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                                <div class="mt-3">
+                                    <h3 class="text-3xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ customers.length }}</h3>
+                                    <p class="text-xs font-semibold text-brand-gold mt-1">Enterprise Directory</p>
                                 </div>
                             </div>
 
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between relative overflow-hidden">
-                                <div class="pr-8">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Revenue (Paid)</p>
-                                    <h3 class="text-base font-extrabold text-emerald-600 mt-1 truncate">{{ formatCurrency(totalRevenuePaid) }}</h3>
-                                    <p class="text-[10px] text-red-500 font-bold mt-1 truncate">Pending: {{ formatCurrency(totalRevenuePending) }}</p>
+                            <!-- 3. Total Quotations -->
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Quotations</p>
+                                    <div class="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-base font-bold shrink-0">
+                                        <i class="fa-solid fa-file-pen"></i>
+                                    </div>
                                 </div>
-                                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg font-bold shrink-0 absolute right-4 top-5">
-                                    <i class="fa-solid fa-sack-dollar"></i>
+                                <div class="mt-3">
+                                    <h3 class="text-3xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ totalQuotations }}</h3>
+                                    <p class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mt-1 truncate">{{ formatCurrency(totalQuotationValue) }}</p>
                                 </div>
                             </div>
 
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between relative overflow-hidden">
-                                <div class="pr-8">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Payroll (Net)</p>
-                                    <h3 class="text-base font-extrabold text-brand-dark dark:text-white mt-1 truncate">{{ formatCurrency(totalPayrollNet) }}</h3>
-                                    <p class="text-[10px] text-purple-600 font-bold mt-1 truncate">{{ payslipHistory.length }} Payslips Generated</p>
+                            <!-- 4. Total Invoices -->
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Invoices</p>
+                                    <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-base font-bold shrink-0">
+                                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                                    </div>
                                 </div>
-                                <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg font-bold shrink-0 absolute right-4 top-5">
-                                    <i class="fa-solid fa-money-bill-transfer"></i>
+                                <div class="mt-3">
+                                    <h3 class="text-3xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ totalInvoices }}</h3>
+                                    <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1 truncate">{{ paidInvoicesCount }} Paid / {{ unpaidInvoicesCount }} Unpaid</p>
                                 </div>
                             </div>
+
+                            <!-- 5. Revenue (Paid) -->
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Revenue (Paid)</p>
+                                    <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base font-bold shrink-0">
+                                        <i class="fa-solid fa-sack-dollar"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <h3 class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight truncate">{{ formatCurrency(totalRevenuePaid) }}</h3>
+                                    <p class="text-xs font-semibold text-red-500 mt-1 truncate">Pending: {{ formatCurrency(totalRevenuePending) }}</p>
+                                </div>
+                            </div>
+
+                            <!-- 6. Total Payroll (Net) -->
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Payroll (Net)</p>
+                                    <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-base font-bold shrink-0">
+                                        <i class="fa-solid fa-money-bill-transfer"></i>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight truncate">{{ formatCurrency(totalPayrollNet) }}</h3>
+                                    <p class="text-xs font-semibold text-purple-600 dark:text-purple-400 mt-1 truncate">{{ payslipHistory.length }} Payslips Generated</p>
+                                </div>
+                            </div>
+
                         </div>
 
                         <!-- REAL DATA CHARTS -->
