@@ -8,15 +8,15 @@
     <!-- FAVICON RASMI PORTAL -->
     <link rel="icon" type="image/png" href="./logo.png">
     
-    <!-- GOOGLE FONTS (Hanya muat turun font Inter — Selesaikan 100% Ralat CORB & Verify Stylesheet URLs) -->
+    <!-- GOOGLE FONTS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
     
-    <!-- VUE 3, TAILWIND CSS & LIBRARIES -->
+    <!-- VUE 3, TAILWIND CSS & CLEAN LIBRARIES (Diganti CDN Chart.js bebas Source Map 404) -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -1209,9 +1209,9 @@
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
                         <template v-if="currentTab === 'settings'">
                             <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Company Name</label><input type="text" v-model="company.name" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold"></div>
-                                <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Business Registration No.</label><input type="text" v-model="company.ssm" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
-                                <div class="col-span-2"><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Full Address</label><textarea rows="3" v-model="company.address" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></textarea></div>
+                                <div><label for="setting-comp-name" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Company Name</label><input id="setting-comp-name" name="companyName" type="text" v-model="company.name" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold"></div>
+                                <div><label for="setting-comp-ssm" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Business Registration No.</label><input id="setting-comp-ssm" name="companySSM" type="text" v-model="company.ssm" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div class="col-span-2"><label for="setting-comp-addr" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Full Address</label><textarea id="setting-comp-addr" name="companyAddr" rows="3" v-model="company.address" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></textarea></div>
                             </div>
                             <div class="flex justify-between items-center pt-4 border-t dark:border-slate-700">
                                 <button @click="backupDatabase" class="bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center space-x-1.5"><i class="fa-solid fa-download"></i><span>Backup Database</span></button>
@@ -1221,11 +1221,11 @@
 
                         <template v-else>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
-                                <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Existing Username</label><input type="text" v-model="userProfile.name" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold"></div>
-                                <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Sign-In Email</label><input type="email" v-model="userProfile.email" disabled class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-400 rounded-xl text-xs cursor-not-allowed"></div>
+                                <div><label for="prof-name" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Existing Username</label><input id="prof-name" name="profName" type="text" v-model="userProfile.name" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold"></div>
+                                <div><label for="prof-email" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Sign-In Email</label><input id="prof-email" name="profEmail" type="email" v-model="userProfile.email" disabled class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-400 rounded-xl text-xs cursor-not-allowed"></div>
                                 <div>
-                                    <label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">User Role (RBAC)</label>
-                                    <select v-model="userProfile.role" :disabled="!canManageRBAC" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold bg-slate-50 disabled:bg-slate-100 dark:disabled:bg-slate-700/50 disabled:cursor-not-allowed">
+                                    <label for="prof-role" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">User Role (RBAC)</label>
+                                    <select id="prof-role" name="profRole" v-model="userProfile.role" :disabled="!canManageRBAC" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold bg-slate-50 disabled:bg-slate-100 dark:disabled:bg-slate-700/50 disabled:cursor-not-allowed">
                                         <option value="Superadmin">Superadmin</option>
                                         <option value="HR">HR</option>
                                         <option value="Account">Account</option>
@@ -1234,7 +1234,7 @@
                                         <option value="Staff">Staff</option>
                                     </select>
                                 </div>
-                                <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Avatar / Photo URL</label><input type="text" v-model="userProfile.photo" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div><label for="prof-photo" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Avatar / Photo URL</label><input id="prof-photo" name="profPhoto" type="text" v-model="userProfile.photo" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
                                 
                                 <div class="sm:col-span-2 flex justify-end pt-1">
                                     <button @click="saveMyProfile" type="button" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
@@ -1296,13 +1296,13 @@
                     <button @click="employeeModal.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
                 <form @submit.prevent="saveEmployee" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    <div><label class="font-bold mb-1 block dark:text-slate-300">Employee ID * (ZEN-XXXXXXX)</label><input v-model="employeeModal.form.empNo" :disabled="employeeModal.isEdit" required class="w-full p-2 border rounded-xl font-bold bg-slate-50 dark:bg-slate-700 dark:text-white"></div>
-                    <div><label class="font-bold mb-1 block dark:text-slate-300">Full Name *</label><input v-model="employeeModal.form.name" required class="w-full p-2 border rounded-xl font-semibold dark:bg-slate-700 dark:text-white"></div>
-                    <div><label class="font-bold mb-1 block dark:text-slate-300">National ID / Passport *</label><input v-model="employeeModal.form.ic" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
-                    <div><label class="font-bold mb-1 block dark:text-slate-300">Position</label><input v-model="employeeModal.form.position" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
-                    <div><label class="font-bold mb-1 block dark:text-slate-300">Basic Salary (RM) *</label><input type="number" v-model="employeeModal.form.basicSalary" step="0.01" required class="w-full p-2 border rounded-xl font-bold dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-id" class="font-bold mb-1 block dark:text-slate-300">Employee ID * (ZEN-XXXXXXX)</label><input id="emp-modal-id" name="empModalId" v-model="employeeModal.form.empNo" :disabled="employeeModal.isEdit" required class="w-full p-2 border rounded-xl font-bold bg-slate-50 dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-name" class="font-bold mb-1 block dark:text-slate-300">Full Name *</label><input id="emp-modal-name" name="empModalName" v-model="employeeModal.form.name" required class="w-full p-2 border rounded-xl font-semibold dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-ic" class="font-bold mb-1 block dark:text-slate-300">National ID / Passport *</label><input id="emp-modal-ic" name="empModalIc" v-model="employeeModal.form.ic" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-position" class="font-bold mb-1 block dark:text-slate-300">Position</label><input id="emp-modal-position" name="empModalPosition" v-model="employeeModal.form.position" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-salary" class="font-bold mb-1 block dark:text-slate-300">Basic Salary (RM) *</label><input id="emp-modal-salary" name="empModalSalary" type="number" v-model="employeeModal.form.basicSalary" step="0.01" required class="w-full p-2 border rounded-xl font-bold dark:bg-slate-700 dark:text-white"></div>
                     <div class="flex items-center space-x-2 pt-2">
-                        <input type="checkbox" id="isSenior" v-model="employeeModal.form.isSenior" class="w-4 h-4 rounded text-brand-dark">
+                        <input type="checkbox" id="isSenior" name="empModalSenior" v-model="employeeModal.form.isSenior" class="w-4 h-4 rounded text-brand-dark">
                         <label for="isSenior" class="font-bold text-slate-700 dark:text-slate-300">Senior Citizen (60+ Years - EPF/SOCSO Exemption)</label>
                     </div>
                     <div class="md:col-span-2 flex justify-end space-x-2 pt-3 border-t dark:border-slate-700">
@@ -1320,12 +1320,12 @@
                     <button @click="userModal.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
                 <form @submit.prevent="savePortalUser" class="space-y-4 text-xs">
-                    <div><label class="font-bold mb-1 block dark:text-slate-300">Username *</label><input v-model="userModal.form.name" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
-                    <div><label class="font-bold mb-1 block dark:text-slate-300">Sign-In Email *</label><input type="email" v-model="userModal.form.email" :disabled="userModal.isEdit" required placeholder="name@zenq0r.com" pattern="^[a-zA-Z0-9._%+-]+@zenq0r\.com$" title="Must use official company domain @zenq0r.com" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"><p class="text-[10px] text-slate-400 mt-1">Must use official company domain (@zenq0r.com).</p></div>
-                    <div><label class="font-bold mb-1 block dark:text-slate-300">Password *</label><input type="text" v-model="userModal.form.password" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="usr-modal-name" class="font-bold mb-1 block dark:text-slate-300">Username *</label><input id="usr-modal-name" name="usrModalName" v-model="userModal.form.name" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="usr-modal-email" class="font-bold mb-1 block dark:text-slate-300">Sign-In Email *</label><input id="usr-modal-email" name="usrModalEmail" type="email" v-model="userModal.form.email" :disabled="userModal.isEdit" required placeholder="name@zenq0r.com" pattern="^[a-zA-Z0-9._%+-]+@zenq0r\.com$" title="Must use official company domain @zenq0r.com" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"><p class="text-[10px] text-slate-400 mt-1">Must use official company domain (@zenq0r.com).</p></div>
+                    <div><label for="usr-modal-pass" class="font-bold mb-1 block dark:text-slate-300">Password *</label><input id="usr-modal-pass" name="usrModalPass" type="text" v-model="userModal.form.password" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
                     <div>
-                        <label class="font-bold mb-1 block dark:text-slate-300">Role *</label>
-                        <select v-model="userModal.form.role" class="w-full p-2 border rounded-xl font-bold dark:bg-slate-700 dark:text-white">
+                        <label for="usr-modal-role" class="font-bold mb-1 block dark:text-slate-300">Role *</label>
+                        <select id="usr-modal-role" name="usrModalRole" v-model="userModal.form.role" class="w-full p-2 border rounded-xl font-bold dark:bg-slate-700 dark:text-white">
                             <option value="Superadmin">Superadmin</option>
                             <option value="HR">HR</option>
                             <option value="Account">Account</option>
