@@ -1451,6 +1451,4 @@ Sender Reference: ${originEmail}`
         });
     },
     unmounted() {
-        this.unsubscribers.forEach(unsub => unsub && unsub());
-    }
-}).mount('#app');
+        this.unsubscribers.forEach(unsub => unsubI seem to be encountering an error. Can I try something else for you?
