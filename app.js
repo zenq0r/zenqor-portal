@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v5.6)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v5.8)
 // ============================================================
 
 import {
@@ -65,7 +65,7 @@ createApp({
             isDarkMode: true,
             searchQuery: '',
             currentPage: 1,
-            itemsPerPage: 6,
+            itemsPerPage: 5,
             notification: { show: false, message: '' },
 
             activePrintModule: null,
@@ -1079,8 +1079,16 @@ Origin: ${originEmail}`
         generateDocNo() {
             if (this.editingDocId) return;
             const prefix = this.docForm.type === 'Invoice' ? 'INV' : 'QT';
-            const count = this.docHistory.filter(d => d.type === this.docForm.type).length + 1;
-            this.docForm.docNo = `${prefix}-2026-${String(count).padStart(6, '0')}`;
+            const relevantDocs = this.docHistory.filter(d => d.type === this.docForm.type);
+            let maxNum = 0;
+            relevantDocs.forEach(d => {
+                if (d.docNo) {
+                    const parts = d.docNo.split('-');
+                    const num = parseInt(parts[parts.length - 1], 10);
+                    if (!isNaN(num) && num > maxNum) maxNum = num;
+                }
+            });
+            this.docForm.docNo = `${prefix}-2026-${String(maxNum + 1).padStart(6, '0')}`;
         },
         cancelEditDoc() { this.editingDocId = null; this.generateDocNo(); },
 
@@ -1107,18 +1115,21 @@ Origin: ${originEmail}`
         cancelEditPay() { this.editingPayId = null; },
         viewRecord(item) {
             if (item.isDoc && item.raw) {
+                this.editingDocId = item.id;
                 this.docForm = JSON.parse(JSON.stringify(item.raw));
                 this.activePrintModule = item.type === 'Quotation' ? 'QUOTATION' : 'INVOICE';
                 this.setPrintOrientation('portrait', '15mm');
                 this.currentTab = 'doc-generator';
             } else if (item.isPay && item.raw) {
+                this.editingPayId = item.id;
                 this.payForm = JSON.parse(JSON.stringify(item.raw));
                 this.autoCalculatePayroll();
                 this.activePrintModule = 'PAYSLIP';
                 this.setPrintOrientation('landscape', '0mm');
                 this.currentTab = 'payslip-generator';
             }
-            setTimeout(() => { window.print(); }, 300);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            this.showNotify(`Record (${item.docNo}) loaded for view.`);
         },
         editRecord(item) {
             if (item.isDoc) {
