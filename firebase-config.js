@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firebase-config.js (SAFE APP CHECK v2.5)
+// ZENQOR TECHNOLOGIES - firebase-config.js (SAFE APP CHECK v2.6)
 // ============================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -46,13 +46,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// Inisialisasi Firebase App Check secara selamat
+// Inisialisasi Firebase App Check tanpa ralat 403
 try {
     const recaptchaKey = env.RECAPTCHA_SITE_KEY || '6LfVnngtAAAAAGJdJnR99Vsm2pnJq2kLwKxvBGUV';
     
-    // Dayakan Debug Token untuk ujian lokal atau pembangunan
-    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === 'hrms-portal.zenq0r.com') {
+    // HANYA aktifkan Debug Token untuk ujian lokal (localhost / 127.0.0.1 sahaja)
+    // Jangan aktifkan untuk hrms-portal.zenq0r.com bagi mengelakkan ralat 403 Forbidden
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
         self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    } else {
+        self.FIREBASE_APPCHECK_DEBUG_TOKEN = false;
     }
 
     initializeAppCheck(app, {

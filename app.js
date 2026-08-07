@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE DEVTOOLS FIX v5.0)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE EN-US SYNC v5.0)
 // ============================================================
 
 import {
@@ -778,9 +778,6 @@ Origin: ${originEmail}`
             }
         },
 
-        // =========================================================
-        // PULIHKAN FUNGSI BACKUP DATABASE (SELESAIKAN RALAT VUE WARN)
-        // =========================================================
         backupDatabase() {
             const data = {
                 company: this.company,
@@ -1153,9 +1150,6 @@ Origin: ${originEmail}`
             }
         },
 
-        // =========================================================
-        // PULIHKAN FUNGSI RENDERCHARTS (SELESAIKAN TYPEERROR)
-        // =========================================================
         renderCharts() {
             if (typeof Chart === 'undefined') return;
             const revData = this.getFilteredRevenueData();

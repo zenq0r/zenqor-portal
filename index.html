@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZENQOR HRMS/CDTS - Dual System Human Resources Management System & Client Documents Tracking System</title>
     
+    <!-- Pemuatan Google Fonts Rasmi (Selesai Ralat Verify Stylesheet & CORB) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Courier+New&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1206,7 +1207,6 @@
                         </template>
 
                         <template v-else>
-                            <!-- BAHAGIAN ATAS: 4 RUANGAN PROFIL (NAMPAK KEPADA SEMUA ROLE) -->
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
                                 <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Existing Username</label><input type="text" v-model="userProfile.name" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold"></div>
                                 <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Sign-In Email</label><input type="email" v-model="userProfile.email" disabled class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-400 rounded-xl text-xs cursor-not-allowed"></div>
@@ -1230,7 +1230,6 @@
                                 </div>
                             </div>
 
-                            <!-- BAHAGIAN BAWAH: JADUAL PENGURUSAN AKSES (HANYA SUPERADMIN & HR SAHAJA) -->
                             <div v-if="canManageRBAC" class="pt-6 space-y-4 border-t border-slate-200 dark:border-slate-700">
                                 <div class="flex justify-between items-center">
                                     <h3 class="text-sm font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-users-viewfinder text-brand-blue mr-2"></i>PORTAL ACCESS MANAGEMENT (SUPERADMIN &amp; HR)</h3>
