@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v5.8)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.0)
 // ============================================================
 
 import {
@@ -289,7 +289,26 @@ createApp({
                 ...this.payslipHistory.map(p => ({ ...p, tagClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200', isPay: true })),
                 ...this.claimsHistory.map(c => ({ ...c, tagClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200', isClaim: true, docNo: c.receiptNo, amount: c.amount, date: c.expenseDate }))
             ];
-            let list = combined.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Peta keutamaan susunan kategori: 1) Payslip -> 2) Quotation -> 3) Invoice -> 4) Claim
+            const typePriority = {
+                'Payslip': 1,
+                'Quotation': 2,
+                'Invoice': 3,
+                'Claim': 4
+            };
+
+            // Susun ikut Kategori terlebih dahulu, kemudian ikut Tarikh Terkini
+            let list = combined.sort((a, b) => {
+                const priorityA = typePriority[a.type] || 99;
+                const priorityB = typePriority[b.type] || 99;
+
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
+                return new Date(b.date) - new Date(a.date);
+            });
+
             if (this.searchQuery) {
                 const q = this.searchQuery.toLowerCase();
                 list = list.filter(c =>
