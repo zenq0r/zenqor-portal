@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE EN-US SYNC v4.6)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE DEVTOOLS FIX v5.0)
 // ============================================================
 
 import {
@@ -778,6 +778,29 @@ Origin: ${originEmail}`
             }
         },
 
+        // =========================================================
+        // PULIHKAN FUNGSI BACKUP DATABASE (SELESAIKAN RALAT VUE WARN)
+        // =========================================================
+        backupDatabase() {
+            const data = {
+                company: this.company,
+                employees: this.employees,
+                customers: this.customers,
+                docHistory: this.docHistory,
+                payslipHistory: this.payslipHistory,
+                claimsHistory: this.claimsHistory,
+                users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })),
+                exportDate: new Date().toISOString()
+            };
+            const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", jsonStr);
+            dlAnchorElem.setAttribute("download", `zenqor_backup_${new Date().toISOString().substr(0,10)}.json`);
+            dlAnchorElem.click();
+            this.logAudit('BACKUP', 'Exported full JSON system backup');
+            this.showNotify("Database JSON backup downloaded successfully!");
+        },
+
         async saveSettings() {
             try {
                 await setDoc(doc(db, "settings", "company_profile"), { ...this.company });
@@ -1128,6 +1151,125 @@ Origin: ${originEmail}`
                     console.error("Record delete error:", error);
                 }
             }
+        },
+
+        // =========================================================
+        // PULIHKAN FUNGSI RENDERCHARTS (SELESAIKAN TYPEERROR)
+        // =========================================================
+        renderCharts() {
+            if (typeof Chart === 'undefined') return;
+            const revData = this.getFilteredRevenueData();
+            const gridColor = this.isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+            const textColor = this.isDarkMode ? '#CBD5E1' : '#475569';
+
+            const ctxRev = document.getElementById('revenueChart');
+            if (ctxRev) {
+                if (this.revenueChartInstance) this.revenueChartInstance.destroy();
+                this.revenueChartInstance = new Chart(ctxRev, {
+                    type: 'line',
+                    data: {
+                        labels: revData.labels,
+                        datasets: [{
+                            label: 'Revenue Paid (RM)',
+                            data: revData.data,
+                            borderColor: '#1E3A8A',
+                            backgroundColor: 'rgba(30, 58, 138, 0.15)',
+                            borderWidth: 3, fill: true, tension: 0.35,
+                            pointRadius: 4, pointBackgroundColor: '#D4AF37'
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            x: { grid: { color: gridColor }, ticks: { color: textColor } },
+                            y: {
+                                beginAtZero: true, min: 0,
+                                grid: { color: gridColor },
+                                ticks: { color: textColor, callback: function(value) { return 'RM ' + value.toLocaleString(); } }
+                            }
+                        },
+                        plugins: { legend: { labels: { color: textColor } } }
+                    }
+                });
+            }
+
+            const ctxStatus = document.getElementById('statusChart');
+            if (ctxStatus) {
+                if (this.statusChartInstance) this.statusChartInstance.destroy();
+                this.statusChartInstance = new Chart(ctxStatus, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Paid Invoices', 'Unpaid Invoices', 'Quotations'],
+                        datasets: [{ data: [this.paidInvoicesCount, this.unpaidInvoicesCount, this.totalQuotations], backgroundColor: ['#10B981', '#EF4444', '#F59E0B'], borderWidth: 2 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
+                });
+            }
+        },
+
+        getFilteredRevenueData() {
+            const filter = this.chartTimeFilter;
+            const now = new Date();
+            let labels = [];
+            let revenueData = [];
+
+            if (filter === 'daily') {
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(now);
+                    d.setDate(d.getDate() - i);
+                    const dateStr = d.toISOString().substr(0, 10);
+                    const dayLabel = d.toLocaleDateString('ms-MY', { weekday: 'short', day: 'numeric', month: 'short' });
+                    labels.push(dayLabel);
+                    let total = 0;
+                    this.docHistory.forEach(doc => {
+                        if (doc.type === 'Invoice' && doc.status === 'Paid' && doc.date === dateStr) {
+                            total += (Number(doc.amount) || 0);
+                        }
+                    });
+                    revenueData.push(total);
+                }
+            } else if (filter === 'weekly') {
+                for (let i = 3; i >= 0; i--) {
+                    labels.push(`Week ${4 - i}`);
+                    const weekStart = new Date(now);
+                    weekStart.setDate(weekStart.getDate() - (i * 7 + 7));
+                    const weekEnd = new Date(now);
+                    weekEnd.setDate(weekEnd.getDate() - (i * 7));
+                    let total = 0;
+                    this.docHistory.forEach(doc => {
+                        if (doc.type === 'Invoice' && doc.status === 'Paid' && doc.date) {
+                            const docDate = new Date(doc.date);
+                            if (docDate >= weekStart && docDate <= weekEnd) total += (Number(doc.amount) || 0);
+                        }
+                    });
+                    revenueData.push(total);
+                }
+            } else if (filter === 'monthly') {
+                labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                revenueData = new Array(12).fill(0);
+                this.docHistory.forEach(doc => {
+                    if (doc.type === 'Invoice' && doc.status === 'Paid' && doc.date) {
+                        const docDate = new Date(doc.date);
+                        if (!isNaN(docDate.getTime()) && docDate.getFullYear() === now.getFullYear()) {
+                            revenueData[docDate.getMonth()] += (Number(doc.amount) || 0);
+                        }
+                    }
+                });
+            } else if (filter === 'yearly') {
+                const currentYear = now.getFullYear();
+                for (let y = currentYear - 4; y <= currentYear; y++) {
+                    labels.push(String(y));
+                    let total = 0;
+                    this.docHistory.forEach(doc => {
+                        if (doc.type === 'Invoice' && doc.status === 'Paid' && doc.date) {
+                            const docDate = new Date(doc.date);
+                            if (docDate.getFullYear() === y) total += (Number(doc.amount) || 0);
+                        }
+                    });
+                    revenueData.push(total);
+                }
+            }
+            return { labels, data: revenueData };
         },
 
         initFirebaseRealtime() {

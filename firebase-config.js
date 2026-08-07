@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firebase-config.js (APP CHECK SECURE v2.4)
+// ZENQOR TECHNOLOGIES - firebase-config.js (SAFE APP CHECK v2.5)
 // ============================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -46,12 +46,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// Inisialisasi Firebase App Check dengan reCAPTCHA v3
+// Inisialisasi Firebase App Check secara selamat
 try {
     const recaptchaKey = env.RECAPTCHA_SITE_KEY || '6LfVnngtAAAAAGJdJnR99Vsm2pnJq2kLwKxvBGUV';
     
-    // Dayakan Debug Token untuk ujian lokal (localhost / 127.0.0.1)
-    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    // Dayakan Debug Token untuk ujian lokal atau pembangunan
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === 'hrms-portal.zenq0r.com') {
         self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
     }
 
@@ -60,7 +60,7 @@ try {
         isTokenAutoRefreshEnabled: true
     });
 } catch (err) {
-    console.warn("App Check Initialization Warning:", err);
+    console.warn("App Check Warning (Non-Fatal):", err.message);
 }
 
 const db = initializeFirestore(app, {
