@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZENQOR HRMS/CDTS - Dual System Human Resources Management System & Client Documents Tracking System</title>
     
-    <!-- FAVICON RASMI PORTAL (Selesaikan Ralat 404 favicon.ico) -->
+    <!-- FAVICON RASMI PORTAL -->
     <link rel="icon" type="image/png" href="./logo.png">
     
-    <!-- GOOGLE FONTS PIAWAI (Selesaikan Ralat CORB & Verify Stylesheet URLs) -->
+    <!-- GOOGLE FONTS (Hanya muat turun font Inter — Selesaikan 100% Ralat CORB & Verify Stylesheet URLs) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+New&family=Inter:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
     
     <!-- VUE 3, TAILWIND CSS & LIBRARIES -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -195,6 +195,7 @@
 
                         <div class="relative w-full max-w-sm">
                             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400 text-xs"></i>
+                            <label for="global-search" class="sr-only">Search System</label>
                             <input id="global-search" name="search" type="text" v-model="searchQuery" placeholder="Search Documents, Employees, TIN, ID..." class="w-full pl-9 pr-4 py-1.5 bg-slate-100 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-semibold focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-brand-gold focus:outline-none transition">
                         </div>
                     </div>
@@ -250,7 +251,8 @@
                                 </h3>
                             </div>
                             <div class="flex items-center space-x-2">
-                                <select id="doc-client-select" name="docClientSelect" aria-label="Select Client" @change="selectCustomerForDoc($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-60 focus:ring-2 focus:ring-brand-gold">
+                                <label for="doc-client-select" class="sr-only">Select Client</label>
+                                <select id="doc-client-select" name="docClientSelect" @change="selectCustomerForDoc($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-60 focus:ring-2 focus:ring-brand-gold">
                                     <option value="">-- Auto-Fill Client --</option>
                                     <option v-for="(cust, cIdx) in customers" :key="cIdx" :value="cust.clientName">{{ cust.clientName }}</option>
                                 </select>
@@ -349,9 +351,9 @@
                                     <p class="text-[10px] text-slate-400 truncate">{{ docForm.paymentAttachment ? 'Receipt Attached' : 'No file selected' }}</p>
                                 </div>
                                 <div class="flex items-center space-x-1 shrink-0">
-                                    <label class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
+                                    <label for="doc-attachment" class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
                                         <span>Select</span>
-                                        <input id="doc-attachment" name="attachment" aria-label="Upload Attachment" type="file" @change="handleAttachmentUpload" accept=".pdf,image/*" class="hidden">
+                                        <input id="doc-attachment" name="attachment" type="file" @change="handleAttachmentUpload" accept=".pdf,image/*" class="hidden">
                                     </label>
                                     <a v-if="docForm.paymentAttachment" :href="docForm.paymentAttachment" download="Bukti_Resit" target="_blank" class="bg-emerald-600 text-white px-2 py-1.5 rounded-lg text-[11px] font-bold" title="View">
                                         <i class="fa-solid fa-eye"></i>
@@ -380,11 +382,11 @@
                                 </thead>
                                 <tbody>
                                     <tr v-for="(item, idx) in docForm.items" :key="idx" class="border-b dark:border-slate-700">
-                                        <td class="p-2 border dark:border-slate-600"><input :id="'item-desc-' + idx" :name="'itemDesc_' + idx" aria-label="Item Description" type="text" v-model="item.desc" placeholder="Service description / payment phase..." class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-xs font-medium"></td>
-                                        <td class="p-2 border dark:border-slate-600"><input :id="'item-qty-' + idx" :name="'itemQty_' + idx" aria-label="Item Quantity" type="number" v-model="item.qty" min="1" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-center text-xs font-bold"></td>
-                                        <td class="p-2 border dark:border-slate-600"><input :id="'item-price-' + idx" :name="'itemPrice_' + idx" aria-label="Item Price" type="number" v-model="item.price" step="0.01" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right text-xs font-semibold"></td>
+                                        <td class="p-2 border dark:border-slate-600"><label :for="'item-desc-' + idx" class="sr-only">Description</label><input :id="'item-desc-' + idx" :name="'itemDesc_' + idx" type="text" v-model="item.desc" placeholder="Service description / payment phase..." class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-xs font-medium"></td>
+                                        <td class="p-2 border dark:border-slate-600"><label :for="'item-qty-' + idx" class="sr-only">Quantity</label><input :id="'item-qty-' + idx" :name="'itemQty_' + idx" type="number" v-model="item.qty" min="1" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-center text-xs font-bold"></td>
+                                        <td class="p-2 border dark:border-slate-600"><label :for="'item-price-' + idx" class="sr-only">Unit Price</label><input :id="'item-price-' + idx" :name="'itemPrice_' + idx" type="number" v-model="item.price" step="0.01" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right text-xs font-semibold"></td>
                                         <td class="p-2 border dark:border-slate-600 text-right font-extrabold text-xs bg-slate-50 dark:bg-slate-700/50 dark:text-white">{{ formatCurrency(item.qty * item.price) }}</td>
-                                        <td class="p-2 border dark:border-slate-600 text-center"><button @click="removeDocItem(idx)" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash text-xs"></i></button></td>
+                                        <td class="p-2 border dark:border-slate-600 text-center"><button type="button" @click="removeDocItem(idx)" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash text-xs"></i></button></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -446,10 +448,13 @@
                                     EMPLOYEE &amp; BANKING INFORMATION
                                 </h3>
                             </div>
-                            <select id="pay-emp-select" name="payEmpSelect" aria-label="Select Employee" @change="selectEmployeeForPayslip($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
-                                <option value="">-- Auto-Fill HR Employee --</option>
-                                <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
-                            </select>
+                            <div>
+                                <label for="pay-emp-select" class="sr-only">Select Employee</label>
+                                <select id="pay-emp-select" name="payEmpSelect" @change="selectEmployeeForPayslip($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
+                                    <option value="">-- Auto-Fill HR Employee --</option>
+                                    <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -537,10 +542,13 @@
                                 <i class="fa-solid fa-file-circle-plus text-brand-gold mr-2 text-base"></i>
                                 NEW EXPENSE CLAIM APPLICATION
                             </h3>
-                            <select id="claim-emp-select" name="claimEmpSelect" aria-label="Select Employee" @change="selectEmployeeForClaim($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
-                                <option value="">-- Auto-Fill HR Employee --</option>
-                                <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
-                            </select>
+                            <div>
+                                <label for="claim-emp-select" class="sr-only">Select Employee</label>
+                                <select id="claim-emp-select" name="claimEmpSelect" @change="selectEmployeeForClaim($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
+                                    <option value="">-- Auto-Fill HR Employee --</option>
+                                    <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -585,9 +593,9 @@
                                     <p class="text-[10px] text-slate-400 truncate">{{ claimForm.receiptAttachment ? 'Receipt Attached' : 'No file selected' }}</p>
                                 </div>
                                 <div class="flex items-center space-x-1 shrink-0">
-                                    <label class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
+                                    <label for="claim-attachment" class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
                                         <span>Select</span>
-                                        <input id="claim-attachment" name="claimAttachment" aria-label="Upload Claim Receipt" type="file" @change="handleClaimAttachmentUpload" accept=".pdf,image/*" class="hidden">
+                                        <input id="claim-attachment" name="claimAttachment" type="file" @change="handleClaimAttachmentUpload" accept=".pdf,image/*" class="hidden">
                                     </label>
                                     <a v-if="claimForm.receiptAttachment" :href="claimForm.receiptAttachment" download="Resit_Tuntutan" target="_blank" class="bg-emerald-600 text-white px-2 py-1.5 rounded-lg text-[11px] font-bold" title="View">
                                         <i class="fa-solid fa-eye"></i>
