@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FULL SYSTEM v4.5)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE EN-US SYNC v4.6)
 // ============================================================
 
 import {
@@ -51,14 +51,14 @@ createApp({
         return {
             isLoggedIn: false,
             authLoading: true,
-            showPassword: false, // Untuk papar/sembunyi kata laluan log masuk
+            showPassword: false,
             loginForm: { 
                 email: '', 
                 password: '', 
-                rememberMe: false // Untuk ingat emel dalam localStorage
+                rememberMe: false
             },
             loginError: '',
-            currentTab: 'dashboard', // Direct ke dashboard sejurus log masuk
+            currentTab: 'dashboard',
             mobileMenuOpen: false,
             desktopSidebarOpen: false,
             chartTimeFilter: 'monthly',
@@ -227,11 +227,8 @@ createApp({
         canCreateEdit() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
         canEditDocs() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
         canDelete() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
-        
-        // HANYA SUPERADMIN & HR SAHAJA BOLEH URUS & NAMPAK PENGURUSAN AKSES PORTAL
         canManageRBAC() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
 
-        // DATA KHUSUS VIEW PEKERJA (STAFF DASHBOARD)
         myPayslips() {
             return this.payslipHistory.filter(p => p.raw && (p.raw.empEmail === this.userProfile.email || p.name === this.userProfile.name));
         },
@@ -250,7 +247,6 @@ createApp({
             return this.myClaims.filter(c => c.status === 'Approved').reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
         },
 
-        // DATA KHUSUS VIEW PELANGGAN (CLIENT DASHBOARD)
         myClientDocs() {
             return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email);
         },
@@ -364,14 +360,14 @@ createApp({
             const file = e.target.files[0];
             if (!file) return;
             if (file.size > 2 * 1024 * 1024) {
-                alert("Saiz lampiran melebihi had maksimum 2MB. Sila pilih fail yang lebih kecil.");
+                alert("Attachment size exceeds 2MB limit. Please choose a smaller file.");
                 e.target.value = '';
                 return;
             }
             const reader = new FileReader();
             reader.onload = (uploadEvent) => {
                 this.docForm.paymentAttachment = uploadEvent.target.result;
-                this.showNotify(`Lampiran resit "${file.name}" sedia dimuat naik.`);
+                this.showNotify(`Receipt attachment "${file.name}" ready for upload.`);
             };
             reader.readAsDataURL(file);
         },
@@ -379,31 +375,31 @@ createApp({
             const file = e.target.files[0];
             if (!file) return;
             if (file.size > 2 * 1024 * 1024) {
-                alert("Saiz lampiran melebihi had maksimum 2MB. Sila pilih fail yang lebih kecil.");
+                alert("Attachment size exceeds 2MB limit. Please choose a smaller file.");
                 e.target.value = '';
                 return;
             }
             const reader = new FileReader();
             reader.onload = (uploadEvent) => {
                 this.claimForm.receiptAttachment = uploadEvent.target.result;
-                this.showNotify(`Lampiran resit "${file.name}" sedia dimuat naik.`);
+                this.showNotify(`Receipt attachment "${file.name}" ready for upload.`);
             };
             reader.readAsDataURL(file);
         },
         clearAllDocItems() {
-            if (confirm("Adakah anda pasti mahu memadam kesemua item barangan/perkhidmatan sekaligus?")) {
+            if (confirm("Are you sure you want to clear all product/service items?")) {
                 this.docForm.items = [{ desc: '', qty: 1, price: 0 }];
-                this.showNotify("Kesemua item telah dipadam sekaligus.");
+                this.showNotify("All items cleared successfully.");
             }
         },
         resetDocForm() {
-            if (confirm("Adakah anda pasti mahu mengosongkan keseluruhan borang dokumen?")) {
+            if (confirm("Are you sure you want to clear the entire document form?")) {
                 this.resetAllForms();
-                this.showNotify("Seluruh ruangan borang dokumen telah dikosongkan.");
+                this.showNotify("Document form cleared successfully.");
             }
         },
         resetPayForm() {
-            if (confirm("Adakah anda pasti mahu mengosongkan keseluruhan borang slip gaji?")) {
+            if (confirm("Are you sure you want to clear the entire payslip form?")) {
                 this.editingPayId = null;
                 this.payForm = {
                     name: '', ic: '', empNo: '', empEmail: '',
@@ -415,7 +411,7 @@ createApp({
                     dedEpf: 0, dedSocso: 0, dedEis: 0, dedPcb: 0, dedAdvance: 0, dedOther: 0
                 };
                 this.autoCalculatePayroll();
-                this.showNotify("Ruangan borang slip gaji telah dikosongkan.");
+                this.showNotify("Payslip form cleared successfully.");
             }
         },
         resetClaimForm() {
@@ -464,7 +460,7 @@ createApp({
             localStorage.setItem('zenqor_theme', this.isDarkMode ? 'dark' : 'light');
             this.applyThemeClass();
             this.$nextTick(() => { this.renderCharts(); });
-            this.showNotify(`Tema ditukar ke: ${this.isDarkMode ? 'Corporate Dark Mode' : 'Light Mode'}`);
+            this.showNotify(`Theme switched to: ${this.isDarkMode ? 'Corporate Dark Mode' : 'Light Mode'}`);
         },
         applyThemeClass() {
             if (this.isDarkMode) {
@@ -483,7 +479,7 @@ createApp({
         },
         switchTab(tabName) {
             if (!this.hasAccess(tabName)) {
-                this.showNotify('Akses Ditolak: Peranan anda tidak dibenarkan membuka modul ini.');
+                this.showNotify('Access Denied: Your role does not permit access to this module.');
                 return;
             }
             this.currentTab = tabName;
@@ -495,12 +491,12 @@ createApp({
         setChartFilter(timeframe) {
             this.chartTimeFilter = timeframe;
             this.renderCharts();
-            this.showNotify(`Graf ditukar ke paparan: ${timeframe.toUpperCase()}`);
+            this.showNotify(`Chart view changed to: ${timeframe.toUpperCase()}`);
         },
         logAudit(action, details) {
             const newLog = {
                 id: String(Date.now()),
-                timestamp: new Date().toLocaleString('ms-MY'),
+                timestamp: new Date().toLocaleString('en-US'),
                 user: this.userProfile.email,
                 action: action,
                 details: details,
@@ -511,8 +507,8 @@ createApp({
 
         downloadPDFDirect(elementId, filename) {
             const element = document.getElementById(elementId);
-            if (!element) { alert("Fail tidak dijumpai untuk dijana PDF."); return; }
-            this.showNotify("Jana PDF terus sedang diproses...");
+            if (!element) { alert("Target element not found for PDF generation."); return; }
+            this.showNotify("Direct PDF generation in progress...");
             const opt = {
                 margin: 5,
                 filename: filename + '.pdf',
@@ -522,26 +518,25 @@ createApp({
             };
             if (typeof html2pdf !== 'undefined') {
                 html2pdf().set(opt).from(element).save().then(() => {
-                    this.showNotify("Fail PDF " + filename + ".pdf berjaya dimuat turun!");
+                    this.showNotify("PDF file " + filename + ".pdf downloaded successfully!");
                 }).catch(err => { console.error("PDF error:", err); window.print(); });
             } else {
                 window.print();
             }
         },
 
-        // FORGOT PASSWORD VIA FIREBASE AUTHENTICATION
         async handleForgotPassword() {
             if (!this.loginForm.email) {
-                alert("Sila masukkan alamat emel rasmi anda di ruangan Emel Pengguna terlebih dahulu.");
+                alert("Please enter your official sign-in email address first.");
                 return;
             }
             try {
                 const { sendPasswordResetEmail } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
                 await sendPasswordResetEmail(auth, this.loginForm.email);
-                this.showNotify(`Pautan set semula kata laluan telah dihantar ke emel: ${this.loginForm.email}`);
+                this.showNotify(`Password reset link sent to: ${this.loginForm.email}`);
             } catch (error) {
                 console.error("Forgot Password Error:", error);
-                alert("Gagal menghantar e-mel set semula kata laluan. Pastikan emel pengguna sah dan berdaftar.");
+                alert("Failed to send password reset email. Ensure the email is valid and registered.");
             }
         },
 
@@ -549,7 +544,7 @@ createApp({
             this.loginError = '';
 
             if (!this.isOfficialEmail(this.loginForm.email)) {
-                this.loginError = `Emel mesti menggunakan domain rasmi (@${this.officialEmailDomain}).`;
+                this.loginError = `Email must use the official domain (@${this.officialEmailDomain}).`;
                 return;
             }
 
@@ -599,19 +594,19 @@ createApp({
                 this.mobileMenuOpen = false;
                 localStorage.setItem('zenqor_theme', this.isDarkMode ? 'dark' : 'light');
                 this.logAudit('LOGIN', `User logged in with role ${role}`);
-                this.showNotify(`Selamat kembali (${role}): ${name}`);
+                this.showNotify(`Welcome back (${role}): ${name}`);
                 this.currentTab = 'dashboard';
                 this.$nextTick(() => { this.renderCharts(); });
 
             } catch (error) {
                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                    this.loginError = 'Emel atau kata laluan tidak sah!';
+                    this.loginError = 'Invalid email or password credentials!';
                 } else if (error.code === 'auth/too-many-requests') {
-                    this.loginError = 'Terlalu banyak percubaan log masuk. Cuba sebentar lagi.';
+                    this.loginError = 'Too many failed sign-in attempts. Try again later.';
                 } else if (error.code === 'auth/user-disabled') {
-                    this.loginError = 'Akaun ini telah dinyahaktifkan. Hubungi Superadmin.';
+                    this.loginError = 'This account has been disabled. Contact Superadmin.';
                 } else {
-                    this.loginError = 'Ralat sistem. Sila cuba sebentar lagi.';
+                    this.loginError = 'System error. Please try again later.';
                     console.error("Auth error:", error.code);
                 }
             }
@@ -637,11 +632,11 @@ createApp({
             const { currentPassword, newPassword, confirmPassword } = this.changePasswordModal;
 
             if (newPassword !== confirmPassword) {
-                this.changePasswordModal.error = 'Kata laluan baharu tidak sepadan.';
+                this.changePasswordModal.error = 'New passwords do not match.';
                 return;
             }
             if (newPassword.length < 8) {
-                this.changePasswordModal.error = 'Kata laluan baharu mesti sekurang-kurangnya 8 aksara.';
+                this.changePasswordModal.error = 'New password must be at least 8 characters long.';
                 return;
             }
 
@@ -656,12 +651,12 @@ createApp({
                 this.changePasswordModal.newPassword = '';
                 this.changePasswordModal.confirmPassword = '';
                 this.logAudit('UPDATE', 'User changed their password');
-                this.showNotify('Kata laluan berjaya dikemaskini!');
+                this.showNotify('Password updated successfully!');
             } catch (error) {
                 if (error.code === 'auth/wrong-password') {
-                    this.changePasswordModal.error = 'Kata laluan semasa tidak betul.';
+                    this.changePasswordModal.error = 'Current password is incorrect.';
                 } else {
-                    this.changePasswordModal.error = 'Ralat sistem: ' + error.message;
+                    this.changePasswordModal.error = 'System error: ' + error.message;
                 }
             } finally {
                 this.changePasswordModal.loading = false;
@@ -679,10 +674,10 @@ createApp({
                     photo: this.userProfile.photo
                 }, { merge: true });
                 this.logAudit('UPDATE', `User updated own profile: ${this.userProfile.email}`);
-                this.showNotify('Profil anda berjaya dikemaskini!');
+                this.showNotify('Your profile has been updated successfully!');
             } catch (error) {
-                console.error("Ralat simpan profil:", error);
-                this.showNotify('Ralat mengemaskini profil.');
+                console.error("Profile save error:", error);
+                this.showNotify('Error updating profile.');
             }
         },
 
@@ -705,43 +700,43 @@ createApp({
         sendWelcomeEmail(userForm) {
             const originEmail = "admin@zenq0r.com";
             const recipientEmail = userForm.email;
-            const subject = encodeURIComponent(`[ZENQOR ENTERPRISE] Maklumat Akaun & Akses Portal Rasmi (${userForm.role})`);
+            const subject = encodeURIComponent(`[ZENQOR ENTERPRISE] Official Account & Portal Access Information (${userForm.role})`);
             
             const emailBody = encodeURIComponent(
-`Salam Sejahtera ${userForm.name},
+`Greetings ${userForm.name},
 
-Akaun pengguna anda bagi sistem ZENQOR TECHNOLOGIES Enterprise Portal v2.0 telah berjaya dicipta dan diaktifkan.
+Your user account for the ZENQOR TECHNOLOGIES Enterprise Portal v2.0 has been created and activated.
 
-Berikut adalah maklumat log masuk anda:
+Here are your sign-in credentials:
 --------------------------------------------------
-• Emel Log Masuk : ${userForm.email}
-• Peranan (Role) : ${userForm.role}
-• Kata Laluan     : ${userForm.password || 'Ditetapkan Pentadbir'}
-• Pautan Portal   : https://hrms-portal.zenq0r.com
+• Sign-In Email   : ${userForm.email}
+• Assigned Role   : ${userForm.role}
+• Password        : ${userForm.password || 'Set by Administrator'}
+• Portal Link     : https://hrms-portal.zenq0r.com
 --------------------------------------------------
 
-Sila log masuk dan tukar kata laluan anda dengan kadar segera di bahagian 'Profile & RBAC' demi keselamatan akaun anda.
+Please sign in and update your password immediately under the 'Profile & RBAC' section for account security.
 
-Sekian, terima kasih.
+Best regards,
 
-Pentadbir Sistem Enterprise
+Enterprise System Administrator
 ZENQOR TECHNOLOGIES
 Origin: ${originEmail}`
             );
 
             const mailtoUrl = `mailto:${recipientEmail}?from=${originEmail}&subject=${subject}&body=${emailBody}`;
             window.open(mailtoUrl, '_blank');
-            this.showNotify(`E-mel makluman akses portal telah dijana untuk dihantar kepada ${recipientEmail}.`);
+            this.showNotify(`Portal access notification email generated for ${recipientEmail}.`);
         },
 
         async savePortalUser() {
             try {
                 if (!this.userModal.form.name || !this.userModal.form.email) {
-                    alert("Sila isi semua ruangan wajib.");
+                    alert("Please fill out all required fields.");
                     return;
                 }
                 if (!this.isOfficialEmail(this.userModal.form.email)) {
-                    alert(`Emel mesti menggunakan domain rasmi (@${this.officialEmailDomain}).`);
+                    alert(`Email must use the official domain (@${this.officialEmailDomain}).`);
                     return;
                 }
 
@@ -763,22 +758,22 @@ Origin: ${originEmail}`
                 if (isNewUser) {
                     this.sendWelcomeEmail(this.userModal.form);
                 } else {
-                    this.showNotify('Maklumat pengguna berjaya dikemaskini!');
+                    this.showNotify('User information updated successfully!');
                 }
             } catch (error) {
-                console.error("Ralat simpan pengguna:", error);
-                alert("Berlaku ralat semasa menyimpan maklumat pengguna.");
+                console.error("User save error:", error);
+                alert("An error occurred while saving user information.");
             }
         },
 
         async deletePortalUser(email) {
-            if (confirm(`Adakah anda pasti mahu memadam akses portal bagi emel: ${email}?`)) {
+            if (confirm(`Are you sure you want to delete portal access for email: ${email}?`)) {
                 try {
                     await deleteDoc(doc(db, "users", email));
                     this.logAudit('DELETE', `Deleted user metadata for ${email}`);
-                    this.showNotify('Rekod pengguna dipadam. Sila nyahaktifkan akaun di Firebase Console juga.');
+                    this.showNotify('User record deleted. Please also disable the account in Firebase Console.');
                 } catch (error) {
-                    console.error("Ralat padam pengguna:", error);
+                    console.error("User delete error:", error);
                 }
             }
         },
@@ -787,9 +782,9 @@ Origin: ${originEmail}`
             try {
                 await setDoc(doc(db, "settings", "company_profile"), { ...this.company });
                 this.logAudit('UPDATE', 'Updated company profile settings');
-                this.showNotify('Tetapan profil syarikat berjaya dikemaskini!');
+                this.showNotify('Company profile settings updated successfully!');
             } catch (error) {
-                console.error("Ralat simpan tetapan:", error);
+                console.error("Settings save error:", error);
             }
         },
 
@@ -798,12 +793,12 @@ Origin: ${originEmail}`
             const cust = this.customers.find(c => c.clientName === name);
             if (cust) {
                 Object.keys(cust).forEach(k => { if (this.docForm.hasOwnProperty(k)) this.docForm[k] = cust[k]; });
-                this.showNotify(`Maklumat ${cust.clientName} dimuatkan.`);
+                this.showNotify(`Client info for ${cust.clientName} loaded.`);
             }
         },
         async saveCustomerToDatabase() {
             if (!this.docForm.clientName || !this.docForm.clientPhone || !this.docForm.clientAddress) {
-                return alert('Sila masukkan Nama Pelanggan, No. Telefon dan Alamat Penuh.');
+                return alert('Please enter Client Name, Phone Number, and Full Address.');
             }
             try {
                 const docId = this.docForm.clientName.trim().replace(/\s+/g, '_').toLowerCase();
@@ -817,16 +812,16 @@ Origin: ${originEmail}`
                 };
                 await setDoc(doc(db, "customers", docId), newCust);
                 this.logAudit('CREATE', `Saved customer ${this.docForm.clientName}`);
-                this.showNotify('Maklumat pelanggan berjaya disimpan ke Firebase!');
+                this.showNotify('Client information saved to Firebase successfully!');
             } catch (error) {
-                console.error("Ralat simpan pelanggan:", error);
+                console.error("Client save error:", error);
             }
         },
         selectCustomerFromTable(cust) {
             ['clientName','clientPhone','clientSSM','clientAddress','clientCity','clientState','clientPostcode','clientCountry','clientEmail','clientContactPerson','clientPosition'].forEach(k => {
                 this.docForm[k] = cust[k] || (k === 'clientCountry' ? 'Malaysia' : '');
             });
-            this.showNotify(`Pelanggan ${cust.clientName} dimuatkan.`);
+            this.showNotify(`Client ${cust.clientName} loaded.`);
         },
         editCustomer(cust) {
             this.selectCustomerFromTable(cust);
@@ -834,14 +829,14 @@ Origin: ${originEmail}`
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         async deleteCustomer(clientName) {
-            if (confirm(`Adakah anda pasti mahu memadam pelanggan (${clientName})?`)) {
+            if (confirm(`Are you sure you want to delete client (${clientName})?`)) {
                 try {
                     const docId = clientName.trim().replace(/\s+/g, '_').toLowerCase();
                     await deleteDoc(doc(db, "customers", docId));
                     this.logAudit('DELETE', `Deleted customer ${clientName}`);
-                    this.showNotify('Pelanggan berjaya dipadam.');
+                    this.showNotify('Client deleted successfully.');
                 } catch (error) {
-                    console.error("Ralat padam pelanggan:", error);
+                    console.error("Client delete error:", error);
                 }
             }
         },
@@ -864,26 +859,26 @@ Origin: ${originEmail}`
         async saveEmployee() {
             try {
                 if (!this.employeeModal.form.empNo || !this.employeeModal.form.name || !this.employeeModal.form.ic) {
-                    alert("Sila isi No. Pekerja, Nama dan No K/P.");
+                    alert("Please enter Employee ID, Name, and National ID/Passport.");
                     return;
                 }
                 const docId = this.employeeModal.form.empNo.trim();
                 await setDoc(doc(db, "employees", docId), { ...this.employeeModal.form });
                 this.employeeModal.show = false;
                 this.logAudit(this.employeeModal.isEdit ? 'UPDATE' : 'CREATE', `Saved employee ${this.employeeModal.form.empNo}`);
-                this.showNotify('Data pekerja berjaya disimpan!');
+                this.showNotify('Employee data saved successfully!');
             } catch (error) {
-                console.error("Ralat simpan pekerja:", error);
+                console.error("Employee save error:", error);
             }
         },
         async deleteEmployee(empNo) {
-            if (confirm(`Adakah anda pasti mahu memadam pekerja No: ${empNo}?`)) {
+            if (confirm(`Are you sure you want to delete employee ID: ${empNo}?`)) {
                 try {
                     await deleteDoc(doc(db, "employees", empNo));
                     this.logAudit('DELETE', `Deleted employee ${empNo}`);
-                    this.showNotify('Pekerja berjaya dipadam.');
+                    this.showNotify('Employee deleted successfully.');
                 } catch (error) {
-                    console.error("Ralat padam pekerja:", error);
+                    console.error("Employee delete error:", error);
                 }
             }
         },
@@ -900,7 +895,7 @@ Origin: ${originEmail}`
             this.payForm.epfSocso = `KWSP: ${emp.epfNo || '-'} | PERKESO: ${emp.socsoNo || '-'}`;
             this.payForm.basic = emp.basicSalary || 0;
             this.autoCalculatePayroll();
-            this.showNotify(`Pekerja ${emp.name} dimuatkan ke Payslip.`);
+            this.showNotify(`Employee ${emp.name} loaded into Payslip.`);
         },
         selectEmployeeForPayslip(e) {
             const emp = this.employees.find(x => x.empNo === e.target.value);
@@ -914,12 +909,12 @@ Origin: ${originEmail}`
                 this.claimForm.empNo = emp.empNo || '';
                 this.claimForm.empEmail = emp.email || '';
                 this.claimForm.dept = emp.dept || '';
-                this.showNotify(`Maklumat pemohon ${emp.name} dimuatkan.`);
+                this.showNotify(`Applicant info for ${emp.name} loaded.`);
             }
         },
         async saveClaimRecord() {
             if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo) {
-                alert("Sila isi Nama, No. Pekerja, Jumlah (RM) dan No. Resit.");
+                alert("Please enter Name, Employee ID, Amount (RM), and Receipt No.");
                 return;
             }
             try {
@@ -944,19 +939,19 @@ Origin: ${originEmail}`
                 await setDoc(doc(db, "claims", claimId), payload);
                 this.logAudit(this.editingClaimId ? 'UPDATE' : 'CREATE', `Saved claim ${this.claimForm.receiptNo} for ${this.claimForm.name}`);
                 this.editingClaimId = null;
-                this.showNotify(`Tuntutan (${this.claimForm.receiptNo}) berjaya dihantar.`);
+                this.showNotify(`Claim (${this.claimForm.receiptNo}) submitted successfully.`);
                 this.resetClaimForm();
             } catch (error) {
-                console.error("Ralat simpan tuntutan:", error);
+                console.error("Claim save error:", error);
             }
         },
         async updateClaimStatus(claimId, newStatus) {
             try {
                 await updateDoc(doc(db, "claims", claimId), { status: newStatus });
                 this.logAudit('UPDATE', `Updated claim ${claimId} status to ${newStatus}`);
-                this.showNotify(`Status tuntutan dikemaskini kepada: ${newStatus}`);
+                this.showNotify(`Claim status updated to: ${newStatus}`);
             } catch (error) {
-                console.error("Ralat kemaskini status tuntutan:", error);
+                console.error("Claim status update error:", error);
             }
         },
         editClaimRecord(clm) {
@@ -970,13 +965,13 @@ Origin: ${originEmail}`
             this.resetClaimForm();
         },
         async deleteClaimRecord(claimId) {
-            if (confirm("Adakah anda pasti mahu memadam rekod tuntutan ini?")) {
+            if (confirm("Are you sure you want to delete this claim record?")) {
                 try {
                     await deleteDoc(doc(db, "claims", claimId));
                     this.logAudit('DELETE', `Deleted claim ${claimId}`);
-                    this.showNotify("Rekod tuntutan berjaya dipadam.");
+                    this.showNotify("Claim record deleted successfully.");
                 } catch (error) {
-                    console.error("Ralat padam tuntutan:", error);
+                    console.error("Claim delete error:", error);
                 }
             }
         },
@@ -988,7 +983,7 @@ Origin: ${originEmail}`
             }
         },
         async printDocumentModule() {
-            if (!this.docForm.clientName) return alert('Sila masukkan nama pelanggan.');
+            if (!this.docForm.clientName) return alert('Please enter client name.');
             const isSaved = await this.saveDocRecord();
             if (!isSaved) return;
             this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE';
@@ -996,7 +991,7 @@ Origin: ${originEmail}`
             setTimeout(() => { window.print(); }, 250);
         },
         async printPayslipModule() {
-            if (!this.payForm.name || !this.payForm.empNo) return alert('Sila isi nama dan No. Pekerja.');
+            if (!this.payForm.name || !this.payForm.empNo) return alert('Please enter Name and Employee ID.');
             this.autoCalculatePayroll();
             this.activePrintModule = 'PAYSLIP';
             this.setPrintOrientation('landscape', '0mm');
@@ -1007,7 +1002,7 @@ Origin: ${originEmail}`
             try {
                 if (['Paid', 'Selesai Dibayar / Paid', 'Partial', 'Bayaran Separa / Partial', 'Selesai Dibayar'].includes(this.docForm.status)) {
                     if (!this.docForm.paymentRefNo || this.docForm.paymentRefNo.trim() === '') {
-                        alert("PERHATIAN: No. Rujukan Bayaran (Reference No.) adalah WAJIB diisi apabila status ialah Selesai Dibayar.");
+                        alert("ATTENTION: Payment Reference No. is REQUIRED when status is Paid.");
                         return false;
                     }
                 }
@@ -1032,11 +1027,11 @@ Origin: ${originEmail}`
                 await this.saveCustomerToDatabase();
                 this.logAudit(this.editingDocId ? 'UPDATE' : 'CREATE', `Saved document ${this.docForm.docNo}`);
                 this.editingDocId = null;
-                this.showNotify(`${this.docForm.type} (${this.docForm.docNo}) berjaya disimpan dalam pangkalan.`);
+                this.showNotify(`${this.docForm.type} (${this.docForm.docNo}) saved successfully.`);
                 this.generateDocNo();
                 return true;
             } catch (error) {
-                console.error("Ralat simpan dokumen:", error);
+                console.error("Document save error:", error);
                 return false;
             }
         },
@@ -1053,9 +1048,9 @@ Origin: ${originEmail}`
                 await setDoc(doc(db, "payslips", docId), payload);
                 this.logAudit(this.editingPayId ? 'UPDATE' : 'CREATE', `Saved payslip for ${this.payForm.name}`);
                 this.editingPayId = null;
-                this.showNotify(`Payslip (${this.payForm.name}) berjaya direkodkan.`);
+                this.showNotify(`Payslip (${this.payForm.name}) saved successfully.`);
             } catch (error) {
-                console.error("Ralat simpan payslip:", error);
+                console.error("Payslip save error:", error);
             }
         },
         addDocItem() { this.docForm.items.push({ desc: '', qty: 1, price: 0 }); },
@@ -1122,15 +1117,15 @@ Origin: ${originEmail}`
             }
         },
         async confirmDeleteRecord(item) {
-            if (confirm(`AMARAN: Memadam rekod (${item.docNo})?`)) {
+            if (confirm(`WARNING: Delete record (${item.docNo})?`)) {
                 try {
                     if (item.isDoc) await deleteDoc(doc(db, "docs", item.id));
                     else if (item.isPay) await deleteDoc(doc(db, "payslips", item.id));
                     else if (item.isClaim) await deleteDoc(doc(db, "claims", item.id));
                     this.logAudit('DELETE', `Deleted record ${item.docNo}`);
-                    this.showNotify('Rekod dipadam.');
+                    this.showNotify('Record deleted successfully.');
                 } catch (error) {
-                    console.error("Ralat padam rekod:", error);
+                    console.error("Record delete error:", error);
                 }
             }
         },
