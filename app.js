@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.6)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.7)
 // ============================================================
 
 import {
@@ -276,6 +276,20 @@ createApp({
 
         activeEmployeesCount() { return this.employees.filter(e => e.status === 'Aktif').length; },
         totalPayrollNet() { return this.payslipHistory.reduce((s, p) => s + (Number(p.amount) || 0), 0); },
+
+        // --- PENGIRAAN CLAIMS (TUNTUTAN) UNTUK DASHBOARD EKSEKUTIF ---
+        approvedClaimsCount() { 
+            return this.claimsHistory.filter(c => c.status === 'Approved').length; 
+        },
+        pendingClaimsCount() { 
+            return this.claimsHistory.filter(c => c.status === 'Pending').length; 
+        },
+        totalApprovedClaimsAmount() { 
+            return this.claimsHistory.filter(c => c.status === 'Approved').reduce((s, c) => s + (Number(c.amount) || 0), 0); 
+        },
+        totalPendingClaimsAmount() { 
+            return this.claimsHistory.filter(c => c.status === 'Pending').reduce((s, c) => s + (Number(c.amount) || 0), 0); 
+        },
 
         clientPortalDocs() {
             if (this.userProfile.role === 'Client' || this.userProfile.role === 'Staff') {
