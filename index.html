@@ -836,7 +836,7 @@
                         </div>
                     </div>
 
-                    <!-- 3. VIEW EKSEKUTIF (SUPERADMIN / HR / ACCOUNT / IT) -->
+                    <!-- 3. VIEW EKSEKUTIF (SUPERADMIN / HR / ACCOUNT / IT / OWNER) -->
                     <div v-else class="space-y-8">
                         <div>
                             <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Enterprise Executive Dashboard</h2>
@@ -1482,6 +1482,7 @@
                     <div>
                         <label for="usr-modal-role" class="font-bold mb-1 block dark:text-slate-300">Role *</label>
                         <select id="usr-modal-role" name="usrModalRole" v-model="userModal.form.role" class="w-full p-2 border rounded-xl font-bold dark:bg-slate-700 dark:text-white">
+                            <option v-if="userProfile.role === 'Superadmin'" value="Owner">Owner (Director)</option>
                             <option value="Superadmin">Superadmin</option>
                             <option value="HR">HR</option>
                             <option value="Account">Account</option>

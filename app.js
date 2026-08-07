@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.7)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.8)
 // ============================================================
 
 import {
@@ -37,7 +37,9 @@ const STATUTORY_RATES = {
     }
 };
 
+// 1. TAMBAH ROLE 'Owner' DENGAN AKSES PENUH SAMA SEPERTI SUPERADMIN
 const RBAC_ROLES = {
+    'Owner': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'Superadmin': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'HR': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
     'Account': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
@@ -225,10 +227,11 @@ createApp({
         };
     },
     computed: {
-        canCreateEdit() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
-        canEditDocs() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
-        canDelete() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
-        canManageRBAC() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
+        // 2. MASUKKAN 'Owner' KEDALAM SENARAI AKSES KHAS EKSEKUTIF
+        canCreateEdit() { return ['Superadmin', 'Owner', 'HR'].includes(this.userProfile.role); },
+        canEditDocs() { return ['Superadmin', 'Owner', 'HR', 'Account'].includes(this.userProfile.role); },
+        canDelete() { return ['Superadmin', 'Owner', 'HR'].includes(this.userProfile.role); },
+        canManageRBAC() { return ['Superadmin', 'Owner', 'HR'].includes(this.userProfile.role); },
 
         myPayslips() {
             return this.payslipHistory.filter(p => p.raw && (p.raw.empEmail === this.userProfile.email || p.name === this.userProfile.name));
@@ -277,7 +280,6 @@ createApp({
         activeEmployeesCount() { return this.employees.filter(e => e.status === 'Aktif').length; },
         totalPayrollNet() { return this.payslipHistory.reduce((s, p) => s + (Number(p.amount) || 0), 0); },
 
-        // --- PENGIRAAN CLAIMS (TUNTUTAN) UNTUK DASHBOARD EKSEKUTIF ---
         approvedClaimsCount() { 
             return this.claimsHistory.filter(c => c.status === 'Approved').length; 
         },
@@ -474,16 +476,17 @@ createApp({
             this.editingClaimId = null;
         },
 
+        // 3. OWNER JUGA BOLEH LIHAT DATA TANPA DITAPIS (UNMASKED)
         maskIC(val) {
             if (!val) return '-';
-            if (['Superadmin', 'HR'].includes(this.userProfile.role)) return val;
+            if (['Superadmin', 'Owner', 'HR'].includes(this.userProfile.role)) return val;
             const str = String(val).trim();
             if (str.length >= 8) return '******-**-' + str.slice(-4);
             return '********';
         },
         maskBank(val) {
             if (!val) return '-';
-            if (['Superadmin', 'HR'].includes(this.userProfile.role)) return val;
+            if (['Superadmin', 'Owner', 'HR'].includes(this.userProfile.role)) return val;
             const parts = String(val).split('/');
             if (parts.length > 1) {
                 return `${parts[0].trim()} / *******${parts[1].trim().slice(-4)}`;
@@ -1451,4 +1454,6 @@ Sender Reference: ${originEmail}`
         });
     },
     unmounted() {
-        this.unsubscribers.forEach(unsub => unsubI seem to be encountering an error. Can I try something else for you?
+        this.unsubscribers.forEach(unsub => unsub && unsub());
+    }
+}).mount('#app');
