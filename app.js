@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.2)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.3)
 // ============================================================
 
 import {
@@ -330,6 +330,20 @@ createApp({
         }
     },
     methods: {
+        // 1. FUNGSI JANA KATA LALUAN RAWAK 8 AKSARA
+        generateRandomPassword(length = 8) {
+            const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const lowercase = "abcdefghijklmnopqrstuvwxyz";
+            const numbers = "0123456789";
+            const symbols = "!@#$%^&*";
+            const allChars = uppercase + lowercase + numbers + symbols;
+            let pwd = "";
+            for (let i = 0; i < length; i++) {
+                pwd += allChars.charAt(Math.floor(Math.random() * allChars.length));
+            }
+            return pwd;
+        },
+
         resetAllForms() {
             this.docForm = {
                 type: 'Invoice',
@@ -714,11 +728,18 @@ createApp({
                 };
             } else {
                 this.userModal.isEdit = false;
-                this.userModal.form = { name: '', email: '', password: '', role: 'Staff' };
+                // Auto-jana kata laluan rawak 8 aksara untuk pengguna baharu
+                this.userModal.form = { 
+                    name: '', 
+                    email: '', 
+                    password: this.generateRandomPassword(8), 
+                    role: 'Staff' 
+                };
             }
             this.userModal.show = true;
         },
 
+        // 2. FUNGSI HANTAR EMEL TERUS KE GOOGLE GMAIL WEB COMPOSE
         sendWelcomeEmail(userForm) {
             const originEmail = "admin@zenq0r.com";
             const recipientEmail = userForm.email;
@@ -729,26 +750,29 @@ createApp({
 
 Your user account for the ZENQOR TECHNOLOGIES Enterprise Portal v2.0 has been created and activated.
 
-Here are your sign-in credentials:
+--------------------------------------------------
+PORTAL SIGN-IN CREDENTIALS:
 --------------------------------------------------
 • Sign-In Email   : ${userForm.email}
 • Assigned Role   : ${userForm.role}
-• Password        : ${userForm.password || 'Set by Administrator'}
+• Password        : ${userForm.password}
 • Portal Link     : https://hrms-portal.zenq0r.com
 --------------------------------------------------
 
-Please sign in and update your password immediately under the 'Profile & RBAC' section for account security.
+SECURITY ADVISORY / WAJIB UBAH KATA LALUAN:
+You MUST log in and change your password immediately under the 'Profile & RBAC' section for account security.
 
 Best regards,
 
 Enterprise System Administrator
 ZENQOR TECHNOLOGIES
-Origin: ${originEmail}`
+Sender Reference: ${originEmail}`
             );
 
-            const mailtoUrl = `mailto:${recipientEmail}?from=${originEmail}&subject=${subject}&body=${emailBody}`;
-            window.open(mailtoUrl, '_blank');
-            this.showNotify(`Portal access notification email generated for ${recipientEmail}.`);
+            // Buka terus ke antaramuka Google Gmail Web Compose
+            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${subject}&body=${emailBody}`;
+            window.open(gmailUrl, '_blank');
+            this.showNotify(`Google Gmail compose window opened for ${recipientEmail}.`);
         },
 
         async savePortalUser() {
@@ -768,14 +792,14 @@ Origin: ${originEmail}`
                 const userRef = doc(db, "users", email);
                 const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.userModal.form.name)}&background=0B1E36&color=D4AF37`;
                 
-                // 1. PASTIKAN DATA LAMA DI FIRESTORE DIHAPUS TERLEBIH DAHULU (Clean Slate)
+                // Pastikan rekod lama dalam Firestore dihapuskan terlebih dahulu (Clean Slate)
                 try {
                     await deleteDoc(userRef);
                 } catch (delErr) {
                     // Abaikan jika dokumen belum wujud
                 }
 
-                // 2. AUTO-DAFTAR KE FIREBASE AUTHENTICATION (Guna Secondary App supaya Admin tidak ter-logout)
+                // Auto-Daftar pengguna ke dalam Firebase Authentication menerusi Secondary App
                 if (isNewUser) {
                     try {
                         const { initializeApp, deleteApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
@@ -797,14 +821,14 @@ Origin: ${originEmail}`
                     }
                 }
 
-                // 3. SIMPAN PROFIL & PERANAN (RBAC) BAHARU KE FIRESTORE DATABASE
+                // Simpan profil & RBAC ke dalam Firestore Database
                 await setDoc(userRef, {
                     email: email,
                     name: this.userModal.form.name,
                     password: password,
                     photo: photoUrl,
                     role: this.userModal.form.role
-                }); // Tanpa merge: true supaya data benar-benar bersih dan baharu
+                });
 
                 this.userModal.show = false;
                 this.logAudit(isNewUser ? 'CREATE' : 'UPDATE', `User role/metadata for ${email} by ${this.userProfile.email}`);
