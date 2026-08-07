@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE EN-US SYNC v5.5)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v5.6)
 // ============================================================
 
 import {
@@ -487,6 +487,7 @@ createApp({
             if (tabName === 'dashboard') {
                 this.$nextTick(() => { this.renderCharts(); });
             }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         setChartFilter(timeframe) {
             this.chartTimeFilter = timeframe;

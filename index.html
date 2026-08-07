@@ -8,12 +8,12 @@
     <!-- FAVICON RASMI PORTAL -->
     <link rel="icon" type="image/png" href="./logo.png">
     
-    <!-- GOOGLE FONTS -->
+    <!-- GOOGLE FONTS (Font Inter Sahaja) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
     
-    <!-- VUE 3, TAILWIND CSS & CLEAN LIBRARIES (Diganti CDN Chart.js bebas Source Map 404) -->
+    <!-- VUE 3, TAILWIND CSS & LIBRARIES -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -125,13 +125,13 @@
                             <p class="text-[9px] text-brand-gold uppercase tracking-widest font-semibold truncate">Enterprise v2.0</p>
                         </div>
                     </div>
-                    <button @click="mobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white text-lg">
+                    <button type="button" @click="mobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white text-lg">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
                 <nav class="flex-1 p-3 space-y-1 overflow-y-auto text-xs font-semibold">
-                    <button v-if="hasAccess('dashboard')" @click="switchTab('dashboard')" :class="{'sidebar-item-active': currentTab === 'dashboard', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'dashboard'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                    <button v-if="hasAccess('dashboard')" type="button" @click="switchTab('dashboard')" :class="{'sidebar-item-active': currentTab === 'dashboard', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'dashboard'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-chart-pie w-5 text-center"></i><span>Dashboard</span>
                     </button>
 
@@ -139,25 +139,25 @@
                         <p class="px-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Operation Center</p>
                     </div>
 
-                    <button v-if="hasAccess('doc-generator')" @click="switchTab('doc-generator')" :class="{'sidebar-item-active': currentTab === 'doc-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'doc-generator'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                    <button v-if="hasAccess('doc-generator')" type="button" @click="switchTab('doc-generator')" :class="{'sidebar-item-active': currentTab === 'doc-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'doc-generator'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i><span>Document Generator</span>
                     </button>
-                    <button v-if="hasAccess('payslip-generator')" @click="switchTab('payslip-generator')" :class="{'sidebar-item-active': currentTab === 'payslip-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'payslip-generator'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                    <button v-if="hasAccess('payslip-generator')" type="button" @click="switchTab('payslip-generator')" :class="{'sidebar-item-active': currentTab === 'payslip-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'payslip-generator'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-money-check-dollar w-5 text-center"></i><span>Payslip Generator</span>
                     </button>
-                    <button v-if="hasAccess('claims')" @click="switchTab('claims')" :class="{'sidebar-item-active': currentTab === 'claims', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'claims'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                    <button v-if="hasAccess('claims')" type="button" @click="switchTab('claims')" :class="{'sidebar-item-active': currentTab === 'claims', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'claims'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-receipt w-5 text-center"></i><span>Claims Management</span>
                     </button>
-                    <button v-if="hasAccess('client-directory')" @click="switchTab('client-directory')" :class="{'sidebar-item-active': currentTab === 'client-directory', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-directory'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                    <button v-if="hasAccess('client-directory')" type="button" @click="switchTab('client-directory')" :class="{'sidebar-item-active': currentTab === 'client-directory', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-directory'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-address-book w-5 text-center"></i><span>Client Directory</span>
                     </button>
-                    <button v-if="hasAccess('hr-employees')" @click="switchTab('hr-employees')" :class="{'sidebar-item-active': currentTab === 'hr-employees', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'hr-employees'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                    <button v-if="hasAccess('hr-employees')" type="button" @click="switchTab('hr-employees')" :class="{'sidebar-item-active': currentTab === 'hr-employees', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'hr-employees'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-users-gear w-5 text-center"></i><span>HR Employees</span>
                     </button>
-                    <button v-if="hasAccess('reports')" @click="switchTab('reports')" :class="{'sidebar-item-active': currentTab === 'reports', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'reports'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                    <button v-if="hasAccess('reports')" type="button" @click="switchTab('reports')" :class="{'sidebar-item-active': currentTab === 'reports', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'reports'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-chart-line w-5 text-center"></i><span>Reports & Analytics</span>
                     </button>
-                    <button v-if="hasAccess('client-portal')" @click="switchTab('client-portal')" :class="{'sidebar-item-active': currentTab === 'client-portal', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-portal'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                    <button v-if="hasAccess('client-portal')" type="button" @click="switchTab('client-portal')" :class="{'sidebar-item-active': currentTab === 'client-portal', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-portal'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-user-tie w-5 text-center"></i><span>Client Portal</span>
                     </button>
 
@@ -165,19 +165,19 @@
                         <p class="px-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">System & Admin</p>
                     </div>
 
-                    <button v-if="hasAccess('audit-logs')" @click="switchTab('audit-logs')" :class="{'sidebar-item-active': currentTab === 'audit-logs', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'audit-logs'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                    <button v-if="hasAccess('audit-logs')" type="button" @click="switchTab('audit-logs')" :class="{'sidebar-item-active': currentTab === 'audit-logs', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'audit-logs'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-shield-halved w-5 text-center"></i><span>Audit & Security Log</span>
                     </button>
-                    <button v-if="hasAccess('settings')" @click="switchTab('settings')" :class="{'sidebar-item-active': currentTab === 'settings', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'settings'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                    <button v-if="hasAccess('settings')" type="button" @click="switchTab('settings')" :class="{'sidebar-item-active': currentTab === 'settings', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'settings'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-gear w-5 text-center"></i><span>Settings</span>
                     </button>
-                    <button v-if="hasAccess('profile')" @click="switchTab('profile')" :class="{'sidebar-item-active': currentTab === 'profile', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'profile'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                    <button v-if="hasAccess('profile')" type="button" @click="switchTab('profile')" :class="{'sidebar-item-active': currentTab === 'profile', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'profile'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-user-shield w-5 text-center"></i><span>Profile & RBAC</span>
                     </button>
                 </nav>
 
                 <div class="p-3 border-t border-slate-800">
-                    <button @click="handleLogout" class="w-full bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2">
+                    <button type="button" @click="handleLogout" class="w-full bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2">
                         <i class="fa-solid fa-right-from-bracket"></i><span>Sign Out</span>
                     </button>
                 </div>
@@ -189,7 +189,7 @@
                 <!-- TOP NAVBAR -->
                 <header class="bg-white dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/80 px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-30 gap-4 backdrop-blur-md">
                     <div class="flex items-center space-x-3 flex-1">
-                        <button @click="toggleSidebar" class="text-slate-600 dark:text-slate-300 hover:text-brand-dark p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-base transition" title="Toggle Sidebar">
+                        <button type="button" @click="toggleSidebar" class="text-slate-600 dark:text-slate-300 hover:text-brand-dark p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-base transition" title="Toggle Sidebar">
                             <i class="fa-solid fa-bars"></i>
                         </button>
 
@@ -202,12 +202,12 @@
 
                     <div class="flex items-center space-x-3 shrink-0">
                         <div class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-600">
-                            <button @click="switchTab('doc-generator')" :class="currentTab === 'doc-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Documents</button>
-                            <button @click="switchTab('payslip-generator')" :class="currentTab === 'payslip-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Payroll</button>
-                            <button @click="switchTab('claims')" :class="currentTab === 'claims' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Claims</button>
+                            <button type="button" @click="switchTab('doc-generator')" :class="currentTab === 'doc-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Documents</button>
+                            <button type="button" @click="switchTab('payslip-generator')" :class="currentTab === 'payslip-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Payroll</button>
+                            <button type="button" @click="switchTab('claims')" :class="currentTab === 'claims' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Claims</button>
                         </div>
 
-                        <button @click="toggleDarkMode" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-amber-400 hover:bg-slate-200 transition" title="Toggle Dark/Light Theme">
+                        <button type="button" @click="toggleDarkMode" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-amber-400 hover:bg-slate-200 transition" title="Toggle Dark/Light Theme">
                             <i :class="isDarkMode ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"></i>
                         </button>
 
@@ -222,21 +222,27 @@
                 <!-- MODULE 1: DOCUMENT GENERATOR -->
                 <div v-show="currentTab === 'doc-generator'" class="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Document Generator</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Generate and manage Quotations (A4 Portrait) and Invoices (A4 Portrait) in standard corporate format.</p>
+                        <div class="flex items-center space-x-3">
+                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span class="hidden sm:inline">Dashboard</span>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Document Generator</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Generate and manage Quotations (A4 Portrait) and Invoices (A4 Portrait) in standard corporate format.</p>
+                            </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <button v-if="editingDocId" @click="cancelEditDoc" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                            <button v-if="editingDocId" type="button" @click="cancelEditDoc" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
                                 Cancel Edit
                             </button>
-                            <button @click="printDocumentModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                            <button type="button" @click="printDocumentModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                 <i class="fa-solid fa-file-pdf"></i><span>Preview / Print PDF</span>
                             </button>
-                            <button @click="saveDocRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                            <button type="button" @click="saveDocRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                 <i class="fa-solid fa-floppy-disk"></i><span>Save Record</span>
                             </button>
-                            <button @click="resetDocForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Clear Form">
+                            <button type="button" @click="resetDocForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Clear Form">
                                 <i class="fa-solid fa-rotate-left"></i>
                             </button>
                         </div>
@@ -256,7 +262,7 @@
                                     <option value="">-- Auto-Fill Client --</option>
                                     <option v-for="(cust, cIdx) in customers" :key="cIdx" :value="cust.clientName">{{ cust.clientName }}</option>
                                 </select>
-                                <button v-if="canCreateEdit" @click="saveCustomerToDatabase" type="button" class="bg-brand-gold hover:bg-yellow-400 text-brand-dark font-extrabold px-3 py-2 rounded-xl text-xs shadow transition">
+                                <button v-if="canCreateEdit" type="button" @click="saveCustomerToDatabase" class="bg-brand-gold hover:bg-yellow-400 text-brand-dark font-extrabold px-3 py-2 rounded-xl text-xs shadow transition">
                                     Save Client
                                 </button>
                             </div>
@@ -392,16 +398,16 @@
                             </table>
                             
                             <div class="flex justify-between items-center mt-3">
-                                <button @click="addDocItem" class="bg-slate-100 dark:bg-slate-700 dark:text-white hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition">+ Add Item</button>
+                                <button type="button" @click="addDocItem" class="bg-slate-100 dark:bg-slate-700 dark:text-white hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition">+ Add Item</button>
                             </div>
                         </div>
 
                         <div class="flex flex-col sm:flex-row items-end justify-between border-t border-slate-100 dark:border-slate-700 pt-5 gap-4">
                             <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                                <button @click="printDocumentModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
+                                <button type="button" @click="printDocumentModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
                                     <i class="fa-solid fa-print"></i><span>Print Document</span>
                                 </button>
-                                <button @click="saveDocRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
+                                <button type="button" @click="saveDocRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
                                     <i class="fa-solid fa-floppy-disk"></i><span>Save Document</span>
                                 </button>
                             </div>
@@ -420,21 +426,27 @@
                 <!-- MODULE 2: PAYSLIP GENERATOR -->
                 <div v-show="currentTab === 'payslip-generator'" class="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Payslip Generator (v1.0.0 Engine)</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Automated statutory contributions calculation engine (EPF, SOCSO, EIS, PCB) &amp; MTD/YTD.</p>
+                        <div class="flex items-center space-x-3">
+                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span class="hidden sm:inline">Dashboard</span>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Payslip Generator (v1.0.0 Engine)</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Automated statutory contributions calculation engine (EPF, SOCSO, EIS, PCB) &amp; MTD/YTD.</p>
+                            </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <button v-if="editingPayId" @click="cancelEditPay" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                            <button v-if="editingPayId" type="button" @click="cancelEditPay" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
                                 Cancel Edit
                             </button>
-                            <button @click="printPayslipModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                            <button type="button" @click="printPayslipModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                 <i class="fa-solid fa-file-pdf"></i><span>Preview / Print Payslip (A4 Landscape)</span>
                             </button>
-                            <button @click="savePayslipRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                            <button type="button" @click="savePayslipRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                 <i class="fa-solid fa-floppy-disk"></i><span>Save Payslip</span>
                             </button>
-                            <button @click="resetPayForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Clear Form">
+                            <button type="button" @click="resetPayForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Clear Form">
                                 <i class="fa-solid fa-rotate-left"></i>
                             </button>
                         </div>
@@ -498,10 +510,10 @@
 
                         <div class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-5 gap-4">
                             <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                                <button @click="printPayslipModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
+                                <button type="button" @click="printPayslipModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
                                     <i class="fa-solid fa-print"></i><span>Print Payslip (A4 Landscape)</span>
                                 </button>
-                                <button @click="savePayslipRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
+                                <button type="button" @click="savePayslipRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
                                     <i class="fa-solid fa-floppy-disk"></i><span>Save Payslip</span>
                                 </button>
                             </div>
@@ -519,18 +531,24 @@
                 <!-- MODULE 3: CLAIMS MANAGEMENT -->
                 <div v-show="currentTab === 'claims'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Claims &amp; Expense Management</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage employee expense claims categorized by type and supported by receipts.</p>
+                        <div class="flex items-center space-x-3">
+                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span class="hidden sm:inline">Dashboard</span>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Claims &amp; Expense Management</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage employee expense claims categorized by type and supported by receipts.</p>
+                            </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <button v-if="editingClaimId" @click="cancelEditClaim" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                            <button v-if="editingClaimId" type="button" @click="cancelEditClaim" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
                                 Cancel Edit
                             </button>
-                            <button @click="saveClaimRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                            <button type="button" @click="saveClaimRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                 <i class="fa-solid fa-floppy-disk"></i><span>Submit Claim</span>
                             </button>
-                            <button @click="resetClaimForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Clear Form">
+                            <button type="button" @click="resetClaimForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Clear Form">
                                 <i class="fa-solid fa-rotate-left"></i>
                             </button>
                         </div>
@@ -955,11 +973,17 @@
                 <!-- CLIENT DIRECTORY MODULE -->
                 <div v-show="currentTab === 'client-directory'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Directory</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage client directory, auto-fill into Quotation/Invoice forms, update or delete records.</p>
+                        <div class="flex items-center space-x-3">
+                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span class="hidden sm:inline">Dashboard</span>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Directory</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage client directory, auto-fill into Quotation/Invoice forms, update or delete records.</p>
+                            </div>
                         </div>
-                        <button v-if="canCreateEdit" @click="switchTab('doc-generator')" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
+                        <button v-if="canCreateEdit" type="button" @click="switchTab('doc-generator')" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
                             <i class="fa-solid fa-plus"></i><span>Create New Document</span>
                         </button>
                     </div>
@@ -1019,11 +1043,17 @@
                 <!-- HR EMPLOYEES MODULE -->
                 <div v-show="currentTab === 'hr-employees'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">HR Employee Management</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage employee profiles, statutory contributions, and employment status.</p>
+                        <div class="flex items-center space-x-3">
+                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span class="hidden sm:inline">Dashboard</span>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">HR Employee Management</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage employee profiles, statutory contributions, and employment status.</p>
+                            </div>
                         </div>
-                        <button v-if="canCreateEdit" @click="openEmployeeModal()" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
+                        <button v-if="canCreateEdit" type="button" @click="openEmployeeModal()" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
                             <i class="fa-solid fa-user-plus"></i><span>Add New Employee</span>
                         </button>
                     </div>
@@ -1092,9 +1122,15 @@
                 <!-- REPORTS MODULE -->
                 <div v-show="currentTab === 'reports'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Enterprise Reports &amp; Data Export</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Export financial, employee, and document reports to CSV/Excel.</p>
+                        <div class="flex items-center space-x-3">
+                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span class="hidden sm:inline">Dashboard</span>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Enterprise Reports &amp; Data Export</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Export financial, employee, and document reports to CSV/Excel.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -1102,21 +1138,21 @@
                         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-4">
                             <div class="w-12 h-12 rounded-xl bg-blue-50 text-brand-blue flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-file-excel"></i></div>
                             <h3 class="text-base font-bold text-brand-dark dark:text-white">Payroll Report</h3>
-                            <button @click="exportCSV('payroll')" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center space-x-2">
+                            <button type="button" @click="exportCSV('payroll')" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center space-x-2">
                                 <i class="fa-solid fa-download"></i><span>Export CSV / Excel</span>
                             </button>
                         </div>
                         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-4">
                             <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-users"></i></div>
                             <h3 class="text-base font-bold text-brand-dark dark:text-white">Employee Directory</h3>
-                            <button @click="exportCSV('employees')" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center space-x-2">
+                            <button type="button" @click="exportCSV('employees')" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center space-x-2">
                                 <i class="fa-solid fa-download"></i><span>Export CSV / Excel</span>
                             </button>
                         </div>
                         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-4">
                             <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-file-invoice"></i></div>
                             <h3 class="text-base font-bold text-brand-dark dark:text-white">Invoice &amp; Quotation Report</h3>
-                            <button @click="exportCSV('docs')" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center space-x-2">
+                            <button type="button" @click="exportCSV('docs')" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center space-x-2">
                                 <i class="fa-solid fa-download"></i><span>Export CSV / Excel</span>
                             </button>
                         </div>
@@ -1125,9 +1161,17 @@
 
                 <!-- CLIENT PORTAL MODULE -->
                 <div v-show="currentTab === 'client-portal'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
-                    <div>
-                        <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Self-Service Portal</h2>
-                        <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Dedicated self-service portal for clients to view documents and payment status.</p>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span class="hidden sm:inline">Dashboard</span>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Self-Service Portal</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Dedicated self-service portal for clients to view documents and payment status.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
@@ -1164,9 +1208,17 @@
 
                 <!-- AUDIT LOGS MODULE -->
                 <div v-show="currentTab === 'audit-logs'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
-                    <div>
-                        <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">System Audit &amp; Security Logs</h2>
-                        <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Real-time user security and activity logs from Firebase.</p>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span class="hidden sm:inline">Dashboard</span>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">System Audit &amp; Security Logs</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Real-time user security and activity logs from Firebase.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
@@ -1204,7 +1256,15 @@
 
                 <!-- SETTINGS & PROFILE MODULE -->
                 <div v-show="['settings', 'profile'].includes(currentTab)" class="p-8 max-w-4xl mx-auto w-full space-y-6">
-                    <h2 class="text-xl font-extrabold text-brand-dark dark:text-white capitalize">{{ currentTab === 'settings' ? 'Global Company Settings' : 'Admin Profile & Portal Access Management' }}</h2>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span class="hidden sm:inline">Dashboard</span>
+                            </button>
+                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white capitalize">{{ currentTab === 'settings' ? 'Global Company Settings' : 'Admin Profile & Portal Access Management' }}</h2>
+                        </div>
+                    </div>
                     
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
                         <template v-if="currentTab === 'settings'">
@@ -1214,8 +1274,8 @@
                                 <div class="col-span-2"><label for="setting-comp-addr" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Full Address</label><textarea id="setting-comp-addr" name="companyAddr" rows="3" v-model="company.address" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></textarea></div>
                             </div>
                             <div class="flex justify-between items-center pt-4 border-t dark:border-slate-700">
-                                <button @click="backupDatabase" class="bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center space-x-1.5"><i class="fa-solid fa-download"></i><span>Backup Database</span></button>
-                                <button @click="saveSettings" class="bg-brand-dark text-white font-bold px-6 py-2 rounded-xl text-xs shadow hover:bg-brand-blue">Save Changes</button>
+                                <button type="button" @click="backupDatabase" class="bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center space-x-1.5"><i class="fa-solid fa-download"></i><span>Backup Database</span></button>
+                                <button type="button" @click="saveSettings" class="bg-brand-dark text-white font-bold px-6 py-2 rounded-xl text-xs shadow hover:bg-brand-blue">Save Changes</button>
                             </div>
                         </template>
 
@@ -1237,7 +1297,7 @@
                                 <div><label for="prof-photo" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Avatar / Photo URL</label><input id="prof-photo" name="profPhoto" type="text" v-model="userProfile.photo" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
                                 
                                 <div class="sm:col-span-2 flex justify-end pt-1">
-                                    <button @click="saveMyProfile" type="button" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                                    <button type="button" @click="saveMyProfile" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                         <i class="fa-solid fa-user-check"></i><span>Save My Profile</span>
                                     </button>
                                 </div>
@@ -1246,7 +1306,7 @@
                             <div v-if="canManageRBAC" class="pt-6 space-y-4 border-t border-slate-200 dark:border-slate-700">
                                 <div class="flex justify-between items-center">
                                     <h3 class="text-sm font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-users-viewfinder text-brand-blue mr-2"></i>PORTAL ACCESS MANAGEMENT (SUPERADMIN &amp; HR)</h3>
-                                    <button @click="openUserAccessModal()" type="button" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                                    <button type="button" @click="openUserAccessModal()" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                         <i class="fa-solid fa-user-plus"></i><span>Add Access</span>
                                     </button>
                                 </div>
@@ -1269,10 +1329,10 @@
                                                     <span class="bg-brand-gold/20 text-brand-dark dark:text-brand-gold font-extrabold px-2 py-0.5 rounded text-[10px] uppercase">{{ usr.role }}</span>
                                                 </td>
                                                 <td class="p-3 text-center space-x-1">
-                                                    <button @click="openUserAccessModal(usr)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit Access">
+                                                    <button type="button" @click="openUserAccessModal(usr)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit Access">
                                                         <i class="fa-solid fa-pen"></i>
                                                     </button>
-                                                    <button v-if="usr.email !== 'admin@zenq0r.com'" @click="deletePortalUser(usr.email)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Delete Access">
+                                                    <button v-if="usr.email !== 'admin@zenq0r.com'" type="button" @click="deletePortalUser(usr.email)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Delete Access">
                                                         <i class="fa-solid fa-trash"></i>
                                                     </button>
                                                 </td>
@@ -1293,7 +1353,7 @@
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4">
                 <div class="flex justify-between items-center border-b pb-3 dark:border-slate-700">
                     <h3 class="text-base font-extrabold text-brand-dark dark:text-white">{{ employeeModal.isEdit ? 'Update Employee: ' + employeeModal.form.empNo : 'Add New Employee' }}</h3>
-                    <button @click="employeeModal.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                    <button type="button" @click="employeeModal.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
                 <form @submit.prevent="saveEmployee" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     <div><label for="emp-modal-id" class="font-bold mb-1 block dark:text-slate-300">Employee ID * (ZEN-XXXXXXX)</label><input id="emp-modal-id" name="empModalId" v-model="employeeModal.form.empNo" :disabled="employeeModal.isEdit" required class="w-full p-2 border rounded-xl font-bold bg-slate-50 dark:bg-slate-700 dark:text-white"></div>
@@ -1317,7 +1377,7 @@
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
                 <div class="flex justify-between items-center border-b pb-3 dark:border-slate-700">
                     <h3 class="text-base font-extrabold text-brand-dark dark:text-white">{{ userModal.isEdit ? 'Update Portal Access' : 'Add Portal Access' }}</h3>
-                    <button @click="userModal.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                    <button type="button" @click="userModal.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
                 <form @submit.prevent="savePortalUser" class="space-y-4 text-xs">
                     <div><label for="usr-modal-name" class="font-bold mb-1 block dark:text-slate-300">Username *</label><input id="usr-modal-name" name="usrModalName" v-model="userModal.form.name" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
