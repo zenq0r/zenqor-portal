@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE EN-US SYNC v5.0)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE DEVTOOLS FIX v5.2)
 // ============================================================
 
 import {
@@ -1150,14 +1150,28 @@ Origin: ${originEmail}`
             }
         },
 
+        // =========================================================
+        // PERLINDUNGAN SAFE CHECK DALAM RENDERCHARTS
+        // =========================================================
         renderCharts() {
-            if (typeof Chart === 'undefined') return;
-            const revData = this.getFilteredRevenueData();
-            const gridColor = this.isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
-            const textColor = this.isDarkMode ? '#CBD5E1' : '#475569';
+            if (typeof Chart === 'undefined' || this.currentTab !== 'dashboard') return;
+            if (['Staff', 'Client'].includes(this.userProfile.role)) return;
 
-            const ctxRev = document.getElementById('revenueChart');
-            if (ctxRev) {
+            this.$nextTick(() => {
+                const revCanvas = document.getElementById('revenueChart');
+                const statusCanvas = document.getElementById('statusChart');
+
+                if (!revCanvas || !statusCanvas) return;
+
+                const ctxRev = revCanvas.getContext('2d');
+                const ctxStatus = statusCanvas.getContext('2d');
+
+                if (!ctxRev || !ctxStatus) return;
+
+                const revData = this.getFilteredRevenueData();
+                const gridColor = this.isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+                const textColor = this.isDarkMode ? '#CBD5E1' : '#475569';
+
                 if (this.revenueChartInstance) this.revenueChartInstance.destroy();
                 this.revenueChartInstance = new Chart(ctxRev, {
                     type: 'line',
@@ -1185,10 +1199,7 @@ Origin: ${originEmail}`
                         plugins: { legend: { labels: { color: textColor } } }
                     }
                 });
-            }
 
-            const ctxStatus = document.getElementById('statusChart');
-            if (ctxStatus) {
                 if (this.statusChartInstance) this.statusChartInstance.destroy();
                 this.statusChartInstance = new Chart(ctxStatus, {
                     type: 'doughnut',
@@ -1198,7 +1209,7 @@ Origin: ${originEmail}`
                     },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
                 });
-            }
+            });
         },
 
         getFilteredRevenueData() {
