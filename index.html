@@ -47,7 +47,6 @@
         <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center bg-brand-dark px-4 py-8">
             <div class="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-100 dark:border-slate-700">
                 
-                <!-- HEADER LOGIN DENGAN LOGO.PNG & TAJUK BAHARU -->
                 <div class="text-center mb-8">
                     <div class="inline-flex items-center justify-center p-3 bg-white rounded-2xl mb-4 shadow-lg border border-brand-gold/30">
                         <img src="./logo.png" onerror="this.style.display='none'" alt="ZENQOR Logo" class="h-12 w-auto object-contain">
@@ -64,7 +63,6 @@
                         <input type="email" v-model="loginForm.email" required placeholder="nama@zenq0r.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue focus:outline-none text-xs font-medium">
                     </div>
 
-                    <!-- INPUT KATA LALUAN DENGAN TOGGLE SHOW PASSWORD -->
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Kata Laluan</label>
                         <div class="relative">
@@ -75,7 +73,6 @@
                         </div>
                     </div>
 
-                    <!-- REMEMBER ME & FORGOT MY PASSWORD -->
                     <div class="flex items-center justify-between text-xs pt-1">
                         <label class="flex items-center space-x-2 cursor-pointer text-slate-600 dark:text-slate-300 font-medium">
                             <input type="checkbox" v-model="loginForm.rememberMe" class="w-4 h-4 rounded border-slate-300 text-brand-dark focus:ring-brand-blue">
@@ -100,7 +97,7 @@
             
             <div v-if="mobileMenuOpen" @click="mobileMenuOpen = false" class="fixed inset-0 bg-black/50 z-40 md:hidden"></div>
 
-            <!-- SIDEBAR PROFESSIONAL -->
+            <!-- SIDEBAR -->
             <aside :class="[
                        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
                        desktopSidebarOpen ? 'md:w-64 md:block' : 'md:w-0 md:hidden md:overflow-hidden'
@@ -192,7 +189,6 @@
                     </div>
 
                     <div class="flex items-center space-x-3 shrink-0">
-                        <!-- TAB SWITCHER PANTAS DI NAVBAR -->
                         <div class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-600">
                             <button @click="switchTab('doc-generator')" :class="currentTab === 'doc-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Documents</button>
                             <button @click="switchTab('payslip-generator')" :class="currentTab === 'payslip-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Payroll</button>
@@ -211,588 +207,285 @@
                     </div>
                 </header>
 
-                <!-- ================================================================= -->
-                <!-- MODUL 1: DOCUMENT GENERATOR (FORMAT KEMAS & BERSIH)              -->
-                <!-- ================================================================= -->
-                <div v-show="currentTab === 'doc-generator'" class="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Document Generator</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Jana dan urus Quotation (A4 Portrait) dan Invoice (A4 Portrait) mengikut format korporat rasmi.</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button v-if="editingDocId" @click="cancelEditDoc" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
-                                Batal Suntingan
-                            </button>
-                            <button @click="printDocumentModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
-                                <i class="fa-solid fa-file-pdf"></i><span>Preview / Cetak PDF</span>
-                            </button>
-                            <button @click="saveDocRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
-                                <i class="fa-solid fa-floppy-disk"></i><span>Simpan Rekod</span>
-                            </button>
-                            <button @click="resetDocForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Kosongkan Borang">
-                                <i class="fa-solid fa-rotate-left"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
-                            <div>
-                                <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
-                                    <i class="fa-solid fa-building-user text-brand-gold mr-2 text-base"></i>
-                                    MAKLUMAT PELANGGAN (BILL TO)
-                                </h3>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <select @change="selectCustomerForDoc($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-60 focus:ring-2 focus:ring-brand-gold">
-                                    <option value="">-- Auto-Isi Pelanggan --</option>
-                                    <option v-for="(cust, cIdx) in customers" :key="cIdx" :value="cust.clientName">{{ cust.clientName }}</option>
-                                </select>
-                                <button v-if="canCreateEdit" @click="saveCustomerToDatabase" type="button" class="bg-brand-gold hover:bg-yellow-400 text-brand-dark font-extrabold px-3 py-2 rounded-xl text-xs shadow transition">
-                                    Simpan Pelanggan
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Pelanggan / Syarikat *</label><input type="text" v-model="docForm.clientName" required placeholder="Nama Syarikat Sdn. Bhd." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. Telefon *</label><input type="text" v-model="docForm.clientPhone" required placeholder="+60 13-XXXX XXX" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. SSM / Cukai (TIN)</label><input type="text" v-model="docForm.clientSSM" placeholder="200901029271 (872376-W)" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Alamat Emel</label><input type="email" v-model="docForm.clientEmail" placeholder="emel@syarikat.com" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Contact Person</label><input type="text" v-model="docForm.clientContactPerson" placeholder="Nama Pegawai Rujukan" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50 font-semibold"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Jawatan</label><input type="text" v-model="docForm.clientPosition" placeholder="EKSEKUTIF / PENGARAH" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div class="md:col-span-3"><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Alamat Penuh Pelanggan *</label><input type="text" v-model="docForm.clientAddress" required placeholder="No. Bangunan, Jalan, Bandar, Negeri..." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 border-t border-slate-100 dark:border-slate-700 pt-5">
-                            <div>
-                                <label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">JENIS DOKUMEN</label>
-                                <select v-model="docForm.type" @change="generateDocNo" :disabled="!!editingDocId" class="w-full p-2 border rounded-xl text-xs font-extrabold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
-                                    <option value="Quotation">Quotation</option>
-                                    <option value="Invoice">Invoice</option>
-                                </select>
-                            </div>
-                            <div><label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">NO. DOKUMEN</label><input type="text" v-model="docForm.docNo" readonly class="w-full p-2 border rounded-xl bg-slate-100 dark:bg-slate-700 dark:text-white font-extrabold text-xs text-brand-dark"></div>
-                            <div><label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">TARIKH DOKUMEN</label><input type="date" v-model="docForm.date" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
-                            <div><label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">{{ docForm.type === 'Invoice' ? 'DUE DATE' : 'VALID UNTIL' }}</label><input type="date" v-model="docForm.dueDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
-                            <div>
-                                <label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">STATUS</label>
-                                <select v-model="docForm.status" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-extrabold text-xs">
-                                    <template v-if="docForm.type === 'Quotation'">
-                                        <option value="Open">Sah / Open</option>
-                                        <option value="Accepted">Dipersetujui / Accepted</option>
-                                        <option value="Rejected">Ditolak / Rejected</option>
-                                        <option value="Invoiced">Telah Di-invois</option>
-                                    </template>
-                                    <template v-else>
-                                        <option value="Unpaid">Belum Dibayar / Unpaid</option>
-                                        <option value="Paid">Selesai Dibayar / Paid</option>
-                                        <option value="Partial">Bayaran Separa / Partial</option>
-                                        <option value="Cancelled">Dibatalkan / Cancelled</option>
-                                    </template>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">PEMBAYARAN</label>
-                                <select v-model="docForm.paymentMethod" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-extrabold text-xs">
-                                    <option value="Bank Transfer">Bank Transfer (EFT)</option>
-                                    <option value="DuitNow QR">DuitNow QR</option>
-                                    <option value="Cheque">Cek (Cheque)</option>
-                                    <option value="Cash">Tunai (Cash)</option>
-                                    <option value="E-Wallet">E-Wallet</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-slate-50 dark:bg-slate-700/40 p-4 rounded-xl border border-slate-200 dark:border-slate-600 items-center">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PILIHAN BANK</label>
-                                <select v-model="docForm.paymentBank" class="w-full p-2 border rounded-xl text-xs font-semibold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
-                                    <option value="">-- Pilih Bank --</option>
-                                    <option value="Maybank (Malayan Banking Berhad)">Maybank (Malayan Banking Berhad)</option>
-                                    <option value="CIMB Bank">CIMB Bank Berhad</option>
-                                    <option value="Public Bank">Public Bank Berhad</option>
-                                    <option value="RHB Bank">RHB Bank Berhad</option>
-                                    <option value="Bank Islam">Bank Islam Malaysia Berhad</option>
-                                    <option value="GXBank">GXBank Berhad</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PENERIMAAN PEMBAYARAN</label>
-                                <select v-model="docForm.paymentReceiver" class="w-full p-2 border rounded-xl text-xs font-semibold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
-                                    <option value="">-- Pilih Akaun Terima --</option>
-                                    <option value="Akaun Maybank Syarikat (562982057309)">Akaun Maybank Syarikat (56298...)</option>
-                                    <option value="DuitNow QR Syarikat">DuitNow QR Syarikat</option>
-                                    <option value="Petty Cash">Tunai / Petty Cash</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
-                                    NO. RUJUKAN BAYARAN (REF NO)
-                                    <span class="text-red-500 font-extrabold ml-1">* WAJIB</span>
-                                </label>
-                                <input type="text" v-model="docForm.paymentRefNo" placeholder="IT280905CT833S" 
-                                       class="w-full p-2 border rounded-xl text-xs font-semibold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
-                            </div>
-
-                            <div class="p-2.5 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500 rounded-xl flex items-center justify-between gap-2">
-                                <div class="overflow-hidden">
-                                    <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight truncate">LAMPIRAN / RESIT (MAX 2MB)</p>
-                                    <p class="text-[10px] text-slate-400 truncate">{{ docForm.paymentAttachment ? 'Resit Didaftarkan' : 'Tiada fail dipilih' }}</p>
-                                </div>
-                                <div class="flex items-center space-x-1 shrink-0">
-                                    <label class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
-                                        <span>Pilih</span>
-                                        <input type="file" @change="handleAttachmentUpload" accept=".pdf,image/*" class="hidden">
-                                    </label>
-                                    <a v-if="docForm.paymentAttachment" :href="docForm.paymentAttachment" download="Bukti_Resit" target="_blank" class="bg-emerald-600 text-white px-2 py-1.5 rounded-lg text-[11px] font-bold" title="Lihat">
-                                        <i class="fa-solid fa-eye"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="border-t border-slate-100 dark:border-slate-700 pt-4">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="text-xs font-extrabold uppercase tracking-wider text-brand-gold">SENARAI BARANGAN & PERKHIDMATAN</h3>
-                                <button type="button" @click="clearAllDocItems" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-1 rounded-lg text-xs transition flex items-center space-x-1">
-                                    <i class="fa-solid fa-trash-can"></i><span>Padam Semua Item</span>
-                                </button>
-                            </div>
-
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 text-[11px] uppercase tracking-wider font-extrabold">
-                                        <th class="p-3 border border-slate-200 dark:border-slate-600">Keterangan / Produk</th>
-                                        <th class="p-3 border border-slate-200 dark:border-slate-600 w-24 text-center">Kuantiti</th>
-                                        <th class="p-3 border border-slate-200 dark:border-slate-600 w-36 text-right">Harga Unit (RM)</th>
-                                        <th class="p-3 border border-slate-200 dark:border-slate-600 w-36 text-right">Jumlah (RM)</th>
-                                        <th class="p-3 border border-slate-200 dark:border-slate-600 w-12 text-center"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="(item, idx) in docForm.items" :key="idx" class="border-b dark:border-slate-700">
-                                        <td class="p-2 border dark:border-slate-600"><input type="text" v-model="item.desc" placeholder="Keterangan perkhidmatan / Fasa bayaran..." class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-xs font-medium"></td>
-                                        <td class="p-2 border dark:border-slate-600"><input type="number" v-model="item.qty" min="1" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-center text-xs font-bold"></td>
-                                        <td class="p-2 border dark:border-slate-600"><input type="number" v-model="item.price" step="0.01" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right text-xs font-semibold"></td>
-                                        <td class="p-2 border dark:border-slate-600 text-right font-extrabold text-xs bg-slate-50 dark:bg-slate-700/50 dark:text-white">{{ formatCurrency(item.qty * item.price) }}</td>
-                                        <td class="p-2 border dark:border-slate-600 text-center"><button @click="removeDocItem(idx)" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash text-xs"></i></button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            
-                            <div class="flex justify-between items-center mt-3">
-                                <button @click="addDocItem" class="bg-slate-100 dark:bg-slate-700 dark:text-white hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition">+ Tambah Item</button>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col sm:flex-row items-end justify-between border-t border-slate-100 dark:border-slate-700 pt-5 gap-4">
-                            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                                <button @click="printDocumentModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
-                                    <i class="fa-solid fa-print"></i><span>Cetak Dokumen</span>
-                                </button>
-                                <button @click="saveDocRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
-                                    <i class="fa-solid fa-floppy-disk"></i><span>Simpan Dokumen</span>
-                                </button>
-                            </div>
-
-                            <div class="w-full sm:w-72 space-y-1.5 text-xs font-semibold">
-                                <div class="flex justify-between text-slate-600 dark:text-slate-300"><span>Subtotal:</span><span class="font-bold">RM {{ docSubtotal.toFixed(2) }}</span></div>
-                                <div class="flex justify-between items-center text-slate-600 dark:text-slate-300"><span>Diskaun (-):</span><input type="number" v-model="docForm.discount" step="0.01" class="w-20 p-1 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right text-xs"></div>
-                                <div class="flex justify-between text-slate-600 dark:text-slate-300"><span>SST (8%):</span><span class="font-bold">RM {{ docSST.toFixed(2) }}</span></div>
-                                <div class="flex justify-between text-sm font-extrabold text-brand-dark dark:text-white border-t border-slate-300 dark:border-slate-600 pt-2"><span>Grand Total:</span><span class="text-brand-gold">RM {{ docGrandTotal.toFixed(2) }}</span></div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- ================================================================= -->
-                <!-- MODUL 2: PAYSLIP GENERATOR                                        -->
-                <!-- ================================================================= -->
-                <div v-show="currentTab === 'payslip-generator'" class="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Payslip Generator (v1.0.0 Engine)</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Sistem caruman berkanun auto-kira (KWSP, SOCSO, EIS, PCB) & MTD/YTD.</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button v-if="editingPayId" @click="cancelEditPay" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
-                                Batal Suntingan
-                            </button>
-                            <button @click="printPayslipModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
-                                <i class="fa-solid fa-file-pdf"></i><span>Preview / Cetak Payslip (A4 Landscape)</span>
-                            </button>
-                            <button @click="savePayslipRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
-                                <i class="fa-solid fa-floppy-disk"></i><span>Simpan Payslip</span>
-                            </button>
-                            <button @click="resetPayForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Kosongkan Borang">
-                                <i class="fa-solid fa-rotate-left"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
-                            <div>
-                                <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
-                                    <i class="fa-solid fa-user-check text-emerald-500 mr-2 text-base"></i>
-                                    MAKLUMAT PEKERJA & BANK
-                                </h3>
-                            </div>
-                            <select @change="selectEmployeeForPayslip($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
-                                <option value="">-- Auto-Isi Pekerja HR --</option>
-                                <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
-                            </select>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Pekerja *</label><input type="text" v-model="payForm.name" required placeholder="Ahmad Azziem" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. K/P *</label><input type="text" v-model="payForm.ic" placeholder="000000-00-0000" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. Pekerja *</label><input type="text" v-model="payForm.empNo" placeholder="ZEN-HR08001" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Jawatan</label><input type="text" v-model="payForm.position" placeholder="ASSISTANT MANAGER HR" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Jabatan</label><input type="text" v-model="payForm.dept" placeholder="OPERATION DEPARTMENT" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Tarikh Masuk</label><input type="date" v-model="payForm.joinDate" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Bank / Akaun</label><input type="text" v-model="payForm.bankAcc" placeholder="Maybank Islamic | 56298..." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. KWSP / SOCSO</label><input type="text" v-model="payForm.epfSocso" placeholder="No. KWSP / SOCSO" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                        </div>
-
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 border-t border-slate-100 dark:border-slate-700 pt-5">
-                            <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
-                                <h4 class="text-xs font-extrabold uppercase tracking-wider text-brand-blue dark:text-blue-400 border-b border-slate-200 dark:border-slate-600 pb-2">PENDAPATAN (EARNINGS) - RM</h4>
-                                <div class="grid grid-cols-2 gap-3 text-xs">
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Bulan Gaji</label><input type="month" v-model="payForm.month" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Tarikh Bayaran</label><input type="date" v-model="payForm.payDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Gaji Pokok (RM) *</label><input type="number" v-model="payForm.basic" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">OT (Overtime)</label><input type="number" v-model="payForm.ot" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Elaun Telefon</label><input type="number" v-model="payForm.phone" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Elaun Pengangkutan</label><input type="number" v-model="payForm.transport" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Elaun Makan</label><input type="number" v-model="payForm.meal" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Bonus & Komisen</label><input type="number" v-model="payForm.bonus" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                </div>
-                            </div>
-
-                            <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
-                                <h4 class="text-xs font-extrabold uppercase tracking-wider text-red-600 border-b border-slate-200 dark:border-slate-600 pb-2">POTONGAN BERKANUN (DEDUCTIONS) - RM</h4>
-                                <div class="grid grid-cols-2 gap-3 text-xs">
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">KWSP Pekerja (11%)</label><input type="number" v-model="payForm.dedEpf" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">PERKESO (0.5%)</label><input type="number" v-model="payForm.dedSocso" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">EIS Pekerja (0.2%)</label><input type="number" v-model="payForm.dedEis" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">PCB (LHDN)</label><input type="number" v-model="payForm.dedPcb" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Advance / Loan</label><input type="number" v-model="payForm.dedAdvance" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Potongan Lain</label><input type="number" v-model="payForm.dedOther" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-5 gap-4">
-                            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                                <button @click="printPayslipModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
-                                    <i class="fa-solid fa-print"></i><span>Cetak Payslip (A4 Landscape)</span>
-                                </button>
-                                <button @click="savePayslipRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow transition text-xs flex items-center space-x-1.5">
-                                    <i class="fa-solid fa-floppy-disk"></i><span>Simpan Payslip</span>
-                                </button>
-                            </div>
-
-                            <div class="bg-brand-dark text-white p-4 rounded-xl w-full sm:w-72 space-y-1 text-xs">
-                                <div class="flex justify-between"><span>Gross Salary:</span><strong class="font-bold">RM {{ payCalc.gross.toFixed(2) }}</strong></div>
-                                <div class="flex justify-between text-red-400"><span>Total Deductions:</span><strong class="font-bold">RM {{ payCalc.deduct.toFixed(2) }}</strong></div>
-                                <div class="flex justify-between text-sm font-extrabold border-t border-slate-700 pt-1.5 mt-1 text-brand-gold"><span>Net Salary:</span><span>RM {{ payCalc.net.toFixed(2) }}</span></div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- ================================================================= -->
-                <!-- MODUL 3: CLAIMS MANAGEMENT (TUNTUTAN PERBELANJAAN & RESIT)        -->
-                <!-- ================================================================= -->
-                <div v-show="currentTab === 'claims'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Claims & Expense Management</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Urus permohonan tuntutan perbelanjaan pekerja mengikut kategori & bukti resit.</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button v-if="editingClaimId" @click="cancelEditClaim" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
-                                Batal Suntingan
-                            </button>
-                            <button @click="saveClaimRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
-                                <i class="fa-solid fa-floppy-disk"></i><span>Hantar Tuntutan</span>
-                            </button>
-                            <button @click="resetClaimForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Kosongkan Borang">
-                                <i class="fa-solid fa-rotate-left"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
-                            <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
-                                <i class="fa-solid fa-file-circle-plus text-brand-gold mr-2 text-base"></i>
-                                BORANG PERMOHONAN TUNTUTAN BAHARU
-                            </h3>
-                            <select @change="selectEmployeeForClaim($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
-                                <option value="">-- Auto-Isi Pekerja --</option>
-                                <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
-                            </select>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Nama Pemohon *</label><input type="text" v-model="claimForm.name" required placeholder="Nama Pekerja" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">No. Pekerja *</label><input type="text" v-model="claimForm.empNo" placeholder="ZEN-HR08001" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Jabatan</label><input type="text" v-model="claimForm.dept" placeholder="OPERATION DEPARTMENT" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Tarikh Perbelanjaan *</label><input type="date" v-model="claimForm.expenseDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">KATEGORI TUNTUTAN *</label>
-                                <select v-model="claimForm.category" @change="claimForm.subCategory = claimSubCategories[claimForm.category][0]" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-xs">
-                                    <option v-for="(subList, catName) in claimSubCategories" :key="catName" :value="catName">{{ catName }}</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">SUB-KATEGORI *</label>
-                                <select v-model="claimForm.subCategory" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-xs">
-                                    <option v-for="(sub, sIdx) in claimSubCategories[claimForm.category]" :key="sIdx" :value="sub">{{ sub }}</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">JUMLAH TUNTUTAN (RM) *</label>
-                                <input type="number" v-model="claimForm.amount" step="0.01" min="1" placeholder="0.00" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-extrabold text-brand-dark">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">NO. RESIT / RUJUKAN *</label>
-                                <input type="text" v-model="claimForm.receiptNo" placeholder="REC-8823901" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4 items-center">
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">KETERANGAN PERBELANJAAN</label>
-                                <input type="text" v-model="claimForm.description" placeholder="Contoh: Makan tengah hari bersama pelanggan dari Syarikat XYZ" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-medium">
-                            </div>
-
-                            <div class="p-2.5 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500 rounded-xl flex items-center justify-between gap-2">
-                                <div class="overflow-hidden">
-                                    <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight truncate">LAMPIRAN RESIT (MAX 2MB)</p>
-                                    <p class="text-[10px] text-slate-400 truncate">{{ claimForm.receiptAttachment ? 'Resit Dilampirkan' : 'Tiada fail dipilih' }}</p>
-                                </div>
-                                <div class="flex items-center space-x-1 shrink-0">
-                                    <label class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
-                                        <span>Pilih</span>
-                                        <input type="file" @change="handleClaimAttachmentUpload" accept=".pdf,image/*" class="hidden">
-                                    </label>
-                                    <a v-if="claimForm.receiptAttachment" :href="claimForm.receiptAttachment" download="Resit_Tuntutan" target="_blank" class="bg-emerald-600 text-white px-2 py-1.5 rounded-lg text-[11px] font-bold" title="Lihat">
-                                        <i class="fa-solid fa-eye"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-sm font-extrabold text-brand-dark dark:text-white tracking-wide"><i class="fa-solid fa-list-check text-brand-blue mr-2"></i>REKOD & STATUS KELULUSAN TUNTUTAN</h3>
-                            <span class="text-xs text-slate-400 font-bold">Jumlah Rekod: {{ claimsHistory.length }}</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="border-b border-slate-100 dark:border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-400">
-                                        <th class="py-3 px-3">Tarikh & No. Resit</th>
-                                        <th class="py-3 px-3">Pekerja</th>
-                                        <th class="py-3 px-3">Kategori & Sub-Kategori</th>
-                                        <th class="py-3 px-3 text-right">Jumlah (RM)</th>
-                                        <th class="py-3 px-3 text-center">Status</th>
-                                        <th class="py-3 px-3 text-center w-36">Tindakan</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
-                                    <tr v-for="clm in claimsHistory" :key="clm.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                        <td class="py-3 px-3">
-                                            <span class="font-bold text-slate-800 dark:text-slate-200 block">{{ clm.expenseDate }}</span>
-                                            <span class="text-slate-400 font-mono text-[10px] block">REF: {{ clm.receiptNo }}</span>
-                                        </td>
-                                        <td class="py-3 px-3">
-                                            <span class="font-bold text-brand-dark dark:text-white block">{{ clm.name }}</span>
-                                            <span class="text-slate-400 text-[10px] block">{{ clm.empNo }}</span>
-                                        </td>
-                                        <td class="py-3 px-3">
-                                            <span class="font-bold text-brand-blue dark:text-blue-400 block">{{ clm.category }}</span>
-                                            <span class="text-slate-500 dark:text-slate-300 block">{{ clm.subCategory }}</span>
-                                        </td>
-                                        <td class="py-3 px-3 text-right font-extrabold text-sm text-brand-dark dark:text-slate-100">
-                                            {{ formatCurrency(clm.amount) }}
-                                        </td>
-                                        <td class="py-3 px-3 text-center">
-                                            <span :class="{
-                                                'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300': clm.status === 'Pending',
-                                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300': clm.status === 'Approved',
-                                                'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': clm.status === 'Rejected'
-                                            }" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase">{{ clm.status }}</span>
-                                        </td>
-                                        <td class="py-3 px-3 text-center space-x-1">
-                                            <button v-if="canCreateEdit && clm.status === 'Pending'" @click="updateClaimStatus(clm.id, 'Approved')" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 p-1.5 rounded" title="Luluskan">
-                                                <i class="fa-solid fa-check"></i>
-                                            </button>
-                                            <button v-if="canCreateEdit && clm.status === 'Pending'" @click="updateClaimStatus(clm.id, 'Rejected')" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Tolak">
-                                                <i class="fa-solid fa-xmark"></i>
-                                            </button>
-                                            <button v-if="canCreateEdit" @click="editClaimRecord(clm)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit">
-                                                <i class="fa-solid fa-pen"></i>
-                                            </button>
-                                            <button v-if="canDelete" @click="deleteClaimRecord(clm.id)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Padam">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="claimsHistory.length === 0">
-                                        <td colspan="6" class="py-8 text-center text-slate-400">Tiada rekod tuntutan perbelanjaan dijumpai.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- DASHBOARD MODULE -->
-                <div v-show="currentTab === 'dashboard'" class="p-8 max-w-7xl mx-auto w-full space-y-8">
-                    <div>
-                        <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Enterprise Executive Dashboard</h2>
-                        <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Pemantauan KPI kewangan, HR, dokumen korporat dan aktiviti sistem secara masa nyata.</p>
+                <div v-show="currentTab === 'dashboard'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8">
+                    
+                    <!-- 1. VIEW PEKERJA (STAFF) -->
+                    <div v-if="userProfile.role === 'Staff'" class="space-y-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Staff Employee Dashboard</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Selamat datang, {{ userProfile.name }}. Pantau slip gaji dan status tuntutan anda.</p>
+                            </div>
+                            <button @click="switchTab('claims')" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2.5 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
+                                <i class="fa-solid fa-receipt"></i><span>Hantar Tuntutan Baharu</span>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Gaji Bersih Terkini</p>
+                                    <h3 class="text-2xl font-extrabold text-emerald-600 mt-1">{{ formatCurrency(myLatestNetSalary) }}</h3>
+                                    <p class="text-[10px] text-slate-400 mt-1">Rekod Payslip Terakhir</p>
+                                </div>
+                                <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 flex items-center justify-center text-lg font-bold"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                            </div>
+
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tuntutan Dalam Proses</p>
+                                    <h3 class="text-2xl font-extrabold text-amber-500 mt-1">{{ myPendingClaimsCount }}</h3>
+                                    <p class="text-[10px] text-amber-600 font-bold mt-1">Status: Pending</p>
+                                </div>
+                                <div class="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 flex items-center justify-center text-lg font-bold"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                            </div>
+
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tuntutan Diluluskan (YTD)</p>
+                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ formatCurrency(myApprovedClaimsAmount) }}</h3>
+                                    <p class="text-[10px] text-emerald-600 font-bold mt-1">Status: Approved</p>
+                                </div>
+                                <div class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-brand-blue flex items-center justify-center text-lg font-bold"><i class="fa-solid fa-receipt"></i></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+                            <h3 class="text-sm font-extrabold text-brand-dark dark:text-white mb-4">Senarai Tuntutan &amp; Slip Gaji Saya</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-slate-100 dark:border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-400">
+                                            <th class="py-3 px-4">Tarikh</th>
+                                            <th class="py-3 px-4">Jenis</th>
+                                            <th class="py-3 px-4">Rujukan / Keterangan</th>
+                                            <th class="py-3 px-4 text-right">Jumlah (RM)</th>
+                                            <th class="py-3 px-4 text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
+                                        <tr v-for="c in myClaims" :key="c.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                            <td class="py-3 px-4">{{ c.expenseDate }}</td>
+                                            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded font-bold bg-purple-100 text-purple-800">Claim</span></td>
+                                            <td class="py-3 px-4 font-bold">{{ c.category }} - {{ c.receiptNo }}</td>
+                                            <td class="py-3 px-4 text-right font-extrabold">{{ formatCurrency(c.amount) }}</td>
+                                            <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded font-bold uppercase" :class="{'bg-amber-100 text-amber-800': c.status==='Pending', 'bg-emerald-100 text-emerald-800': c.status==='Approved', 'bg-red-100 text-red-800': c.status==='Rejected'}">{{ c.status }}</span></td>
+                                        </tr>
+                                        <tr v-for="p in myPayslips" :key="p.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                            <td class="py-3 px-4">{{ p.date }}</td>
+                                            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800">Payslip</span></td>
+                                            <td class="py-3 px-4 font-bold">{{ p.docNo }} ({{ p.raw?.month || 'Gaji Bulanan' }})</td>
+                                            <td class="py-3 px-4 text-right font-extrabold">{{ formatCurrency(p.amount) }}</td>
+                                            <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800">PAID</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- 6 KAD KPI DENGAN IKON DISERAGAMKAN -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                    <!-- 2. VIEW PELANGGAN (CLIENT) -->
+                    <div v-else-if="userProfile.role === 'Client'" class="space-y-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
-                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Employees</p>
-                                <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ employees.length }}</h3>
-                                <p class="text-[10px] text-emerald-600 font-bold mt-1"><i class="fa-solid fa-circle-check mr-1"></i>{{ activeEmployeesCount }} Aktif</p>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Executive Dashboard</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Selamat datang, {{ userProfile.name }}. Semak ringkasan sebut harga dan invois syarikat anda.</p>
                             </div>
-                            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-brand-blue dark:text-blue-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-users"></i></div>
+                            <button @click="switchTab('client-portal')" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2.5 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
+                                <i class="fa-solid fa-folder-open"></i><span>Buka Client Portal</span>
+                            </button>
                         </div>
 
-                        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Clients</p>
-                                <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ customers.length }}</h3>
-                                <p class="text-[10px] text-brand-gold font-bold mt-1">Enterprise Directory</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Jumlah Dokumen</p>
+                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ myClientDocs.length }}</h3>
+                                    <p class="text-[10px] text-slate-400 mt-1">Quotation &amp; Invoice</p>
+                                </div>
+                                <div class="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-brand-blue flex items-center justify-center text-lg font-bold"><i class="fa-solid fa-file-invoice"></i></div>
                             </div>
-                            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-building"></i></div>
+
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Invois Belum Dibayar</p>
+                                    <h3 class="text-2xl font-extrabold text-red-500 mt-1">{{ formatCurrency(myUnpaidInvoicesAmount) }}</h3>
+                                    <p class="text-[10px] text-red-500 font-bold mt-1">{{ myUnpaidInvoicesCount }} Invois Unpaid</p>
+                                </div>
+                                <div class="w-11 h-11 rounded-xl bg-red-50 dark:bg-red-900/40 text-red-500 flex items-center justify-center text-lg font-bold"><i class="fa-solid fa-circle-exclamation"></i></div>
+                            </div>
+
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Jumlah Selesai Dibayar</p>
+                                    <h3 class="text-2xl font-extrabold text-emerald-600 mt-1">{{ formatCurrency(myPaidInvoicesAmount) }}</h3>
+                                    <p class="text-[10px] text-emerald-600 font-bold mt-1">Status: Paid</p>
+                                </div>
+                                <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 flex items-center justify-center text-lg font-bold"><i class="fa-solid fa-sack-dollar"></i></div>
+                            </div>
                         </div>
 
-                        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Quotations</p>
-                                <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ totalQuotations }}</h3>
-                                <p class="text-[10px] text-indigo-600 font-bold mt-1">{{ formatCurrency(totalQuotationValue) }}</p>
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+                            <h3 class="text-sm font-extrabold text-brand-dark dark:text-white mb-4">Senarai Dokumen Rasmi Syarikat Anda</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-slate-100 dark:border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-400">
+                                            <th class="py-3 px-4">Tarikh</th>
+                                            <th class="py-3 px-4">Jenis</th>
+                                            <th class="py-3 px-4">No. Dokumen</th>
+                                            <th class="py-3 px-4 text-right">Jumlah (RM)</th>
+                                            <th class="py-3 px-4 text-center">Status</th>
+                                            <th class="py-3 px-4 text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
+                                        <tr v-for="d in myClientDocs" :key="d.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                            <td class="py-3 px-4">{{ d.date }}</td>
+                                            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded font-bold" :class="d.type==='Invoice'?'bg-blue-100 text-blue-800':'bg-amber-100 text-amber-800'">{{ d.type }}</span></td>
+                                            <td class="py-3 px-4 font-bold text-brand-dark dark:text-white">{{ d.docNo }}</td>
+                                            <td class="py-3 px-4 text-right font-extrabold">{{ formatCurrency(d.amount) }}</td>
+                                            <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded font-bold" :class="d.status==='Paid'?'bg-emerald-100 text-emerald-800':'bg-red-100 text-red-800'">{{ d.status || 'Unpaid' }}</span></td>
+                                            <td class="py-3 px-4 text-center"><button @click="viewRecord(d)" class="bg-brand-dark text-white px-3 py-1 rounded-lg text-xs font-bold"><i class="fa-solid fa-print mr-1"></i>Cetak</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-file-pen"></i></div>
-                        </div>
-
-                        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Invoices</p>
-                                <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ totalInvoices }}</h3>
-                                <p class="text-[10px] text-emerald-600 font-bold mt-1">{{ paidInvoicesCount }} Paid / {{ unpaidInvoicesCount }} Unpaid</p>
-                            </div>
-                            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-                        </div>
-
-                        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Revenue (Paid)</p>
-                                <h3 class="text-base font-extrabold text-emerald-600 mt-1">{{ formatCurrency(totalRevenuePaid) }}</h3>
-                                <p class="text-[10px] text-red-500 font-bold mt-1">Pending: {{ formatCurrency(totalRevenuePending) }}</p>
-                            </div>
-                            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-sack-dollar"></i></div>
-                        </div>
-
-                        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Payroll (Net)</p>
-                                <h3 class="text-base font-extrabold text-brand-dark dark:text-white mt-1">{{ formatCurrency(totalPayrollNet) }}</h3>
-                                <p class="text-[10px] text-purple-600 font-bold mt-1">{{ payslipHistory.length }} Payslips Generated</p>
-                            </div>
-                            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-money-bill-transfer"></i></div>
                         </div>
                     </div>
 
-                    <!-- REAL DATA CHARTS -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                                <h3 class="text-sm font-extrabold text-brand-dark dark:text-white">
-                                    <i class="fa-solid fa-chart-line text-brand-blue mr-2"></i>Kewangan & Revenue Trend
-                                </h3>
-                                <div class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl text-xs font-bold shrink-0">
-                                    <button @click="setChartFilter('daily')" :class="chartTimeFilter === 'daily' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-2.5 py-1 rounded-lg transition">Daily</button>
-                                    <button @click="setChartFilter('weekly')" :class="chartTimeFilter === 'weekly' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-2.5 py-1 rounded-lg transition">Weekly</button>
-                                    <button @click="setChartFilter('monthly')" :class="chartTimeFilter === 'monthly' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-2.5 py-1 rounded-lg transition">Monthly</button>
-                                    <button @click="setChartFilter('yearly')" :class="chartTimeFilter === 'yearly' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-2.5 py-1 rounded-lg transition">Yearly</button>
+                    <!-- 3. VIEW EKSEKUTIF (SUPERADMIN / HR / ACCOUNT / IT) -->
+                    <div v-else class="space-y-8">
+                        <div>
+                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Enterprise Executive Dashboard</h2>
+                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Pemantauan KPI kewangan, HR, dokumen korporat dan aktiviti sistem secara masa nyata.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Employees</p>
+                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ employees.length }}</h3>
+                                    <p class="text-[10px] text-emerald-600 font-bold mt-1"><i class="fa-solid fa-circle-check mr-1"></i>{{ activeEmployeesCount }} Aktif</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-brand-blue dark:text-blue-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-users"></i></div>
+                            </div>
+
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Clients</p>
+                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ customers.length }}</h3>
+                                    <p class="text-[10px] text-brand-gold font-bold mt-1">Enterprise Directory</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-building"></i></div>
+                            </div>
+
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Quotations</p>
+                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ totalQuotations }}</h3>
+                                    <p class="text-[10px] text-indigo-600 font-bold mt-1">{{ formatCurrency(totalQuotationValue) }}</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-file-pen"></i></div>
+                            </div>
+
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Invoices</p>
+                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white mt-1">{{ totalInvoices }}</h3>
+                                    <p class="text-[10px] text-emerald-600 font-bold mt-1">{{ paidInvoicesCount }} Paid / {{ unpaidInvoicesCount }} Unpaid</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                            </div>
+
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Revenue (Paid)</p>
+                                    <h3 class="text-base font-extrabold text-emerald-600 mt-1">{{ formatCurrency(totalRevenuePaid) }}</h3>
+                                    <p class="text-[10px] text-red-500 font-bold mt-1">Pending: {{ formatCurrency(totalRevenuePending) }}</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-sack-dollar"></i></div>
+                            </div>
+
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Payroll (Net)</p>
+                                    <h3 class="text-base font-extrabold text-brand-dark dark:text-white mt-1">{{ formatCurrency(totalPayrollNet) }}</h3>
+                                    <p class="text-[10px] text-purple-600 font-bold mt-1">{{ payslipHistory.length }} Payslips Generated</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg font-bold shrink-0"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                                    <h3 class="text-sm font-extrabold text-brand-dark dark:text-white">
+                                        <i class="fa-solid fa-chart-line text-brand-blue mr-2"></i>Kewangan & Revenue Trend
+                                    </h3>
+                                    <div class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl text-xs font-bold shrink-0">
+                                        <button @click="setChartFilter('daily')" :class="chartTimeFilter === 'daily' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-2.5 py-1 rounded-lg transition">Daily</button>
+                                        <button @click="setChartFilter('weekly')" :class="chartTimeFilter === 'weekly' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-2.5 py-1 rounded-lg transition">Weekly</button>
+                                        <button @click="setChartFilter('monthly')" :class="chartTimeFilter === 'monthly' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-2.5 py-1 rounded-lg transition">Monthly</button>
+                                        <button @click="setChartFilter('yearly')" :class="chartTimeFilter === 'yearly' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-2.5 py-1 rounded-lg transition">Yearly</button>
+                                    </div>
+                                </div>
+                                <div class="h-64 relative">
+                                    <canvas id="revenueChart"></canvas>
                                 </div>
                             </div>
-                            <div class="h-64 relative">
-                                <canvas id="revenueChart"></canvas>
+                            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                                <h3 class="text-sm font-extrabold text-brand-dark dark:text-white mb-4"><i class="fa-solid fa-chart-pie text-brand-gold mr-2"></i>Agihan Status Dokumen & Invois</h3>
+                                <div class="h-64 relative flex items-center justify-center">
+                                    <canvas id="statusChart"></canvas>
+                                </div>
                             </div>
                         </div>
-                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-                            <h3 class="text-sm font-extrabold text-brand-dark dark:text-white mb-4"><i class="fa-solid fa-chart-pie text-brand-gold mr-2"></i>Agihan Status Dokumen & Invois</h3>
-                            <div class="h-64 relative flex items-center justify-center">
-                                <canvas id="statusChart"></canvas>
+
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-sm font-extrabold text-brand-dark dark:text-white">Aktiviti Terkini & Senarai Dokumen</h3>
+                                <span class="text-xs text-slate-400">Papar: {{ filteredRecentActivities.length }} rekod</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-slate-100 dark:border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-400">
+                                            <th class="py-3 px-4">Tarikh</th>
+                                            <th class="py-3 px-4">Modul</th>
+                                            <th class="py-3 px-4">No. Rujukan</th>
+                                            <th class="py-3 px-4">Penerima / Pekerja</th>
+                                            <th class="py-3 px-4 text-right">Jumlah (RM)</th>
+                                            <th class="py-3 px-4 text-center w-36">Tindakan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
+                                        <tr v-for="item in paginatedActivities" :key="item.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                            <td class="py-3 px-4 text-slate-600 dark:text-slate-300">{{ item.date }}</td>
+                                            <td class="py-3 px-4">
+                                                <span :class="item.tagClass" class="px-2.5 py-1 rounded-full text-[11px] font-bold">{{ item.type }}</span>
+                                                <span v-if="item.type === 'Invoice' && item.status === 'Paid'" class="ml-1.5 px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800 uppercase">PAID</span>
+                                                <span v-if="item.type === 'Invoice' && item.status !== 'Paid'" class="ml-1.5 px-2 py-0.5 rounded text-[10px] font-extrabold bg-red-100 text-red-800 uppercase">UNPAID</span>
+                                            </td>
+                                            <td class="py-3 px-4 font-bold text-brand-dark dark:text-slate-100">{{ item.docNo }}</td>
+                                            <td class="py-3 px-4 font-medium text-slate-700 dark:text-slate-200">{{ item.name }}</td>
+                                            <td class="py-3 px-4 text-right font-extrabold text-brand-dark dark:text-slate-100">{{ formatCurrency(item.amount) }}</td>
+                                            <td class="py-3 px-4 text-center space-x-1.5">
+                                                <button @click="viewRecord(item)" class="bg-blue-50 text-brand-blue hover:bg-blue-100 p-2 rounded-lg text-xs font-bold transition" title="Lihat / Cetak"><i class="fa-solid fa-eye"></i></button>
+                                                <button v-if="canCreateEdit" @click="editRecord(item)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-2 rounded-lg text-xs font-bold transition" title="Sunting Rekod"><i class="fa-solid fa-pen"></i></button>
+                                                <button v-if="canDelete" @click="confirmDeleteRecord(item)" class="bg-red-50 text-red-600 hover:bg-red-100 p-2 rounded-lg text-xs font-bold transition" title="Padam Rekod"><i class="fa-solid fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="filteredRecentActivities.length === 0">
+                                            <td colspan="6" class="py-8 text-center text-slate-400">Tiada rekod dijumpai.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- RECENT ACTIVITIES TABLE -->
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-sm font-extrabold text-brand-dark dark:text-white">Aktiviti Terkini & Senarai Dokumen</h3>
-                            <span class="text-xs text-slate-400">Papar: {{ filteredRecentActivities.length }} rekod</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="border-b border-slate-100 dark:border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-400">
-                                        <th class="py-3 px-4">Tarikh</th>
-                                        <th class="py-3 px-4">Modul</th>
-                                        <th class="py-3 px-4">No. Rujukan</th>
-                                        <th class="py-3 px-4">Penerima / Pekerja</th>
-                                        <th class="py-3 px-4 text-right">Jumlah (RM)</th>
-                                        <th class="py-3 px-4 text-center w-36">Tindakan</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
-                                    <tr v-for="item in paginatedActivities" :key="item.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                        <td class="py-3 px-4 text-slate-600 dark:text-slate-300">{{ item.date }}</td>
-                                        <td class="py-3 px-4">
-                                            <span :class="item.tagClass" class="px-2.5 py-1 rounded-full text-[11px] font-bold">{{ item.type }}</span>
-                                            <span v-if="item.type === 'Invoice' && item.status === 'Paid'" class="ml-1.5 px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800 uppercase">PAID</span>
-                                            <span v-if="item.type === 'Invoice' && item.status !== 'Paid'" class="ml-1.5 px-2 py-0.5 rounded text-[10px] font-extrabold bg-red-100 text-red-800 uppercase">UNPAID</span>
-                                        </td>
-                                        <td class="py-3 px-4 font-bold text-brand-dark dark:text-slate-100">{{ item.docNo }}</td>
-                                        <td class="py-3 px-4 font-medium text-slate-700 dark:text-slate-200">{{ item.name }}</td>
-                                        <td class="py-3 px-4 text-right font-extrabold text-brand-dark dark:text-slate-100">{{ formatCurrency(item.amount) }}</td>
-                                        <td class="py-3 px-4 text-center space-x-1.5">
-                                            <button @click="viewRecord(item)" class="bg-blue-50 text-brand-blue hover:bg-blue-100 p-2 rounded-lg text-xs font-bold transition" title="Lihat / Cetak"><i class="fa-solid fa-eye"></i></button>
-                                            <button v-if="canCreateEdit" @click="editRecord(item)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-2 rounded-lg text-xs font-bold transition" title="Sunting Rekod"><i class="fa-solid fa-pen"></i></button>
-                                            <button v-if="canDelete" @click="confirmDeleteRecord(item)" class="bg-red-50 text-red-600 hover:bg-red-100 p-2 rounded-lg text-xs font-bold transition" title="Padam Rekod"><i class="fa-solid fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="filteredRecentActivities.length === 0">
-                                        <td colspan="6" class="py-8 text-center text-slate-400">Tiada rekod dijumpai.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- CLIENT DIRECTORY MODULE -->
@@ -1063,7 +756,6 @@
                         </template>
 
                         <template v-else>
-                            <!-- BAHAGIAN ATAS: 4 RUANGAN PROFIL (NAMPAK KEPADA SEMUA ROLE) -->
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
                                 <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Nama Pengguna Sedia Ada</label><input type="text" v-model="userProfile.name" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold"></div>
                                 <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Emel Log Masuk</label><input type="email" v-model="userProfile.email" disabled class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-400 rounded-xl text-xs cursor-not-allowed"></div>
@@ -1080,7 +772,6 @@
                                 </div>
                                 <div><label class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">URL Avatar / Foto</label><input type="text" v-model="userProfile.photo" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
                                 
-                                <!-- BUTANG SIMPAN PROFIL ATAS -->
                                 <div class="sm:col-span-2 flex justify-end pt-1">
                                     <button @click="saveMyProfile" type="button" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                         <i class="fa-solid fa-user-check"></i><span>Simpan Profil Saya</span>
@@ -1088,7 +779,6 @@
                                 </div>
                             </div>
 
-                            <!-- BAHAGIAN BAWAH: JADUAL PENGURUSAN AKSES (HANYA SUPERADMIN & HR SAHAJA AKAN NAMPAK) -->
                             <div v-if="canManageRBAC" class="pt-6 space-y-4 border-t border-slate-200 dark:border-slate-700">
                                 <div class="flex justify-between items-center">
                                     <h3 class="text-sm font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-users-viewfinder text-brand-blue mr-2"></i>PENGURUSAN AKSES PORTAL (SUPERADMIN & HR)</h3>

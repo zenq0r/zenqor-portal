@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FULL SYSTEM v3.5)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FULL SYSTEM v4.0)
 // ============================================================
 
 import {
@@ -51,14 +51,14 @@ createApp({
         return {
             isLoggedIn: false,
             authLoading: true,
-            showPassword: false, // Untuk butang mata (Show/Hide Password)
+            showPassword: false, // Papar/Sembunyi kata laluan log masuk
             loginForm: { 
                 email: '', 
                 password: '', 
-                rememberMe: false // Untuk kotak semak Remember Me
+                rememberMe: false // Simpan emel dengan LocalStorage
             },
             loginError: '',
-            currentTab: 'doc-generator',
+            currentTab: 'dashboard', // Direct ke dashboard selepas log masuk
             mobileMenuOpen: false,
             desktopSidebarOpen: false,
             chartTimeFilter: 'monthly',
@@ -227,7 +227,42 @@ createApp({
         canCreateEdit() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
         canEditDocs() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
         canDelete() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
+        
+        // HANYA SUPERADMIN & HR SAHAJA MENGURUS DAN NAMPAK PENGURUSAN AKSES PORTAL
         canManageRBAC() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
+
+        // DATA VIEW PEKERJA (STAFF DASHBOARD)
+        myPayslips() {
+            return this.payslipHistory.filter(p => p.raw && (p.raw.empEmail === this.userProfile.email || p.name === this.userProfile.name));
+        },
+        myLatestNetSalary() {
+            if (this.myPayslips.length === 0) return 0;
+            const sorted = [...this.myPayslips].sort((a, b) => new Date(b.date) - new Date(a.date));
+            return Number(sorted[0].amount) || 0;
+        },
+        myClaims() {
+            return this.claimsHistory.filter(c => c.empEmail === this.userProfile.email || c.name === this.userProfile.name);
+        },
+        myPendingClaimsCount() {
+            return this.myClaims.filter(c => c.status === 'Pending').length;
+        },
+        myApprovedClaimsAmount() {
+            return this.myClaims.filter(c => c.status === 'Approved').reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+        },
+
+        // DATA VIEW PELANGGAN (CLIENT DASHBOARD)
+        myClientDocs() {
+            return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email);
+        },
+        myUnpaidInvoicesCount() {
+            return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').length;
+        },
+        myUnpaidInvoicesAmount() {
+            return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+        },
+        myPaidInvoicesAmount() {
+            return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status === 'Paid').reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+        },
 
         docSubtotal() { return this.docForm.items.reduce((s, i) => s + (i.qty * i.price), 0); },
         docSST() { return this.docSubtotal * 0.08; },
@@ -494,7 +529,7 @@ createApp({
             }
         },
 
-        // FUNGSI FORGOT PASSWORD (HANTAR EMAIL RESET RESMI FIREBASE)
+        // FORGOT PASSWORD VIA FIREBASE AUTH
         async handleForgotPassword() {
             if (!this.loginForm.email) {
                 alert("Sila masukkan alamat emel rasmi anda di ruangan Emel Pengguna terlebih dahulu.");
@@ -506,7 +541,7 @@ createApp({
                 this.showNotify(`Pautan set semula kata laluan telah dihantar ke emel: ${this.loginForm.email}`);
             } catch (error) {
                 console.error("Forgot Password Error:", error);
-                alert("Gagal menghantar e-mel set semula kata laluan. Pastikan emel pengguna sah dan berdaftar.");
+                alert("Gagal menghantar e-mel set semula kata laluan. Pastikan emel pengguna sah.");
             }
         },
 
@@ -540,7 +575,6 @@ createApp({
                     photo = userSnap.data().photo || photo;
                 }
 
-                // OVERRIDE KESELAMATAN MUTLAK SUPERADMIN
                 if (firebaseUser.email === 'admin@zenq0r.com') {
                     role = 'Superadmin';
                 }
@@ -553,7 +587,7 @@ createApp({
                     photo: photo
                 };
 
-                // SIMPAN EMEL JIKA KOTAK REMEMBER ME DISEMAD
+                // REMEMBER ME: SIMPAN ATAU PADAM EMEL
                 if (this.loginForm.rememberMe) {
                     localStorage.setItem('zenqor_remember_email', this.loginForm.email);
                 } else {
@@ -567,7 +601,7 @@ createApp({
                 localStorage.setItem('zenqor_theme', this.isDarkMode ? 'dark' : 'light');
                 this.logAudit('LOGIN', `User logged in with role ${role}`);
                 this.showNotify(`Selamat kembali (${role}): ${name}`);
-                this.currentTab = 'doc-generator';
+                this.currentTab = 'dashboard';
                 this.$nextTick(() => { this.renderCharts(); });
 
             } catch (error) {
@@ -591,7 +625,7 @@ createApp({
                 this.isLoggedIn = false;
                 this.userProfile = { name: '', email: '', role: '', photo: '' };
                 this.resetAllForms();
-                this.currentTab = 'doc-generator';
+                this.currentTab = 'dashboard';
                 this.loginForm = { email: '', password: '', rememberMe: false };
                 this.searchQuery = '';
             } catch (error) {
@@ -635,6 +669,7 @@ createApp({
             }
         },
 
+        // SIMPAN PROFIL ATAS (4 RUANGAN KEPADA SEMUA ROLE)
         async saveMyProfile() {
             try {
                 if (!this.userProfile.email) return;
@@ -669,6 +704,7 @@ createApp({
             this.userModal.show = true;
         },
 
+        // TEMPLAT E-MEL RASMI DARI admin@zenq0r.com
         sendWelcomeEmail(userForm) {
             const originEmail = "admin@zenq0r.com";
             const recipientEmail = userForm.email;
@@ -1158,11 +1194,9 @@ Origin: ${originEmail}`
                         name = userSnap.data().name || name;
                         photo = userSnap.data().photo || photo;
                     }
-
                     if (firebaseUser.email === 'admin@zenq0r.com') {
                         role = 'Superadmin';
                     }
-
                     this.userProfile = {
                         name, email: firebaseUser.email, role,
                         uid: firebaseUser.uid,
