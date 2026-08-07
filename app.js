@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.0)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.1)
 // ============================================================
 
 import {
@@ -155,7 +155,7 @@ createApp({
 
             docForm: {
                 type: 'Invoice',
-                docNo: 'INV-2026-000001',
+                docNo: 'INV-2026-01001',
                 status: 'Unpaid',
                 paymentMethod: 'Bank Transfer (EFT)',
                 paymentBank: '',
@@ -1068,9 +1068,11 @@ Origin: ${originEmail}`
                 await setDoc(doc(db, "docs", docId), payload);
                 await this.saveCustomerToDatabase();
                 this.logAudit(this.editingDocId ? 'UPDATE' : 'CREATE', `Saved document ${this.docForm.docNo}`);
-                this.editingDocId = null;
+                
+                // PENTING: Kekalkan editingDocId = docId supaya klik Save/Print seterusnya mengemaskini rekod yang sama (TIDAK cipta baharu/duplikat)
+                this.editingDocId = docId;
+                
                 this.showNotify(`${this.docForm.type} (${this.docForm.docNo}) saved successfully.`);
-                this.generateDocNo();
                 return true;
             } catch (error) {
                 console.error("Document save error:", error);
@@ -1101,7 +1103,7 @@ Origin: ${originEmail}`
             if (this.editingDocId) return;
             const prefix = this.docForm.type === 'Invoice' ? 'INV' : 'QT';
             const relevantDocs = this.docHistory.filter(d => d.type === this.docForm.type);
-            let maxNum = 0;
+            let maxNum = 1000; // Mula dari asas 1000 supaya nombor pertama ialah 1001 -> 01001
             relevantDocs.forEach(d => {
                 if (d.docNo) {
                     const parts = d.docNo.split('-');
@@ -1109,7 +1111,7 @@ Origin: ${originEmail}`
                     if (!isNaN(num) && num > maxNum) maxNum = num;
                 }
             });
-            this.docForm.docNo = `${prefix}-2026-${String(maxNum + 1).padStart(6, '0')}`;
+            this.docForm.docNo = `${prefix}-2026-${String(maxNum + 1).padStart(5, '0')}`;
         },
         cancelEditDoc() { this.editingDocId = null; this.generateDocNo(); },
 
