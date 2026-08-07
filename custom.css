@@ -1,21 +1,26 @@
 /* ============================================================
-   ZENQOR TECHNOLOGIES - custom.css (CLEAN STYLESHEET v2.1)
+   ZENQOR TECHNOLOGIES - custom.css (CLEAN STYLESHEET v2.2)
    ============================================================ */
 
 body { 
     font-family: 'Inter', sans-serif; 
 }
 
-[v-cloak] { display: none !important; }
+[v-cloak] { 
+    display: none !important; 
+}
 
+/* Lencana Tab & Menu Aktif Sidebar */
 .sidebar-item-active {
     background-color: #1E3A8A;
     color: #FFFFFF;
     font-weight: 700;
     box-shadow: 0 4px 12px rgba(30, 58, 138, 0.4);
     border-left: 4px solid #D4AF37;
+    pointer-events: auto;
 }
 
+/* Penyesuaian Bar Skrol (Scrollbar styling) */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -31,6 +36,9 @@ body {
     background: #D4AF37;
 }
 
+/* ============================================================
+   PENETAPAN MOD CETAKAN & EKSPORT PDF (A4 PRINT / HTML2PDF)
+   ============================================================ */
 @media print {
     body { 
         background-color: white !important; 
@@ -40,12 +48,21 @@ body {
         -webkit-print-color-adjust: exact !important; 
         print-color-adjust: exact !important; 
     }
-    .no-print { display: none !important; }
-    .print-only { display: block !important; }
+    .no-print { 
+        display: none !important; 
+    }
+    .print-only { 
+        display: block !important; 
+    }
     
     .print-container {
-        position: absolute; left: 0; top: 0; width: 100%;
-        background: white; padding: 0; margin: 0;
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+        width: 100%;
+        background: white; 
+        padding: 0; 
+        margin: 0;
         box-shadow: none !important;
     }
 
@@ -55,17 +72,27 @@ body {
         -webkit-print-color-adjust: exact !important; 
         print-color-adjust: exact !important; 
     }
-    .print-header-border { border-bottom: 2px solid #D4AF37 !important; }
+    .print-header-border { 
+        border-bottom: 2px solid #D4AF37 !important; 
+    }
     .print-total-box { 
         background-color: #0B1E36 !important; 
         color: white !important; 
         -webkit-print-color-adjust: exact !important; 
         print-color-adjust: exact !important; 
     }
+    .print-logo-container {
+        background: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
 }
 
-.print-only { display: none; }
+.print-only { 
+    display: none; 
+}
 
+/* Logo Syarikat pada Dokumen & Cetakan */
 .print-logo-container {
     width: 46mm;
     height: 18mm;
@@ -84,25 +111,39 @@ body {
     object-position: center;
 }
 
-@media print {
-    .print-logo-container {
-        background: #000000 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-}
-
+/* ============================================================
+   GAYA KANVAS PAYSLIP (A4 LANDSCAPE 297mm x 210mm)
+   ============================================================ */
 .payslip-paper {
-    background: white; color: black; width: 297mm; min-height: 205mm; max-height: 209mm;
-    padding: 10mm 14mm; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    font-size: 11px; box-sizing: border-box; display: flex; flex-direction: column;
-    margin: 0 auto; overflow: hidden; page-break-inside: avoid;
+    background: white; 
+    color: black; 
+    width: 297mm; 
+    min-height: 205mm; 
+    padding: 10mm 14mm; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    font-size: 11px; 
+    box-sizing: border-box; 
+    display: flex; 
+    flex-direction: column;
+    margin: 0 auto; 
+    overflow: hidden; 
+    page-break-inside: avoid;
 }
 .payslip-header {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    border-bottom: 2px solid #0B1E36; padding-bottom: 8px; margin-bottom: 10px; width: 100%;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start;
+    border-bottom: 2px solid #0B1E36; 
+    padding-bottom: 8px; 
+    margin-bottom: 10px; 
+    width: 100%;
 }
-.company-brand { display: flex; gap: 12px; align-items: flex-start; width: 62%; }
+.company-brand { 
+    display: flex; 
+    gap: 12px; 
+    align-items: flex-start; 
+    width: 62%; 
+}
 .company-brand img { 
     width: 38mm; 
     height: 16mm; 
@@ -112,39 +153,201 @@ body {
     background: #000000; 
     border-radius: 4px; 
 }
-.company-brand-text h1 { font-size: 18px; margin-bottom: 2px; text-transform: uppercase; color: #0B1E36; font-weight: 800; }
-.company-brand-text p { font-size: 10px; color: #334155; margin-bottom: 1px; white-space: pre-wrap; line-height: 1.35; font-weight: 500; }
-.payslip-title { width: 36%; text-align: right; display: flex; flex-direction: column; }
-.payslip-title h2 { font-size: 22px; margin-bottom: 4px; color: #D4AF37; letter-spacing: 2px; font-weight: 800; }
-.payslip-title p { font-size: 11px; margin-bottom: 2px; color: #1E293B; font-weight: 600; }
+.company-brand-text h1 { 
+    font-size: 18px; 
+    margin-bottom: 2px; 
+    text-transform: uppercase; 
+    color: #0B1E36; 
+    font-weight: 800; 
+}
+.company-brand-text p { 
+    font-size: 10px; 
+    color: #334155; 
+    margin-bottom: 1px; 
+    white-space: pre-wrap; 
+    line-height: 1.35; 
+    font-weight: 500; 
+}
+.payslip-title { 
+    width: 36%; 
+    text-align: right; 
+    display: flex; 
+    flex-direction: column; 
+}
+.payslip-title h2 { 
+    font-size: 22px; 
+    margin-bottom: 4px; 
+    color: #D4AF37; 
+    letter-spacing: 2px; 
+    font-weight: 800; 
+}
+.payslip-title p { 
+    font-size: 11px; 
+    margin-bottom: 2px; 
+    color: #1E293B; 
+    font-weight: 600; 
+}
 
-.info-table-container { width: 100%; margin-bottom: 12px; }
-.info-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.info-table th, .info-table td { padding: 6px 8px; border: 1px solid #CBD5E1; text-align: left; font-size: 11px; vertical-align: middle; }
-.info-table th { background-color: #F1F5F9 !important; width: 15%; font-weight: 700; color: #0B1E36; }
-.info-table td { width: 18%; color: #1E293B; font-weight: 600; }
+/* Jadual Maklumat Pekerja */
+.info-table-container { 
+    width: 100%; 
+    margin-bottom: 12px; 
+}
+.info-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    table-layout: fixed; 
+}
+.info-table th, .info-table td { 
+    padding: 6px 8px; 
+    border: 1px solid #CBD5E1; 
+    text-align: left; 
+    font-size: 11px; 
+    vertical-align: middle; 
+}
+.info-table th { 
+    background-color: #F1F5F9 !important; 
+    width: 15%; 
+    font-weight: 700; 
+    color: #0B1E36; 
+}
+.info-table td { 
+    width: 18%; 
+    color: #1E293B; 
+    font-weight: 600; 
+}
 
-.salary-breakdown { display: flex; flex-direction: row !important; gap: 16px; margin-bottom: 10px; width: 100%; }
-.salary-col { flex: 1; width: calc(50% - 8px); display: flex; flex-direction: column; }
-.calc-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; table-layout: fixed; }
-.calc-table th, .calc-table td { border: 1px solid #CBD5E1; padding: 6px 8px; color: #1E293B; font-size: 11px; vertical-align: middle; }
-.calc-table thead th { background: #0B1E36 !important; color: white !important; text-align: left; font-weight: 700; }
-.calc-table tfoot th, .calc-table tfoot td { background: #E2E8F0 !important; font-weight: 800; color: #0B1E36; }
-.calc-table td.amount, .calc-table th.amount { text-align: right; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; width: 35%; }
+/* Seksyen Pecahan Gaji & Potongan */
+.salary-breakdown { 
+    display: flex; 
+    flex-direction: row !important; 
+    gap: 16px; 
+    margin-bottom: 10px; 
+    width: 100%; 
+}
+.salary-col { 
+    flex: 1; 
+    width: calc(50% - 8px); 
+    display: flex; 
+    flex-direction: column; 
+}
+.calc-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-bottom: 8px; 
+    table-layout: fixed; 
+}
+.calc-table th, .calc-table td { 
+    border: 1px solid #CBD5E1; 
+    padding: 6px 8px; 
+    color: #1E293B; 
+    font-size: 11px; 
+    vertical-align: middle; 
+}
+.calc-table thead th { 
+    background: #0B1E36 !important; 
+    color: white !important; 
+    text-align: left; 
+    font-weight: 700; 
+}
+.calc-table tfoot th, .calc-table tfoot td { 
+    background: #E2E8F0 !important; 
+    font-weight: 800; 
+    color: #0B1E36; 
+}
+.calc-table td.amount, .calc-table th.amount { 
+    text-align: right; 
+    font-family: 'Courier New', monospace; 
+    font-size: 12px; 
+    font-weight: 700; 
+    width: 35%; 
+}
 
-.net-pay-section { border: 2px solid #0B1E36; padding: 8px 12px; background: #F8FAFC !important; margin-top: auto; border-radius: 4px; }
-.net-pay-table { width: 100%; font-size: 12px; }
-.net-pay-table .final-net td { font-size: 15px; font-weight: 800; color: #0B1E36; }
-.net-pay-table .amount { text-align: right; font-family: 'Courier New', monospace; color: #1E3A8A; font-weight: 800; }
+/* Kotak Gaji Bersih (Net Pay Section) */
+.net-pay-section { 
+    border: 2px solid #0B1E36; 
+    padding: 8px 12px; 
+    background: #F8FAFC !important; 
+    margin-top: auto; 
+    border-radius: 4px; 
+}
+.net-pay-table { 
+    width: 100%; 
+    font-size: 12px; 
+}
+.net-pay-table .final-net td { 
+    font-size: 15px; 
+    font-weight: 800; 
+    color: #0B1E36; 
+}
+.net-pay-table .amount { 
+    text-align: right; 
+    font-family: 'Courier New', monospace; 
+    color: #1E3A8A; 
+    font-weight: 800; 
+}
 
-.contributions-section { width: 100%; margin-bottom: 8px; }
-.contrib-grid { display: flex; flex-direction: row !important; gap: 16px; width: 100%; }
-.contrib-col { flex: 1; width: calc(50% - 8px); }
-.contrib-col h3 { font-size: 11px; margin-bottom: 4px; color: #0B1E36; border-bottom: 2px solid #0B1E36; padding-bottom: 2px; font-weight: 800; text-transform: uppercase; }
-.contrib-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.contrib-table th, .contrib-table td { border: 1px solid #CBD5E1; padding: 5px 8px; color: #1E293B; font-size: 10px; vertical-align: middle; }
-.contrib-table th { background: #F1F5F9 !important; text-align: left; font-weight: 700; color: #0B1E36; }
-.contrib-table td:first-child { width: 44%; font-weight: 600; }
-.contrib-table td.amount, .contrib-table th.amount { text-align: right; font-family: 'Courier New', monospace; width: 28%; font-weight: 700; }
+/* Seksyen Sumbangan Statutory (EPF / SOCSO / EIS) */
+.contributions-section { 
+    width: 100%; 
+    margin-bottom: 8px; 
+}
+.contrib-grid { 
+    display: flex; 
+    flex-direction: row !important; 
+    gap: 16px; 
+    width: 100%; 
+}
+.contrib-col { 
+    flex: 1; 
+    width: calc(50% - 8px); 
+}
+.contrib-col h3 { 
+    font-size: 11px; 
+    margin-bottom: 4px; 
+    color: #0B1E36; 
+    border-bottom: 2px solid #0B1E36; 
+    padding-bottom: 2px; 
+    font-weight: 800; 
+    text-transform: uppercase; 
+}
+.contrib-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    table-layout: fixed; 
+}
+.contrib-table th, .contrib-table td { 
+    border: 1px solid #CBD5E1; 
+    padding: 5px 8px; 
+    color: #1E293B; 
+    font-size: 10px; 
+    vertical-align: middle; 
+}
+.contrib-table th { 
+    background: #F1F5F9 !important; 
+    text-align: left; 
+    font-weight: 700; 
+    color: #0B1E36; 
+}
+.contrib-table td:first-child { 
+    width: 44%; 
+    font-weight: 600; 
+}
+.contrib-table td.amount, .contrib-table th.amount { 
+    text-align: right; 
+    font-family: 'Courier New', monospace; 
+    width: 28%; 
+    font-weight: 700; 
+}
 
-.electronic-footer { margin-top: auto; text-align: center; font-size: 10px; color: #64748B; font-style: italic; border-top: 1px dashed #CBD5E1; padding-top: 6px; width: 100%; }
+/* Kaki Halaman Elektronik */
+.electronic-footer { 
+    margin-top: auto; 
+    text-align: center; 
+    font-size: 10px; 
+    color: #64748B; 
+    font-style: italic; 
+    border-top: 1px dashed #CBD5E1; 
+    padding-top: 6px; 
+    width: 100%; 
+}
