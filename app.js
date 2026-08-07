@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.3)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.4)
 // ============================================================
 
 import {
@@ -127,7 +127,7 @@ createApp({
             userModal: {
                 show: false,
                 isEdit: false,
-                form: { name: '', email: '', password: '', role: '' }
+                form: { name: '', email: '', password: '', role: 'Staff' }
             },
 
             claimSubCategories: {
@@ -330,7 +330,6 @@ createApp({
         }
     },
     methods: {
-        // 1. FUNGSI JANA KATA LALUAN RAWAK 8 AKSARA
         generateRandomPassword(length = 8) {
             const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             const lowercase = "abcdefghijklmnopqrstuvwxyz";
@@ -576,6 +575,7 @@ createApp({
             }
         },
 
+        // 1. KEMAS KINI PEMBACAAN FIRESTORE KEPADA `.email` DI SINI
         async handleLogin() {
             this.loginError = '';
 
@@ -592,7 +592,8 @@ createApp({
                 );
                 const firebaseUser = userCredential.user;
 
-                const userDocRef = doc(db, "users", firebaseUser.uid);
+                // Baca dokumen berdasarkan EMEL pengguna
+                const userDocRef = doc(db, "users", firebaseUser.email);
                 const userSnap = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
                     .then(m => m.getDoc(userDocRef));
 
@@ -728,7 +729,6 @@ createApp({
                 };
             } else {
                 this.userModal.isEdit = false;
-                // Auto-jana kata laluan rawak 8 aksara untuk pengguna baharu
                 this.userModal.form = { 
                     name: '', 
                     email: '', 
@@ -739,7 +739,6 @@ createApp({
             this.userModal.show = true;
         },
 
-        // 2. FUNGSI HANTAR EMEL TERUS KE GOOGLE GMAIL WEB COMPOSE
         sendWelcomeEmail(userForm) {
             const originEmail = "admin@zenq0r.com";
             const recipientEmail = userForm.email;
@@ -769,7 +768,6 @@ ZENQOR TECHNOLOGIES
 Sender Reference: ${originEmail}`
             );
 
-            // Buka terus ke antaramuka Google Gmail Web Compose
             const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${subject}&body=${emailBody}`;
             window.open(gmailUrl, '_blank');
             this.showNotify(`Google Gmail compose window opened for ${recipientEmail}.`);
@@ -792,14 +790,12 @@ Sender Reference: ${originEmail}`
                 const userRef = doc(db, "users", email);
                 const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.userModal.form.name)}&background=0B1E36&color=D4AF37`;
                 
-                // Pastikan rekod lama dalam Firestore dihapuskan terlebih dahulu (Clean Slate)
                 try {
                     await deleteDoc(userRef);
                 } catch (delErr) {
                     // Abaikan jika dokumen belum wujud
                 }
 
-                // Auto-Daftar pengguna ke dalam Firebase Authentication menerusi Secondary App
                 if (isNewUser) {
                     try {
                         const { initializeApp, deleteApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
@@ -821,7 +817,6 @@ Sender Reference: ${originEmail}`
                     }
                 }
 
-                // Simpan profil & RBAC ke dalam Firestore Database
                 await setDoc(userRef, {
                     email: email,
                     name: this.userModal.form.name,
@@ -1404,11 +1399,12 @@ Sender Reference: ${originEmail}`
             this.loginForm.rememberMe = true;
         }
 
+        // 2. KEMAS KINI PEMBACAAN FIRESTORE KEPADA `.email` DI SINI JUGAK
         onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 try {
                     const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-                    const userSnap = await getDoc(doc(db, "users", firebaseUser.uid));
+                    const userSnap = await getDoc(doc(db, "users", firebaseUser.email));
                     let role = 'Staff';
                     let name = firebaseUser.displayName || firebaseUser.email;
                     let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
