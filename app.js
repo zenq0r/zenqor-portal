@@ -62,6 +62,7 @@ createApp({
             mobileMenuOpen: false,
             desktopSidebarOpen: false,
             chartTimeFilter: 'monthly',
+            sortOption: 'latest',
             isDarkMode: true,
             searchQuery: '',
             currentPage: 1,
@@ -290,21 +291,22 @@ createApp({
                 ...this.claimsHistory.map(c => ({ ...c, tagClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200', isClaim: true, docNo: c.receiptNo, amount: c.amount, date: c.expenseDate }))
             ];
 
-            // Peta keutamaan susunan kategori: 1) Payslip -> 2) Quotation -> 3) Invoice -> 4) Claim
-            const typePriority = {
-                'Payslip': 1,
-                'Quotation': 2,
-                'Invoice': 3,
-                'Claim': 4
-            };
+            const typePriority = { 'Payslip': 1, 'Quotation': 2, 'Invoice': 3, 'Claim': 4 };
 
-            // Susun ikut Kategori terlebih dahulu, kemudian ikut Tarikh Terkini
             let list = combined.sort((a, b) => {
-                const priorityA = typePriority[a.type] || 99;
-                const priorityB = typePriority[b.type] || 99;
-
-                if (priorityA !== priorityB) {
-                    return priorityA - priorityB;
+                if (this.sortOption === 'latest') {
+                    return new Date(b.date) - new Date(a.date);
+                } else if (this.sortOption === 'oldest') {
+                    return new Date(a.date) - new Date(b.date);
+                } else if (this.sortOption === 'module') {
+                    const priorityA = typePriority[a.type] || 99;
+                    const priorityB = typePriority[b.type] || 99;
+                    if (priorityA !== priorityB) return priorityA - priorityB;
+                    return new Date(b.date) - new Date(a.date);
+                } else if (this.sortOption === 'amount_high') {
+                    return (Number(b.amount) || 0) - (Number(a.amount) || 0);
+                } else if (this.sortOption === 'amount_low') {
+                    return (Number(a.amount) || 0) - (Number(b.amount) || 0);
                 }
                 return new Date(b.date) - new Date(a.date);
             });
