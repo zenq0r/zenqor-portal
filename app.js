@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.1)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v6.2)
 // ============================================================
 
 import {
@@ -753,8 +753,8 @@ Origin: ${originEmail}`
 
         async savePortalUser() {
             try {
-                if (!this.userModal.form.name || !this.userModal.form.email) {
-                    alert("Please fill out all required fields.");
+                if (!this.userModal.form.name || !this.userModal.form.email || !this.userModal.form.password) {
+                    alert("Please fill out all required fields including Password.");
                     return;
                 }
                 if (!this.isOfficialEmail(this.userModal.form.email)) {
@@ -763,22 +763,55 @@ Origin: ${originEmail}`
                 }
 
                 const isNewUser = !this.userModal.isEdit;
-                const userRef = doc(db, "users", this.userModal.form.email);
+                const email = this.userModal.form.email.trim();
+                const password = this.userModal.form.password.trim();
+                const userRef = doc(db, "users", email);
                 const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.userModal.form.name)}&background=0B1E36&color=D4AF37`;
                 
+                // 1. PASTIKAN DATA LAMA DI FIRESTORE DIHAPUS TERLEBIH DAHULU (Clean Slate)
+                try {
+                    await deleteDoc(userRef);
+                } catch (delErr) {
+                    // Abaikan jika dokumen belum wujud
+                }
+
+                // 2. AUTO-DAFTAR KE FIREBASE AUTHENTICATION (Guna Secondary App supaya Admin tidak ter-logout)
+                if (isNewUser) {
+                    try {
+                        const { initializeApp, deleteApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+                        const { getAuth, createUserWithEmailAndPassword, signOut: signOutSecondary } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+                        
+                        const secondaryApp = initializeApp(auth.app.options, "SecondaryAuthApp-" + Date.now());
+                        const secondaryAuth = getAuth(secondaryApp);
+                        
+                        await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                        await signOutSecondary(secondaryAuth);
+                        await deleteApp(secondaryApp);
+                    } catch (authErr) {
+                        if (authErr.code === 'auth/email-already-in-use') {
+                            console.log("Emel sudah wujud dalam Firebase Authentication. Meneruskan penyimpanan ke Firestore...");
+                        } else {
+                            alert("Gagal mendaftar ke Firebase Authentication: " + authErr.message);
+                            return;
+                        }
+                    }
+                }
+
+                // 3. SIMPAN PROFIL & PERANAN (RBAC) BAHARU KE FIRESTORE DATABASE
                 await setDoc(userRef, {
-                    email: this.userModal.form.email,
+                    email: email,
                     name: this.userModal.form.name,
-                    password: this.userModal.form.password || '',
+                    password: password,
                     photo: photoUrl,
                     role: this.userModal.form.role
-                }, { merge: true });
+                }); // Tanpa merge: true supaya data benar-benar bersih dan baharu
 
                 this.userModal.show = false;
-                this.logAudit(isNewUser ? 'CREATE' : 'UPDATE', `User role/metadata for ${this.userModal.form.email} by ${this.userProfile.email}`);
+                this.logAudit(isNewUser ? 'CREATE' : 'UPDATE', `User role/metadata for ${email} by ${this.userProfile.email}`);
                 
                 if (isNewUser) {
                     this.sendWelcomeEmail(this.userModal.form);
+                    this.showNotify('Akaun berjaya dicipta dalam Authentication & Firestore!');
                 } else {
                     this.showNotify('User information updated successfully!');
                 }
@@ -1068,10 +1101,7 @@ Origin: ${originEmail}`
                 await setDoc(doc(db, "docs", docId), payload);
                 await this.saveCustomerToDatabase();
                 this.logAudit(this.editingDocId ? 'UPDATE' : 'CREATE', `Saved document ${this.docForm.docNo}`);
-                
-                // PENTING: Kekalkan editingDocId = docId supaya klik Save/Print seterusnya mengemaskini rekod yang sama (TIDAK cipta baharu/duplikat)
                 this.editingDocId = docId;
-                
                 this.showNotify(`${this.docForm.type} (${this.docForm.docNo}) saved successfully.`);
                 return true;
             } catch (error) {
@@ -1103,7 +1133,7 @@ Origin: ${originEmail}`
             if (this.editingDocId) return;
             const prefix = this.docForm.type === 'Invoice' ? 'INV' : 'QT';
             const relevantDocs = this.docHistory.filter(d => d.type === this.docForm.type);
-            let maxNum = 1000; // Mula dari asas 1000 supaya nombor pertama ialah 1001 -> 01001
+            let maxNum = 1000;
             relevantDocs.forEach(d => {
                 if (d.docNo) {
                     const parts = d.docNo.split('-');
