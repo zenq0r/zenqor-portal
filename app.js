@@ -127,7 +127,7 @@ createApp({
             userModal: {
                 show: false,
                 isEdit: false,
-                form: { name: '', email: '', password: '', role: 'Staff' }
+                form: { name: '', email: '', password: '', role: '' }
             },
 
             claimSubCategories: {
