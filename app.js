@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FIRESTORE SYNC v3.2)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FULL SYSTEM v3.5)
 // ============================================================
 
 import {
@@ -51,7 +51,12 @@ createApp({
         return {
             isLoggedIn: false,
             authLoading: true,
-            loginForm: { email: '', password: '' },
+            showPassword: false, // Untuk butang mata (Show/Hide Password)
+            loginForm: { 
+                email: '', 
+                password: '', 
+                rememberMe: false // Untuk kotak semak Remember Me
+            },
             loginError: '',
             currentTab: 'doc-generator',
             mobileMenuOpen: false,
@@ -489,6 +494,22 @@ createApp({
             }
         },
 
+        // FUNGSI FORGOT PASSWORD (HANTAR EMAIL RESET RESMI FIREBASE)
+        async handleForgotPassword() {
+            if (!this.loginForm.email) {
+                alert("Sila masukkan alamat emel rasmi anda di ruangan Emel Pengguna terlebih dahulu.");
+                return;
+            }
+            try {
+                const { sendPasswordResetEmail } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+                await sendPasswordResetEmail(auth, this.loginForm.email);
+                this.showNotify(`Pautan set semula kata laluan telah dihantar ke emel: ${this.loginForm.email}`);
+            } catch (error) {
+                console.error("Forgot Password Error:", error);
+                alert("Gagal menghantar e-mel set semula kata laluan. Pastikan emel pengguna sah dan berdaftar.");
+            }
+        },
+
         async handleLogin() {
             this.loginError = '';
 
@@ -505,39 +526,21 @@ createApp({
                 );
                 const firebaseUser = userCredential.user;
 
-                const firestoreModule = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
                 const userDocRef = doc(db, "users", firebaseUser.uid);
-                const userSnap = await firestoreModule.getDoc(userDocRef);
+                const userSnap = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
+                    .then(m => m.getDoc(userDocRef));
 
                 let role = 'Staff';
                 let name = firebaseUser.displayName || firebaseUser.email;
                 let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
 
                 if (userSnap.exists()) {
-                    // Rekod ditemui dengan UID — situasi normal
                     role = userSnap.data().role || 'Staff';
                     name = userSnap.data().name || name;
                     photo = userSnap.data().photo || photo;
-                } else {
-                    // Cuba cari rekod lama (disimpan guna email sebagai doc ID)
-                    const emailDocRef = doc(db, "users", firebaseUser.email);
-                    const emailSnap = await firestoreModule.getDoc(emailDocRef);
-                    if (emailSnap.exists()) {
-                        const emailDocData = emailSnap.data();
-                        role = emailDocData.role || 'Staff';
-                        name = emailDocData.name || name;
-                        photo = emailDocData.photo || photo;
-                        // Auto-migrate: pindah ke UID-based doc ID
-                        await firestoreModule.setDoc(doc(db, "users", firebaseUser.uid), {
-                            ...emailDocData,
-                            uid: firebaseUser.uid,
-                            pending_uid: false,
-                            migratedAt: new Date().toISOString()
-                        }, { merge: true });
-                        await firestoreModule.deleteDoc(emailDocRef);
-                    }
                 }
 
+                // OVERRIDE KESELAMATAN MUTLAK SUPERADMIN
                 if (firebaseUser.email === 'admin@zenq0r.com') {
                     role = 'Superadmin';
                 }
@@ -549,6 +552,13 @@ createApp({
                     uid: firebaseUser.uid,
                     photo: photo
                 };
+
+                // SIMPAN EMEL JIKA KOTAK REMEMBER ME DISEMAD
+                if (this.loginForm.rememberMe) {
+                    localStorage.setItem('zenqor_remember_email', this.loginForm.email);
+                } else {
+                    localStorage.removeItem('zenqor_remember_email');
+                }
 
                 this.resetAllForms();
                 this.isLoggedIn = true;
@@ -582,7 +592,7 @@ createApp({
                 this.userProfile = { name: '', email: '', role: '', photo: '' };
                 this.resetAllForms();
                 this.currentTab = 'doc-generator';
-                this.loginForm = { email: '', password: '' };
+                this.loginForm = { email: '', password: '', rememberMe: false };
                 this.searchQuery = '';
             } catch (error) {
                 console.error("Logout error:", error);
@@ -627,11 +637,9 @@ createApp({
 
         async saveMyProfile() {
             try {
-                if (!this.userProfile.email || !this.userProfile.uid) return;
-                // Guna UID sebagai doc ID supaya konsisten dengan Firebase Auth & Firestore Rules
-                const userRef = doc(db, "users", this.userProfile.uid);
+                if (!this.userProfile.email) return;
+                const userRef = doc(db, "users", this.userProfile.email);
                 await setDoc(userRef, {
-                    uid: this.userProfile.uid,
                     name: this.userProfile.name,
                     email: this.userProfile.email,
                     role: this.userProfile.role,
@@ -693,7 +701,6 @@ Origin: ${originEmail}`
             this.showNotify(`E-mel makluman akses portal telah dijana untuk dihantar kepada ${recipientEmail}.`);
         },
 
-        // SIMPAN METADATA PENGGUNA KE FIRESTORE — DOC ID = UID (konsisten dengan Auth & Firestore Rules)
         async savePortalUser() {
             try {
                 if (!this.userModal.form.name || !this.userModal.form.email) {
@@ -706,52 +713,16 @@ Origin: ${originEmail}`
                 }
 
                 const isNewUser = !this.userModal.isEdit;
+                const userRef = doc(db, "users", this.userModal.form.email);
                 const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.userModal.form.name)}&background=0B1E36&color=D4AF37`;
-
-                if (isNewUser) {
-                    // PENGGUNA BARU: cari UID dari senarai users yang sudah dimuatkan
-                    // (Superadmin perlu cipta akaun di Firebase Console dahulu, atau gunakan
-                    //  Firebase Admin SDK / Cloud Function untuk createUser)
-                    const existingUser = this.users.find(u => u.email === this.userModal.form.email);
-                    if (!existingUser || !existingUser.uid) {
-                        // Jika UID tiada, simpan sementara dengan email sebagai doc ID
-                        // dan tandakan sebagai 'pending_uid' untuk diselaraskan kemudian
-                        const tempRef = doc(db, "users", this.userModal.form.email);
-                        await setDoc(tempRef, {
-                            email: this.userModal.form.email,
-                            name: this.userModal.form.name,
-                            photo: photoUrl,
-                            role: this.userModal.form.role,
-                            pending_uid: true,  // Penanda: rekod ini perlu dikemas apabila UID tersedia
-                            createdBy: this.userProfile.email,
-                            createdAt: new Date().toISOString()
-                        }, { merge: true });
-                    } else {
-                        // UID sudah ada — simpan dengan UID sebagai doc ID
-                        const userRef = doc(db, "users", existingUser.uid);
-                        await setDoc(userRef, {
-                            uid: existingUser.uid,
-                            email: this.userModal.form.email,
-                            name: this.userModal.form.name,
-                            photo: photoUrl,
-                            role: this.userModal.form.role,
-                            createdBy: this.userProfile.email,
-                            createdAt: new Date().toISOString()
-                        }, { merge: true });
-                    }
-                } else {
-                    // KEMASKINI PENGGUNA SEDIA ADA — guna UID jika ada
-                    const existingUser = this.users.find(u => u.email === this.userModal.form.email);
-                    const docId = (existingUser && existingUser.uid) ? existingUser.uid : this.userModal.form.email;
-                    const userRef = doc(db, "users", docId);
-                    await setDoc(userRef, {
-                        name: this.userModal.form.name,
-                        role: this.userModal.form.role,
-                        photo: photoUrl,
-                        updatedBy: this.userProfile.email,
-                        updatedAt: new Date().toISOString()
-                    }, { merge: true });
-                }
+                
+                await setDoc(userRef, {
+                    email: this.userModal.form.email,
+                    name: this.userModal.form.name,
+                    password: this.userModal.form.password || '',
+                    photo: photoUrl,
+                    role: this.userModal.form.role
+                }, { merge: true });
 
                 this.userModal.show = false;
                 this.logAudit(isNewUser ? 'CREATE' : 'UPDATE', `User role/metadata for ${this.userModal.form.email} by ${this.userProfile.email}`);
@@ -770,10 +741,7 @@ Origin: ${originEmail}`
         async deletePortalUser(email) {
             if (confirm(`Adakah anda pasti mahu memadam akses portal bagi emel: ${email}?`)) {
                 try {
-                    // Cari UID pengguna dari senarai — doc ID mesti UID, bukan email
-                    const existingUser = this.users.find(u => u.email === email);
-                    const docId = (existingUser && existingUser.uid) ? existingUser.uid : email;
-                    await deleteDoc(doc(db, "users", docId));
+                    await deleteDoc(doc(db, "users", email));
                     this.logAudit('DELETE', `Deleted user metadata for ${email}`);
                     this.showNotify('Rekod pengguna dipadam. Sila nyahaktifkan akaun di Firebase Console juga.');
                 } catch (error) {
@@ -1169,48 +1137,32 @@ Origin: ${originEmail}`
         this.autoCalculatePayroll();
         this.generateDocNo();
 
+        // MUAT NAIK EMEL JIKA KOTAK "REMEMBER ME" PERNAH DISEMAD
+        const savedEmail = localStorage.getItem('zenqor_remember_email');
+        if (savedEmail) {
+            this.loginForm.email = savedEmail;
+            this.loginForm.rememberMe = true;
+        }
+
         onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 try {
-                    const { getDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-                    
-                    // Baca dokumen guna UID (doc ID yang betul)
-                    const userSnapByUid = await getDoc(doc(db, "users", firebaseUser.uid));
+                    const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                    const userSnap = await getDoc(doc(db, "users", firebaseUser.uid));
                     let role = 'Staff';
                     let name = firebaseUser.displayName || firebaseUser.email;
                     let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
 
-                    if (userSnapByUid.exists()) {
-                        // Rekod ditemui dengan UID — situasi normal
-                        role = userSnapByUid.data().role || 'Staff';
-                        name = userSnapByUid.data().name || name;
-                        photo = userSnapByUid.data().photo || photo;
-                    } else {
-                        // Rekod tidak ada guna UID — mungkin admin simpan guna email (rekod lama)
-                        // Cuba cari rekod pending_uid guna email sebagai doc ID
-                        const userSnapByEmail = await getDoc(doc(db, "users", firebaseUser.email));
-                        if (userSnapByEmail.exists()) {
-                            const emailDocData = userSnapByEmail.data();
-                            role = emailDocData.role || 'Staff';
-                            name = emailDocData.name || name;
-                            photo = emailDocData.photo || photo;
-
-                            // Selaraskan: pindahkan rekod ke doc ID yang betul (UID)
-                            // dan padam rekod lama (email-based)
-                            await setDoc(doc(db, "users", firebaseUser.uid), {
-                                ...emailDocData,
-                                uid: firebaseUser.uid,
-                                pending_uid: false,
-                                migratedAt: new Date().toISOString()
-                            }, { merge: true });
-                            await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
-                                .then(m => m.deleteDoc(doc(db, "users", firebaseUser.email)));
-                        }
+                    if (userSnap.exists()) {
+                        role = userSnap.data().role || 'Staff';
+                        name = userSnap.data().name || name;
+                        photo = userSnap.data().photo || photo;
                     }
 
                     if (firebaseUser.email === 'admin@zenq0r.com') {
                         role = 'Superadmin';
                     }
+
                     this.userProfile = {
                         name, email: firebaseUser.email, role,
                         uid: firebaseUser.uid,

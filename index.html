@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZENQOR TECHNOLOGIES - Enterprise Portal v2.0</title>
+    <title>ZENQOR HRMS/CDTS - Dual System Human Resources Management System & Client Documents Tracking System</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -37,32 +37,57 @@
 
         <!-- NOTIFICATION BAR -->
         <transition name="fade">
-            <div v-if="notification.show" class="fixed top-5 right-5 z-50 bg-brand-dark text-white px-5 py-3 rounded-xl shadow-2xl border-l-4 border-brand-gold flex items-center space-x-3 no-print">
+            <div v-if="notification.show" class="fixed top-5 right-5 z-50 bg-brand-dark text-white px-5 py-3.5 rounded-xl shadow-2xl border-l-4 border-brand-gold flex items-center space-x-3 no-print">
                 <i class="fa-solid fa-circle-check text-brand-gold text-base"></i>
                 <span class="text-xs font-semibold">{{ notification.message }}</span>
             </div>
         </transition>
 
         <!-- LOGIN SYSTEM & RBAC GUARD -->
-        <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center bg-brand-dark px-4">
+        <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center bg-brand-dark px-4 py-8">
             <div class="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-100 dark:border-slate-700">
+                
+                <!-- HEADER LOGIN DENGAN LOGO.PNG & TAJUK BAHARU -->
                 <div class="text-center mb-8">
-                    <div class="inline-flex items-center justify-center w-14 h-14 bg-brand-dark rounded-2xl mb-4 shadow-lg border border-brand-gold/30">
-                        <i class="fa-solid fa-layer-group text-brand-gold text-2xl"></i>
+                    <div class="inline-flex items-center justify-center p-3 bg-white rounded-2xl mb-4 shadow-lg border border-brand-gold/30">
+                        <img src="./logo.png" onerror="this.style.display='none'" alt="ZENQOR Logo" class="h-12 w-auto object-contain">
                     </div>
-                    <h2 class="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">ZENQOR ENTERPRISE</h2>
-                    <p class="text-xs text-slate-400 uppercase tracking-widest mt-1">Operation Portal v2.0</p>
+                    <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">ZENQOR HRMS/CDTS</h2>
+                    <p class="text-[11px] font-semibold text-slate-400 mt-1 leading-snug">
+                        Dual System Human Resources Management System &amp; Client Documents Tracking System
+                    </p>
                 </div>
+
                 <form @submit.prevent="handleLogin" class="space-y-4">
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Emel Pengguna</label>
                         <input type="email" v-model="loginForm.email" required placeholder="nama@zenq0r.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue focus:outline-none text-xs font-medium">
                     </div>
+
+                    <!-- INPUT KATA LALUAN DENGAN TOGGLE SHOW PASSWORD -->
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">Kata Laluan</label>
-                        <input type="password" v-model="loginForm.password" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue focus:outline-none text-xs">
+                        <div class="relative">
+                            <input :type="showPassword ? 'text' : 'password'" v-model="loginForm.password" required placeholder="••••••••" class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue focus:outline-none text-xs">
+                            <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none" title="Papar / Sembunyi Kata Laluan">
+                                <i :class="showPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                            </button>
+                        </div>
                     </div>
+
+                    <!-- REMEMBER ME & FORGOT MY PASSWORD -->
+                    <div class="flex items-center justify-between text-xs pt-1">
+                        <label class="flex items-center space-x-2 cursor-pointer text-slate-600 dark:text-slate-300 font-medium">
+                            <input type="checkbox" v-model="loginForm.rememberMe" class="w-4 h-4 rounded border-slate-300 text-brand-dark focus:ring-brand-blue">
+                            <span>Remember me</span>
+                        </label>
+                        <a href="#" @click.prevent="handleForgotPassword" class="text-brand-gold hover:underline font-bold">
+                            Forgot my password?
+                        </a>
+                    </div>
+
                     <div v-if="loginError" class="text-red-500 text-xs font-semibold text-center bg-red-50 dark:bg-red-900/30 p-2.5 rounded-lg">{{ loginError }}</div>
+                    
                     <button type="submit" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition duration-200 text-xs uppercase tracking-wider">
                         Log Masuk Sistem
                     </button>
@@ -84,11 +109,11 @@
                 
                 <div class="p-4 border-b border-slate-800 flex items-center justify-between">
                     <div class="flex items-center space-x-3 overflow-hidden">
-                        <div class="bg-white p-1.5 rounded-xl shrink-0 flex items-center justify-center border border-brand-gold/30">
+                        <div class="bg-white p-1 rounded-xl shrink-0 flex items-center justify-center border border-brand-gold/30">
                             <img src="./logo.png" onerror="this.style.display='none'" class="h-6 w-auto object-contain">
                         </div>
                         <div class="truncate">
-                            <h1 class="font-extrabold text-xs tracking-wide text-white truncate">ZENQOR</h1>
+                            <h1 class="font-extrabold text-xs tracking-wide text-white truncate">ZENQOR HRMS/CDTS</h1>
                             <p class="text-[9px] text-brand-gold uppercase tracking-widest font-semibold truncate">Enterprise v2.0</p>
                         </div>
                     </div>
@@ -167,6 +192,7 @@
                     </div>
 
                     <div class="flex items-center space-x-3 shrink-0">
+                        <!-- TAB SWITCHER PANTAS DI NAVBAR -->
                         <div class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-600">
                             <button @click="switchTab('doc-generator')" :class="currentTab === 'doc-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Documents</button>
                             <button @click="switchTab('payslip-generator')" :class="currentTab === 'payslip-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Payroll</button>
@@ -186,7 +212,7 @@
                 </header>
 
                 <!-- ================================================================= -->
-                <!-- MODUL 1: DOCUMENT GENERATOR                                       -->
+                <!-- MODUL 1: DOCUMENT GENERATOR (FORMAT KEMAS & BERSIH)              -->
                 <!-- ================================================================= -->
                 <div v-show="currentTab === 'doc-generator'" class="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -642,6 +668,7 @@
                         <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Pemantauan KPI kewangan, HR, dokumen korporat dan aktiviti sistem secara masa nyata.</p>
                     </div>
 
+                    <!-- 6 KAD KPI DENGAN IKON DISERAGAMKAN -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                         <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
                             <div>
