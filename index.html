@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZENQOR HRMS/CDTS - Dual System Human Resources Management System & Client Documents Tracking System</title>
     
-    <!-- Pemuatan Google Fonts Rasmi (Selesai Ralat Verify Stylesheet & CORB) -->
+    <!-- Google Fonts Piawai (Selesai Ralat CORB & Verify Stylesheet URLs) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Courier+New&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+New&family=Inter:wght@300;400;500;600;700;800&display=swap">
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -245,7 +245,7 @@
                                 </h3>
                             </div>
                             <div class="flex items-center space-x-2">
-                                <select @change="selectCustomerForDoc($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-60 focus:ring-2 focus:ring-brand-gold">
+                                <select id="doc-client-select" name="docClientSelect" aria-label="Select Client" @change="selectCustomerForDoc($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-60 focus:ring-2 focus:ring-brand-gold">
                                     <option value="">-- Auto-Fill Client --</option>
                                     <option v-for="(cust, cIdx) in customers" :key="cIdx" :value="cust.clientName">{{ cust.clientName }}</option>
                                 </select>
@@ -256,29 +256,29 @@
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Client / Company Name *</label><input type="text" v-model="docForm.clientName" required placeholder="Company Name Sdn. Bhd." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Phone Number *</label><input type="text" v-model="docForm.clientPhone" required placeholder="+60 13-XXXX XXX" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Business Reg. / TIN</label><input type="text" v-model="docForm.clientSSM" placeholder="200901029271 (872376-W)" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Email Address</label><input type="email" v-model="docForm.clientEmail" placeholder="email@company.com" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Contact Person</label><input type="text" v-model="docForm.clientContactPerson" placeholder="Officer Name" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50 font-semibold"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Position</label><input type="text" v-model="docForm.clientPosition" placeholder="EXECUTIVE / DIRECTOR" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div class="md:col-span-3"><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Full Client Address *</label><input type="text" v-model="docForm.clientAddress" required placeholder="Building No., Street, City, State..." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="doc-client-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Client / Company Name *</label><input id="doc-client-name" name="clientName" type="text" v-model="docForm.clientName" required placeholder="Company Name Sdn. Bhd." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
+                            <div><label for="doc-client-phone" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Phone Number *</label><input id="doc-client-phone" name="clientPhone" type="text" v-model="docForm.clientPhone" required placeholder="+60 13-XXXX XXX" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="doc-client-ssm" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Business Reg. / TIN</label><input id="doc-client-ssm" name="clientSSM" type="text" v-model="docForm.clientSSM" placeholder="200901029271 (872376-W)" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="doc-client-email" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Email Address</label><input id="doc-client-email" name="clientEmail" type="email" v-model="docForm.clientEmail" placeholder="email@company.com" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="doc-client-contact" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Contact Person</label><input id="doc-client-contact" name="clientContact" type="text" v-model="docForm.clientContactPerson" placeholder="Officer Name" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50 font-semibold"></div>
+                            <div><label for="doc-client-position" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Position</label><input id="doc-client-position" name="clientPosition" type="text" v-model="docForm.clientPosition" placeholder="EXECUTIVE / DIRECTOR" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div class="md:col-span-3"><label for="doc-client-address" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Full Client Address *</label><input id="doc-client-address" name="clientAddress" type="text" v-model="docForm.clientAddress" required placeholder="Building No., Street, City, State..." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 border-t border-slate-100 dark:border-slate-700 pt-5">
                             <div>
-                                <label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">DOCUMENT TYPE</label>
-                                <select v-model="docForm.type" @change="generateDocNo" :disabled="!!editingDocId" class="w-full p-2 border rounded-xl text-xs font-extrabold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
+                                <label for="doc-type" class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">DOCUMENT TYPE</label>
+                                <select id="doc-type" name="docType" v-model="docForm.type" @change="generateDocNo" :disabled="!!editingDocId" class="w-full p-2 border rounded-xl text-xs font-extrabold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
                                     <option value="Quotation">Quotation</option>
                                     <option value="Invoice">Invoice</option>
                                 </select>
                             </div>
-                            <div><label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">DOCUMENT NO.</label><input type="text" v-model="docForm.docNo" readonly class="w-full p-2 border rounded-xl bg-slate-100 dark:bg-slate-700 dark:text-white font-extrabold text-xs text-brand-dark"></div>
-                            <div><label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">DOCUMENT DATE</label><input type="date" v-model="docForm.date" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
-                            <div><label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">{{ docForm.type === 'Invoice' ? 'DUE DATE' : 'VALID UNTIL' }}</label><input type="date" v-model="docForm.dueDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                            <div><label for="doc-no" class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">DOCUMENT NO.</label><input id="doc-no" name="docNo" type="text" v-model="docForm.docNo" readonly class="w-full p-2 border rounded-xl bg-slate-100 dark:bg-slate-700 dark:text-white font-extrabold text-xs text-brand-dark"></div>
+                            <div><label for="doc-date" class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">DOCUMENT DATE</label><input id="doc-date" name="docDate" type="date" v-model="docForm.date" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                            <div><label for="doc-due-date" class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">{{ docForm.type === 'Invoice' ? 'DUE DATE' : 'VALID UNTIL' }}</label><input id="doc-due-date" name="dueDate" type="date" v-model="docForm.dueDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
                             <div>
-                                <label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">STATUS</label>
-                                <select v-model="docForm.status" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-extrabold text-xs">
+                                <label for="doc-status" class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">STATUS</label>
+                                <select id="doc-status" name="docStatus" v-model="docForm.status" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-extrabold text-xs">
                                     <template v-if="docForm.type === 'Quotation'">
                                         <option value="Open">Open</option>
                                         <option value="Accepted">Accepted</option>
@@ -294,8 +294,8 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">PAYMENT METHOD</label>
-                                <select v-model="docForm.paymentMethod" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-extrabold text-xs">
+                                <label for="doc-payment-method" class="block text-[11px] font-extrabold text-slate-600 dark:text-slate-300 uppercase mb-1">PAYMENT METHOD</label>
+                                <select id="doc-payment-method" name="paymentMethod" v-model="docForm.paymentMethod" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-extrabold text-xs">
                                     <option value="Bank Transfer">Bank Transfer (EFT)</option>
                                     <option value="DuitNow QR">DuitNow QR</option>
                                     <option value="Cheque">Cheque</option>
@@ -307,8 +307,8 @@
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-slate-50 dark:bg-slate-700/40 p-4 rounded-xl border border-slate-200 dark:border-slate-600 items-center">
                             <div>
-                                <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">BANK SELECTION</label>
-                                <select v-model="docForm.paymentBank" class="w-full p-2 border rounded-xl text-xs font-semibold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
+                                <label for="doc-payment-bank" class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">BANK SELECTION</label>
+                                <select id="doc-payment-bank" name="paymentBank" v-model="docForm.paymentBank" class="w-full p-2 border rounded-xl text-xs font-semibold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
                                     <option value="">-- Select Bank --</option>
                                     <option value="Maybank (Malayan Banking Berhad)">Maybank (Malayan Banking Berhad)</option>
                                     <option value="CIMB Bank">CIMB Bank Berhad</option>
@@ -320,8 +320,8 @@
                             </div>
 
                             <div>
-                                <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PAYMENT RECEIVER</label>
-                                <select v-model="docForm.paymentReceiver" class="w-full p-2 border rounded-xl text-xs font-semibold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
+                                <label for="doc-payment-receiver" class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PAYMENT RECEIVER</label>
+                                <select id="doc-payment-receiver" name="paymentReceiver" v-model="docForm.paymentReceiver" class="w-full p-2 border rounded-xl text-xs font-semibold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
                                     <option value="">-- Select Receiver Account --</option>
                                     <option value="Akaun Maybank Syarikat (562982057309)">Maybank Corporate Account (56298...)</option>
                                     <option value="DuitNow QR Syarikat">DuitNow QR Corporate</option>
@@ -330,11 +330,11 @@
                             </div>
 
                             <div>
-                                <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
+                                <label for="doc-payment-ref" class="block text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                                     PAYMENT REFERENCE NO.
                                     <span class="text-red-500 font-extrabold ml-1">* REQUIRED</span>
                                 </label>
-                                <input type="text" v-model="docForm.paymentRefNo" placeholder="IT280905CT833S" 
+                                <input id="doc-payment-ref" name="paymentRefNo" type="text" v-model="docForm.paymentRefNo" placeholder="IT280905CT833S" 
                                        class="w-full p-2 border rounded-xl text-xs font-semibold bg-white dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-600">
                             </div>
 
@@ -346,7 +346,7 @@
                                 <div class="flex items-center space-x-1 shrink-0">
                                     <label class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
                                         <span>Select</span>
-                                        <input type="file" @change="handleAttachmentUpload" accept=".pdf,image/*" class="hidden">
+                                        <input id="doc-attachment" name="attachment" aria-label="Upload Attachment" type="file" @change="handleAttachmentUpload" accept=".pdf,image/*" class="hidden">
                                     </label>
                                     <a v-if="docForm.paymentAttachment" :href="docForm.paymentAttachment" download="Bukti_Resit" target="_blank" class="bg-emerald-600 text-white px-2 py-1.5 rounded-lg text-[11px] font-bold" title="View">
                                         <i class="fa-solid fa-eye"></i>
@@ -375,9 +375,9 @@
                                 </thead>
                                 <tbody>
                                     <tr v-for="(item, idx) in docForm.items" :key="idx" class="border-b dark:border-slate-700">
-                                        <td class="p-2 border dark:border-slate-600"><input type="text" v-model="item.desc" placeholder="Service description / payment phase..." class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-xs font-medium"></td>
-                                        <td class="p-2 border dark:border-slate-600"><input type="number" v-model="item.qty" min="1" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-center text-xs font-bold"></td>
-                                        <td class="p-2 border dark:border-slate-600"><input type="number" v-model="item.price" step="0.01" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right text-xs font-semibold"></td>
+                                        <td class="p-2 border dark:border-slate-600"><input :id="'item-desc-' + idx" :name="'itemDesc_' + idx" aria-label="Item Description" type="text" v-model="item.desc" placeholder="Service description / payment phase..." class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-xs font-medium"></td>
+                                        <td class="p-2 border dark:border-slate-600"><input :id="'item-qty-' + idx" :name="'itemQty_' + idx" aria-label="Item Quantity" type="number" v-model="item.qty" min="1" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-center text-xs font-bold"></td>
+                                        <td class="p-2 border dark:border-slate-600"><input :id="'item-price-' + idx" :name="'itemPrice_' + idx" aria-label="Item Price" type="number" v-model="item.price" step="0.01" class="w-full p-1.5 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right text-xs font-semibold"></td>
                                         <td class="p-2 border dark:border-slate-600 text-right font-extrabold text-xs bg-slate-50 dark:bg-slate-700/50 dark:text-white">{{ formatCurrency(item.qty * item.price) }}</td>
                                         <td class="p-2 border dark:border-slate-600 text-center"><button @click="removeDocItem(idx)" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash text-xs"></i></button></td>
                                     </tr>
@@ -401,7 +401,7 @@
 
                             <div class="w-full sm:w-72 space-y-1.5 text-xs font-semibold">
                                 <div class="flex justify-between text-slate-600 dark:text-slate-300"><span>Subtotal:</span><span class="font-bold">RM {{ docSubtotal.toFixed(2) }}</span></div>
-                                <div class="flex justify-between items-center text-slate-600 dark:text-slate-300"><span>Discount (-):</span><input type="number" v-model="docForm.discount" step="0.01" class="w-20 p-1 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right text-xs"></div>
+                                <div class="flex justify-between items-center text-slate-600 dark:text-slate-300"><label for="doc-discount" class="cursor-pointer">Discount (-):</label><input id="doc-discount" name="docDiscount" type="number" v-model="docForm.discount" step="0.01" class="w-20 p-1 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded text-right text-xs"></div>
                                 <div class="flex justify-between text-slate-600 dark:text-slate-300"><span>SST (8%):</span><span class="font-bold">RM {{ docSST.toFixed(2) }}</span></div>
                                 <div class="flex justify-between text-sm font-extrabold text-brand-dark dark:text-white border-t border-slate-300 dark:border-slate-600 pt-2"><span>Grand Total:</span><span class="text-brand-gold">RM {{ docGrandTotal.toFixed(2) }}</span></div>
                             </div>
@@ -441,47 +441,47 @@
                                     EMPLOYEE &amp; BANKING INFORMATION
                                 </h3>
                             </div>
-                            <select @change="selectEmployeeForPayslip($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
+                            <select id="pay-emp-select" name="payEmpSelect" aria-label="Select Employee" @change="selectEmployeeForPayslip($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
                                 <option value="">-- Auto-Fill HR Employee --</option>
                                 <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
                             </select>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee Name *</label><input type="text" v-model="payForm.name" required placeholder="Ahmad Azziem" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">National ID / Passport *</label><input type="text" v-model="payForm.ic" placeholder="000000-00-0000" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input type="text" v-model="payForm.empNo" placeholder="ZEN-HR08001" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Position</label><input type="text" v-model="payForm.position" placeholder="ASSISTANT MANAGER HR" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input type="text" v-model="payForm.dept" placeholder="OPERATION DEPARTMENT" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Join Date</label><input type="date" v-model="payForm.joinDate" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Bank / Account No.</label><input type="text" v-model="payForm.bankAcc" placeholder="Maybank Islamic | 56298..." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">EPF / SOCSO No.</label><input type="text" v-model="payForm.epfSocso" placeholder="EPF / SOCSO No." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="pay-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee Name *</label><input id="pay-name" name="payName" type="text" v-model="payForm.name" required placeholder="Ahmad Azziem" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
+                            <div><label for="pay-ic" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">National ID / Passport *</label><input id="pay-ic" name="payIc" type="text" v-model="payForm.ic" placeholder="000000-00-0000" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="pay-emp-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input id="pay-emp-no" name="payEmpNo" type="text" v-model="payForm.empNo" placeholder="ZEN-HR08001" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
+                            <div><label for="pay-position" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Position</label><input id="pay-position" name="payPosition" type="text" v-model="payForm.position" placeholder="ASSISTANT MANAGER HR" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="pay-dept" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input id="pay-dept" name="payDept" type="text" v-model="payForm.dept" placeholder="OPERATION DEPARTMENT" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="pay-join-date" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Join Date</label><input id="pay-join-date" name="payJoinDate" type="date" v-model="payForm.joinDate" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="pay-bank-acc" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Bank / Account No.</label><input id="pay-bank-acc" name="payBankAcc" type="text" v-model="payForm.bankAcc" placeholder="Maybank Islamic | 56298..." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="pay-epf-socso" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">EPF / SOCSO No.</label><input id="pay-epf-socso" name="payEpfSocso" type="text" v-model="payForm.epfSocso" placeholder="EPF / SOCSO No." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
                         </div>
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 border-t border-slate-100 dark:border-slate-700 pt-5">
                             <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
                                 <h4 class="text-xs font-extrabold uppercase tracking-wider text-brand-blue dark:text-blue-400 border-b border-slate-200 dark:border-slate-600 pb-2">EARNINGS - RM</h4>
                                 <div class="grid grid-cols-2 gap-3 text-xs">
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Payroll Month</label><input type="month" v-model="payForm.month" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Payment Date</label><input type="date" v-model="payForm.payDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Basic Salary (RM) *</label><input type="number" v-model="payForm.basic" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">OT (Overtime)</label><input type="number" v-model="payForm.ot" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Phone Allowance</label><input type="number" v-model="payForm.phone" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Transport Allowance</label><input type="number" v-model="payForm.transport" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Meal Allowance</label><input type="number" v-model="payForm.meal" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Bonus &amp; Commission</label><input type="number" v-model="payForm.bonus" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                    <div><label for="pay-month" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Payroll Month</label><input id="pay-month" name="payMonth" type="month" v-model="payForm.month" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                    <div><label for="pay-date" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Payment Date</label><input id="pay-date" name="payDate" type="date" v-model="payForm.payDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                    <div><label for="pay-basic" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Basic Salary (RM) *</label><input id="pay-basic" name="payBasic" type="number" v-model="payForm.basic" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold"></div>
+                                    <div><label for="pay-ot" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">OT (Overtime)</label><input id="pay-ot" name="payOt" type="number" v-model="payForm.ot" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                    <div><label for="pay-phone" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Phone Allowance</label><input id="pay-phone" name="payPhone" type="number" v-model="payForm.phone" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                    <div><label for="pay-transport" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Transport Allowance</label><input id="pay-transport" name="payTransport" type="number" v-model="payForm.transport" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                    <div><label for="pay-meal" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Meal Allowance</label><input id="pay-meal" name="payMeal" type="number" v-model="payForm.meal" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                    <div><label for="pay-bonus" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Bonus &amp; Commission</label><input id="pay-bonus" name="payBonus" type="number" v-model="payForm.bonus" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
                                 </div>
                             </div>
 
                             <div class="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
                                 <h4 class="text-xs font-extrabold uppercase tracking-wider text-red-600 border-b border-slate-200 dark:border-slate-600 pb-2">STATUTORY DEDUCTIONS - RM</h4>
                                 <div class="grid grid-cols-2 gap-3 text-xs">
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Employee EPF (11%)</label><input type="number" v-model="payForm.dedEpf" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">SOCSO (0.5%)</label><input type="number" v-model="payForm.dedSocso" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Employee EIS (0.2%)</label><input type="number" v-model="payForm.dedEis" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">MTD / PCB (Tax)</label><input type="number" v-model="payForm.dedPcb" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Advance / Loan</label><input type="number" v-model="payForm.dedAdvance" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
-                                    <div><label class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Other Deductions</label><input type="number" v-model="payForm.dedOther" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                    <div><label for="pay-ded-epf" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Employee EPF (11%)</label><input id="pay-ded-epf" name="payDedEpf" type="number" v-model="payForm.dedEpf" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
+                                    <div><label for="pay-ded-socso" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">SOCSO (0.5%)</label><input id="pay-ded-socso" name="payDedSocso" type="number" v-model="payForm.dedSocso" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
+                                    <div><label for="pay-ded-eis" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Employee EIS (0.2%)</label><input id="pay-ded-eis" name="payDedEis" type="number" v-model="payForm.dedEis" readonly class="w-full p-2 border border-slate-300 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 dark:text-white"></div>
+                                    <div><label for="pay-ded-pcb" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">MTD / PCB (Tax)</label><input id="pay-ded-pcb" name="payDedPcb" type="number" v-model="payForm.dedPcb" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold"></div>
+                                    <div><label for="pay-ded-advance" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Advance / Loan</label><input id="pay-ded-advance" name="payDedAdvance" type="number" v-model="payForm.dedAdvance" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
+                                    <div><label for="pay-ded-other" class="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Other Deductions</label><input id="pay-ded-other" name="payDedOther" type="number" v-model="payForm.dedOther" @input="autoCalculatePayroll" step="0.01" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl"></div>
                                 </div>
                             </div>
                         </div>
@@ -532,46 +532,46 @@
                                 <i class="fa-solid fa-file-circle-plus text-brand-gold mr-2 text-base"></i>
                                 NEW EXPENSE CLAIM APPLICATION
                             </h3>
-                            <select @change="selectEmployeeForClaim($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
+                            <select id="claim-emp-select" name="claimEmpSelect" aria-label="Select Employee" @change="selectEmployeeForClaim($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
                                 <option value="">-- Auto-Fill HR Employee --</option>
                                 <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
                             </select>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Applicant Name *</label><input type="text" v-model="claimForm.name" required placeholder="Employee Name" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input type="text" v-model="claimForm.empNo" placeholder="ZEN-HR08001" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input type="text" v-model="claimForm.dept" placeholder="OPERATION DEPARTMENT" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Expense Date *</label><input type="date" v-model="claimForm.expenseDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                            <div><label for="claim-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Applicant Name *</label><input id="claim-name" name="claimName" type="text" v-model="claimForm.name" required placeholder="Employee Name" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
+                            <div><label for="claim-emp-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input id="claim-emp-no" name="claimEmpNo" type="text" v-model="claimForm.empNo" placeholder="ZEN-HR08001" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
+                            <div><label for="claim-dept" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input id="claim-dept" name="claimDept" type="text" v-model="claimForm.dept" placeholder="OPERATION DEPARTMENT" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="claim-date" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Expense Date *</label><input id="claim-date" name="claimDate" type="date" v-model="claimForm.expenseDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4">
                             <div>
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">CLAIM CATEGORY *</label>
-                                <select v-model="claimForm.category" @change="claimForm.subCategory = claimSubCategories[claimForm.category][0]" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-xs">
+                                <label for="claim-category" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">CLAIM CATEGORY *</label>
+                                <select id="claim-category" name="claimCategory" v-model="claimForm.category" @change="claimForm.subCategory = claimSubCategories[claimForm.category][0]" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-xs">
                                     <option v-for="(subList, catName) in claimSubCategories" :key="catName" :value="catName">{{ catName }}</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">SUB-CATEGORY *</label>
-                                <select v-model="claimForm.subCategory" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-xs">
+                                <label for="claim-sub-category" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">SUB-CATEGORY *</label>
+                                <select id="claim-sub-category" name="claimSubCategory" v-model="claimForm.subCategory" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-xs">
                                     <option v-for="(sub, sIdx) in claimSubCategories[claimForm.category]" :key="sIdx" :value="sub">{{ sub }}</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">CLAIM AMOUNT (RM) *</label>
-                                <input type="number" v-model="claimForm.amount" step="0.01" min="1" placeholder="0.00" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-extrabold text-brand-dark">
+                                <label for="claim-amount" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">CLAIM AMOUNT (RM) *</label>
+                                <input id="claim-amount" name="claimAmount" type="number" v-model="claimForm.amount" step="0.01" min="1" placeholder="0.00" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-extrabold text-brand-dark">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">RECEIPT / REF NO. *</label>
-                                <input type="text" v-model="claimForm.receiptNo" placeholder="REC-8823901" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold">
+                                <label for="claim-receipt-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">RECEIPT / REF NO. *</label>
+                                <input id="claim-receipt-no" name="claimReceiptNo" type="text" v-model="claimForm.receiptNo" placeholder="REC-8823901" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4 items-center">
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">EXPENSE DESCRIPTION</label>
-                                <input type="text" v-model="claimForm.description" placeholder="Example: Client lunch meeting with XYZ Company" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-medium">
+                                <label for="claim-description" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">EXPENSE DESCRIPTION</label>
+                                <input id="claim-description" name="claimDescription" type="text" v-model="claimForm.description" placeholder="Example: Client lunch meeting with XYZ Company" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-medium">
                             </div>
 
                             <div class="p-2.5 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500 rounded-xl flex items-center justify-between gap-2">
@@ -582,7 +582,7 @@
                                 <div class="flex items-center space-x-1 shrink-0">
                                     <label class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
                                         <span>Select</span>
-                                        <input type="file" @change="handleClaimAttachmentUpload" accept=".pdf,image/*" class="hidden">
+                                        <input id="claim-attachment" name="claimAttachment" aria-label="Upload Claim Receipt" type="file" @change="handleClaimAttachmentUpload" accept=".pdf,image/*" class="hidden">
                                     </label>
                                     <a v-if="claimForm.receiptAttachment" :href="claimForm.receiptAttachment" download="Resit_Tuntutan" target="_blank" class="bg-emerald-600 text-white px-2 py-1.5 rounded-lg text-[11px] font-bold" title="View">
                                         <i class="fa-solid fa-eye"></i>

@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firebase-config.js (SAFE APP CHECK v2.6)
+// ZENQOR TECHNOLOGIES - firebase-config.js (SAFE AUTH & DB v2.7)
 // ============================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -26,10 +26,6 @@ import {
     EmailAuthProvider,
     reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-    initializeAppCheck,
-    ReCaptchaV3Provider
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
 
 const env = window.__ENV__ || {};
 
@@ -45,26 +41,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-
-// Inisialisasi Firebase App Check tanpa ralat 403
-try {
-    const recaptchaKey = env.RECAPTCHA_SITE_KEY || '6LfVnngtAAAAAGJdJnR99Vsm2pnJq2kLwKxvBGUV';
-    
-    // HANYA aktifkan Debug Token untuk ujian lokal (localhost / 127.0.0.1 sahaja)
-    // Jangan aktifkan untuk hrms-portal.zenq0r.com bagi mengelakkan ralat 403 Forbidden
-    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-        self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-    } else {
-        self.FIREBASE_APPCHECK_DEBUG_TOKEN = false;
-    }
-
-    initializeAppCheck(app, {
-        provider: new ReCaptchaV3Provider(recaptchaKey),
-        isTokenAutoRefreshEnabled: true
-    });
-} catch (err) {
-    console.warn("App Check Warning (Non-Fatal):", err.message);
-}
 
 const db = initializeFirestore(app, {
     localCache: persistentLocalCache()
