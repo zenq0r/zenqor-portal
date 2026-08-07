@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FULL SYSTEM v4.0)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FULL SYSTEM v4.5)
 // ============================================================
 
 import {
@@ -51,14 +51,14 @@ createApp({
         return {
             isLoggedIn: false,
             authLoading: true,
-            showPassword: false, // Papar/Sembunyi kata laluan log masuk
+            showPassword: false, // Untuk papar/sembunyi kata laluan log masuk
             loginForm: { 
                 email: '', 
                 password: '', 
-                rememberMe: false // Simpan emel dengan LocalStorage
+                rememberMe: false // Untuk ingat emel dalam localStorage
             },
             loginError: '',
-            currentTab: 'dashboard', // Direct ke dashboard selepas log masuk
+            currentTab: 'dashboard', // Direct ke dashboard sejurus log masuk
             mobileMenuOpen: false,
             desktopSidebarOpen: false,
             chartTimeFilter: 'monthly',
@@ -228,10 +228,10 @@ createApp({
         canEditDocs() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
         canDelete() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
         
-        // HANYA SUPERADMIN & HR SAHAJA MENGURUS DAN NAMPAK PENGURUSAN AKSES PORTAL
+        // HANYA SUPERADMIN & HR SAHAJA BOLEH URUS & NAMPAK PENGURUSAN AKSES PORTAL
         canManageRBAC() { return ['Superadmin', 'HR'].includes(this.userProfile.role); },
 
-        // DATA VIEW PEKERJA (STAFF DASHBOARD)
+        // DATA KHUSUS VIEW PEKERJA (STAFF DASHBOARD)
         myPayslips() {
             return this.payslipHistory.filter(p => p.raw && (p.raw.empEmail === this.userProfile.email || p.name === this.userProfile.name));
         },
@@ -250,7 +250,7 @@ createApp({
             return this.myClaims.filter(c => c.status === 'Approved').reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
         },
 
-        // DATA VIEW PELANGGAN (CLIENT DASHBOARD)
+        // DATA KHUSUS VIEW PELANGGAN (CLIENT DASHBOARD)
         myClientDocs() {
             return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email);
         },
@@ -529,7 +529,7 @@ createApp({
             }
         },
 
-        // FORGOT PASSWORD VIA FIREBASE AUTH
+        // FORGOT PASSWORD VIA FIREBASE AUTHENTICATION
         async handleForgotPassword() {
             if (!this.loginForm.email) {
                 alert("Sila masukkan alamat emel rasmi anda di ruangan Emel Pengguna terlebih dahulu.");
@@ -541,7 +541,7 @@ createApp({
                 this.showNotify(`Pautan set semula kata laluan telah dihantar ke emel: ${this.loginForm.email}`);
             } catch (error) {
                 console.error("Forgot Password Error:", error);
-                alert("Gagal menghantar e-mel set semula kata laluan. Pastikan emel pengguna sah.");
+                alert("Gagal menghantar e-mel set semula kata laluan. Pastikan emel pengguna sah dan berdaftar.");
             }
         },
 
@@ -587,7 +587,6 @@ createApp({
                     photo: photo
                 };
 
-                // REMEMBER ME: SIMPAN ATAU PADAM EMEL
                 if (this.loginForm.rememberMe) {
                     localStorage.setItem('zenqor_remember_email', this.loginForm.email);
                 } else {
@@ -669,7 +668,6 @@ createApp({
             }
         },
 
-        // SIMPAN PROFIL ATAS (4 RUANGAN KEPADA SEMUA ROLE)
         async saveMyProfile() {
             try {
                 if (!this.userProfile.email) return;
@@ -704,7 +702,6 @@ createApp({
             this.userModal.show = true;
         },
 
-        // TEMPLAT E-MEL RASMI DARI admin@zenq0r.com
         sendWelcomeEmail(userForm) {
             const originEmail = "admin@zenq0r.com";
             const recipientEmail = userForm.email;
@@ -1173,7 +1170,6 @@ Origin: ${originEmail}`
         this.autoCalculatePayroll();
         this.generateDocNo();
 
-        // MUAT NAIK EMEL JIKA KOTAK "REMEMBER ME" PERNAH DISEMAD
         const savedEmail = localStorage.getItem('zenqor_remember_email');
         if (savedEmail) {
             this.loginForm.email = savedEmail;
