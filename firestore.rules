@@ -23,6 +23,14 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() == 'Superadmin';
     }
 
+    function isDirector() {
+      return isAuthenticated() && getUserRole() == 'Director';
+    }
+
+    function isAdmin() {
+      return isSuperadmin() || isDirector();
+    }
+
     function isHR() {
       return isAuthenticated() && getUserRole() == 'HR';
     }
@@ -45,56 +53,58 @@ service cloud.firestore {
 
     match /settings/{docId} {
       allow read: if isAuthenticated();
-      allow write: if isSuperadmin();
+      allow write: if isAdmin();
     }
 
     match /users/{userId} {
       // Pengguna boleh baca dokumen sendiri (guna UID), Superadmin & HR boleh baca semua
       allow read: if isAuthenticated() && (
-        request.auth.uid == userId || isSuperadmin() || isHR()
+        request.auth.uid == userId || isAdmin() || isHR()
       );
-      // Pengguna boleh kemaskini rekod sendiri sahaja (profil)
-      // Superadmin boleh tulis mana-mana rekod
-      allow write: if isSuperadmin() || request.auth.uid == userId;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photo'])
+      );
     }
 
     match /employees/{empId} {
       allow read: if isAuthenticated();
-      allow write: if isSuperadmin() || isHR();
+      allow write: if isAdmin() || isHR();
     }
 
     match /customers/{customerId} {
       allow read: if isAuthenticated();
-      allow write: if isSuperadmin() || isHR() || isAccount();
+      allow write: if isAdmin() || isHR() || isAccount();
     }
 
     match /docs/{docId} {
       allow read: if isAuthenticated() && (
-        isSuperadmin() || isHR() || isAccount() || isIT() ||
+        isAdmin() || isHR() || isAccount() || isIT() ||
         (isClient() && resource.data.raw.clientEmail == request.auth.token.email)
       );
-      allow write: if isSuperadmin() || isHR() || isAccount();
+      allow write: if isAdmin() || isHR() || isAccount();
     }
 
     match /payslips/{payslipId} {
       allow read: if isAuthenticated() && (
-        isSuperadmin() || isHR() || isAccount() ||
+        isAdmin() || isHR() || isAccount() ||
         (isStaff() && resource.data.raw.empEmail == request.auth.token.email)
       );
-      allow write: if isSuperadmin() || isHR() || isAccount();
+      allow write: if isAdmin() || isHR() || isAccount();
     }
 
     match /claims/{claimId} {
       allow read: if isAuthenticated() && (
-        isSuperadmin() || isHR() || isAccount() ||
+        isAdmin() || isHR() || isAccount() ||
         (isStaff() && resource.data.empEmail == request.auth.token.email)
       );
-      allow create: if isAuthenticated();
-      allow update, delete: if isSuperadmin() || isHR() || isAccount();
+      allow create: if isAuthenticated() && request.resource.data.empEmail == request.auth.token.email;
+      allow update, delete: if isAdmin() || isHR() || isAccount();
     }
 
     match /audit_logs/{logId} {
-      allow read: if isSuperadmin() || isIT();
+      allow read: if isAdmin() || isIT();
       allow create: if isAuthenticated();
       allow update, delete: if false;
     }

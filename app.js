@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.2)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.1)
 // ============================================================
 
 import {
@@ -38,13 +38,13 @@ const STATUTORY_RATES = {
 };
 
 const RBAC_ROLES = {
-    'boss': ['dashboard', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
-    'spad': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
-    'hrms': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
-    'fams': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
-    'itms': ['dashboard', 'hr-employees', 'audit-logs', 'settings'],
-    'cust': ['dashboard', 'client-portal', 'profile'],
-    'otms': ['dashboard', 'claims', 'client-portal', 'profile']
+    'Director': ['dashboard', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
+    'Superadmin': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
+    'HR': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
+    'Account': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
+    'IT': ['dashboard', 'hr-employees', 'audit-logs', 'settings'],
+    'Client': ['dashboard', 'client-portal', 'profile'],
+    'Staff': ['dashboard', 'claims', 'client-portal', 'profile']
 };
 
 createApp({
@@ -134,7 +134,7 @@ createApp({
             userModal: {
                 show: false,
                 isEdit: false,
-                form: { name: '', email: '', password: '', role: 'otms' }
+                form: { uid: '', name: '', email: '', password: '', role: 'Staff' }
             },
 
             claimSubCategories: {
@@ -206,10 +206,10 @@ createApp({
         };
     },
     computed: {
-        canCreateEdit() { return ['spad', 'boss', 'hrms'].includes(this.userProfile.role); },
-        canEditDocs() { return ['spad', 'boss', 'hrms', 'fams'].includes(this.userProfile.role); },
-        canDelete() { return ['spad', 'boss', 'hrms'].includes(this.userProfile.role); },
-        canManageRBAC() { return ['spad', 'boss', 'hrms'].includes(this.userProfile.role); },
+        canCreateEdit() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
+        canEditDocs() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
+        canDelete() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
+        canManageRBAC() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
 
         myPayslips() { return this.payslipHistory.filter(p => p.raw && (p.raw.empEmail === this.userProfile.email || p.name === this.userProfile.name)); },
         myLatestNetSalary() {
@@ -248,7 +248,7 @@ createApp({
         totalPendingClaimsAmount() { return this.claimsHistory.filter(c => c.status && c.status.includes('Pending')).reduce((s, c) => s + (Number(c.amount) || 0), 0); },
 
         clientPortalDocs() {
-            if (this.userProfile.role === 'cust' || this.userProfile.role === 'otms') {
+            if (this.userProfile.role === 'Client' || this.userProfile.role === 'Staff') {
                 return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email);
             }
             return this.docHistory;
@@ -319,13 +319,13 @@ createApp({
     methods: {
         getRoleDisplayName(code) {
             const roles = {
-                'boss': 'Director',
-                'spad': 'Super Admin',
-                'hrms': 'Human Resource Management',
-                'fams': 'Finance Account Management',
-                'itms': 'Intelligence Team Management',
-                'otms': 'Operation Team Management',
-                'cust': 'Client Users System Terminal'
+                'Director': 'Director',
+                'Superadmin': 'Super Admin',
+                'HR': 'Human Resource Management',
+                'Account': 'Finance Account Management',
+                'IT': 'Intelligence Team Management',
+                'Staff': 'Operation Team Management',
+                'Client': 'Client Users System Terminal'
             };
             return roles[code] || code;
         },
@@ -422,14 +422,14 @@ createApp({
 
         maskIC(val) {
             if (!val) return '-';
-            if (['spad', 'boss', 'hrms'].includes(this.userProfile.role)) return val;
+            if (['Superadmin', 'Director', 'HR'].includes(this.userProfile.role)) return val;
             const str = String(val).trim();
             if (str.length >= 8) return '******-**-' + str.slice(-4);
             return '********';
         },
         maskBank(val) {
             if (!val) return '-';
-            if (['spad', 'boss', 'hrms'].includes(this.userProfile.role)) return val;
+            if (['Superadmin', 'Director', 'HR'].includes(this.userProfile.role)) return val;
             const parts = String(val).split('/');
             if (parts.length > 1) return `${parts[0].trim()} / *******${parts[1].trim().slice(-4)}`;
             return '*******' + String(val).slice(-4);
@@ -500,15 +500,15 @@ createApp({
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, this.loginForm.email, this.loginForm.password);
                 const firebaseUser = userCredential.user;
-                const userDocRef = doc(db, "users", firebaseUser.email);
+                const userDocRef = doc(db, "users", firebaseUser.uid);
                 const userSnap = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js").then(m => m.getDoc(userDocRef));
 
-                let role = 'otms';
+                let role = 'Staff';
                 let name = firebaseUser.displayName || firebaseUser.email;
                 let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
 
-                if (userSnap.exists()) { role = userSnap.data().role || 'otms'; name = userSnap.data().name || name; photo = userSnap.data().photo || photo; }
-                if (firebaseUser.email === 'admin@zenq0r.com') role = 'spad';
+                if (userSnap.exists()) { role = userSnap.data().role || 'Staff'; name = userSnap.data().name || name; photo = userSnap.data().photo || photo; }
+                if (firebaseUser.email === 'admin@zenq0r.com') role = 'Superadmin';
 
                 this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo };
                 if (this.loginForm.rememberMe) localStorage.setItem('zenqor_remember_email', this.loginForm.email);
@@ -552,22 +552,22 @@ createApp({
         async saveMyProfile() {
             try {
                 if (!this.userProfile.email) return;
-                const userRef = doc(db, "users", this.userProfile.email);
+                const userRef = doc(db, "users", this.userProfile.uid);
                 await setDoc(userRef, { name: this.userProfile.name, email: this.userProfile.email, role: this.userProfile.role, photo: this.userProfile.photo }, { merge: true });
                 this.logAudit('UPDATE', `User updated own profile: ${this.userProfile.email}`); this.showNotify('Your profile has been updated successfully!');
             } catch (error) { this.showNotify('Error updating profile.'); }
         },
 
         openUserAccessModal(usr = null) {
-            if (usr) { this.userModal.isEdit = true; this.userModal.form = { name: usr.name || '', email: usr.email || '', password: usr.password || '', role: usr.role || 'otms' }; }
-            else { this.userModal.isEdit = false; this.userModal.form = { name: '', email: '', password: this.generateRandomPassword(8), role: 'otms' }; }
+            if (usr) { this.userModal.isEdit = true; this.userModal.form = { uid: usr.id, name: usr.name || '', email: usr.email || '', password: '', role: usr.role || 'Staff' }; }
+            else { this.userModal.isEdit = false; this.userModal.form = { uid: '', name: '', email: '', password: this.generateRandomPassword(8), role: 'Staff' }; }
             this.userModal.show = true;
         },
 
         sendWelcomeEmail(userForm) {
             const originEmail = "admin@zenq0r.com";
             const subject = encodeURIComponent(`[ZENQOR ENTERPRISE] Official Account & Portal Access Information (${this.getRoleDisplayName(userForm.role)})`);
-            const emailBody = encodeURIComponent(`Greetings ${userForm.name},\n\nYour user account for the ZENQOR TECHNOLOGIES Enterprise Portal v2.0 has been created.\n\nSign-In Email: ${userForm.email}\nAssigned Role: ${this.getRoleDisplayName(userForm.role)}\nPassword: ${userForm.password}\nPortal Link: https://hrms-portal.zenq0r.com\n\nWAJIB UBAH KATA LALUAN: You MUST log in and change your password immediately.\n\nBest regards,\nSystem Administrator`);
+                const emailBody = encodeURIComponent(`Greetings ${userForm.name},\n\nYour user account for the ZENQOR TECHNOLOGIES Enterprise Portal v2.0 has been created.\n\nSign-In Email: ${userForm.email}\nAssigned Role: ${this.getRoleDisplayName(userForm.role)}\nPortal Link: https://hrms-portal.zenq0r.com\n\nPlease use the password provided through your approved secure channel, then change it immediately after signing in.\n\nBest regards,\nSystem Administrator`);
             window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(userForm.email)}&su=${subject}&body=${emailBody}`, '_blank');
             this.showNotify(`Google Gmail compose window opened.`);
         },
@@ -579,10 +579,8 @@ createApp({
 
                 const isNewUser = !this.userModal.isEdit;
                 const email = this.userModal.form.email.trim(); const password = this.userModal.form.password.trim();
-                const userRef = doc(db, "users", email);
                 const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.userModal.form.name)}&background=0B1E36&color=D4AF37`;
-                
-                try { await deleteDoc(userRef); } catch (delErr) { }
+                let userId = this.userModal.form.uid;
 
                 if (isNewUser) {
                     try {
@@ -590,12 +588,14 @@ createApp({
                         const { getAuth, createUserWithEmailAndPassword, signOut: signOutSecondary } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
                         const secondaryApp = initializeApp(auth.app.options, "SecondaryAuthApp-" + Date.now());
                         const secondaryAuth = getAuth(secondaryApp);
-                        await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                        const createdUser = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                        userId = createdUser.user.uid;
                         await signOutSecondary(secondaryAuth); await deleteApp(secondaryApp);
                     } catch (authErr) { if (authErr.code !== 'auth/email-already-in-use') { alert("Gagal mendaftar ke Firebase: " + authErr.message); return; } }
                 }
 
-                await setDoc(userRef, { email: email, name: this.userModal.form.name, password: password, photo: photoUrl, role: this.userModal.form.role });
+                if (!userId) { alert("User UID is required to update this record."); return; }
+                await setDoc(doc(db, "users", userId), { email: email, name: this.userModal.form.name, photo: photoUrl, role: this.userModal.form.role }, { merge: true });
                 this.userModal.show = false;
                 this.logAudit(isNewUser ? 'CREATE' : 'UPDATE', `User role/metadata for ${email}`);
                 if (isNewUser) { this.sendWelcomeEmail(this.userModal.form); this.showNotify('Akaun berjaya dicipta!'); }
@@ -603,9 +603,9 @@ createApp({
             } catch (error) { alert("An error occurred while saving user information."); }
         },
 
-        async deletePortalUser(email) {
+        async deletePortalUser(uid, email) {
             if (confirm(`Are you sure you want to delete portal access for: ${email}?`)) {
-                try { await deleteDoc(doc(db, "users", email)); this.logAudit('DELETE', `Deleted user metadata for ${email}`); this.showNotify('User record deleted.'); } catch (error) {}
+                try { await deleteDoc(doc(db, "users", uid)); this.logAudit('DELETE', `Deleted user metadata for ${email}`); this.showNotify('User record deleted.'); } catch (error) {}
             }
         },
 
@@ -666,9 +666,9 @@ createApp({
         // MULTI-TIER WORKFLOW KELULUSAN
         canApproveClaim(clm) {
             const role = this.userProfile.role;
-            if (role === 'spad' || role === 'boss') return ['Pending HR', 'Pending Account', 'Pending Owner'].includes(clm.status);
-            if (role === 'hrms' && clm.status === 'Pending HR') return true;
-            if (role === 'fams' && clm.status === 'Pending Account') return true;
+            if (role === 'Superadmin' || role === 'Director') return ['Pending HR', 'Pending Account', 'Pending Owner'].includes(clm.status);
+            if (role === 'HR' && clm.status === 'Pending HR') return true;
+            if (role === 'Account' && clm.status === 'Pending Account') return true;
             return false;
         },
         async approveClaim(clm) {
@@ -685,8 +685,8 @@ createApp({
             if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo) return alert("Enter Name, Emp ID, Amount, and Receipt No.");
             try {
                 const applicantUser = this.users.find(u => u.email === (this.claimForm.empEmail || this.userProfile.email));
-                const applicantRole = applicantUser ? applicantUser.role : 'otms';
-                const initialStatus = ['otms', 'cust'].includes(applicantRole) ? 'Pending HR' : 'Pending Owner';
+                const applicantRole = applicantUser ? applicantUser.role : 'Staff';
+                const initialStatus = ['Staff', 'Client'].includes(applicantRole) ? 'Pending HR' : 'Pending Owner';
 
                 const claimId = String(this.editingClaimId || Date.now());
                 const payload = { id: claimId, type: 'Claim', date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: this.claimForm.empEmail || this.userProfile.email, dept: this.claimForm.dept, category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus };
@@ -831,18 +831,18 @@ createApp({
             if (firebaseUser) {
                 try {
                     const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-                    const userSnap = await getDoc(doc(db, "users", firebaseUser.email));
-                    let role = 'otms';
+                    const userSnap = await getDoc(doc(db, "users", firebaseUser.uid));
+                    let role = 'Staff';
                     let name = firebaseUser.displayName || firebaseUser.email;
                     let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
 
                     if (userSnap.exists()) {
-                        role = userSnap.data().role || 'otms';
+                        role = userSnap.data().role || 'Staff';
                         name = userSnap.data().name || name;
                         photo = userSnap.data().photo || photo;
                     }
                     if (firebaseUser.email === 'admin@zenq0r.com') {
-                        role = 'spad';
+                        role = 'Superadmin';
                     }
                     this.userProfile = { name, email: firebaseUser.email, role, uid: firebaseUser.uid, photo };
                     this.resetAllForms();
@@ -866,6 +866,3 @@ createApp({
         this.unsubscribers.forEach(unsub => unsub && unsub());
     }
 }).mount('#app');
-    </script>
-</body>
-</html>

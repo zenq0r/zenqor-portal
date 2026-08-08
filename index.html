@@ -1420,13 +1420,13 @@
                                 <div>
                                     <label for="prof-role" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">User Role (RBAC)</label>
                                     <select id="prof-role" name="profRole" v-model="userProfile.role" :disabled="!canManageRBAC" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold bg-slate-50 disabled:bg-slate-100 dark:disabled:bg-slate-700/50 disabled:cursor-not-allowed">
-                                        <option value="boss">Director</option>
-                                        <option value="spad">Super Admin</option>
-                                        <option value="hrms">Human Resource Management</option>
-                                        <option value="fams">Finance Account Management</option>
-                                        <option value="itms">Intelligence Team Management</option>
-                                        <option value="otms">Operation Team Management</option>
-                                        <option value="cust">Client Users System Terminal</option>
+                                         <option value="Director">Director</option>
+                                         <option value="Superadmin">Super Admin</option>
+                                         <option value="HR">Human Resource Management</option>
+                                         <option value="Account">Finance Account Management</option>
+                                         <option value="IT">Intelligence Team Management</option>
+                                         <option value="Staff">Operation Team Management</option>
+                                         <option value="Client">Client Users System Terminal</option>
                                     </select>
                                 </div>
                                 <div><label for="prof-photo" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Avatar / Photo URL</label><input id="prof-photo" name="profPhoto" type="text" v-model="userProfile.photo" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
@@ -1470,7 +1470,7 @@
                                                     <button type="button" @click="openUserAccessModal(usr)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit Access">
                                                         <i class="fa-solid fa-pen"></i>
                                                     </button>
-                                                    <button v-if="usr.email !== 'admin@zenq0r.com'" type="button" @click="deletePortalUser(usr.email)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Delete Access">
+                                                    <button v-if="usr.email !== 'admin@zenq0r.com'" type="button" @click="deletePortalUser(usr.id, usr.email)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Delete Access">
                                                         <i class="fa-solid fa-trash"></i>
                                                     </button>
                                                 </td>
@@ -1524,13 +1524,13 @@
                     <div>
                         <label for="usr-modal-role" class="font-bold mb-1 block dark:text-slate-300">Role *</label>
                         <select id="usr-modal-role" name="usrModalRole" v-model="userModal.form.role" class="w-full p-2 border rounded-xl font-bold dark:bg-slate-700 dark:text-white">
-                            <option v-if="userProfile.role === 'spad' || userProfile.role === 'boss'" value="boss">Director</option>
-                            <option value="spad">Super Admin</option>
-                            <option value="hrms">Human Resource Management</option>
-                            <option value="fams">Finance Account Management</option>
-                            <option value="itms">Intelligence Team Management</option>
-                            <option value="otms">Operation Team Management</option>
-                            <option value="cust">Client Users System Terminal</option>
+                                            <option v-if="userProfile.role === 'Superadmin' || userProfile.role === 'Director'" value="Director">Director</option>
+                                            <option value="Superadmin">Super Admin</option>
+                                            <option value="HR">Human Resource Management</option>
+                                            <option value="Account">Finance Account Management</option>
+                                            <option value="IT">Intelligence Team Management</option>
+                                            <option value="Staff">Operation Team Management</option>
+                                            <option value="Client">Client Users System Terminal</option>
                         </select>
                     </div>
                     <div class="flex justify-end space-x-2 pt-3 border-t dark:border-slate-700">
