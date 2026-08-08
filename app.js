@@ -282,6 +282,7 @@ createApp({
         pendingClaimsCount() { return this.claimsHistory.filter(c => c.status && c.status.includes('Pending')).length; },
         totalApprovedClaimsAmount() { return this.claimsHistory.filter(c => c.status === 'Approved').reduce((s, c) => s + (Number(c.amount) || 0), 0); },
         totalPendingClaimsAmount() { return this.claimsHistory.filter(c => c.status && c.status.includes('Pending')).reduce((s, c) => s + (Number(c.amount) || 0), 0); },
+        financePendingClaims() { return this.claimsHistory.filter(c => c.status === 'Pending Account'); },
 
         clientPortalDocs() {
             if (this.userProfile.role === 'Client' || this.userProfile.role === 'Staff') {
@@ -364,6 +365,24 @@ createApp({
                 'Client': 'Client Users System Terminal'
             };
             return roles[code] || code;
+        },
+        getActivityStatus(item) {
+            if (item.type === 'Invoice') {
+                return item.status === 'Paid'
+                    ? { label: 'PAID', detail: 'Payment received', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' }
+                    : { label: 'UNPAID', detail: 'Payment not received', className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' };
+            }
+            if (item.type === 'Claim') {
+                const statuses = {
+                    'Pending HR': { label: 'PENDING HR', detail: 'Awaiting HR approval', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
+                    'Pending Account': { label: 'PENDING FINANCE', detail: 'HR approved — Finance action required', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
+                    'Pending Director': { label: 'PENDING DIRECTOR', detail: 'Finance approved — Director action required', className: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300' },
+                    'Approved': { label: 'APPROVED', detail: 'Claim fully approved', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
+                    'Rejected': { label: 'REJECTED', detail: 'Claim rejected', className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' }
+                };
+                return statuses[item.status] || { label: 'PENDING', detail: 'Awaiting action', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' };
+            }
+            return { label: 'RECORDED', detail: 'Record created', className: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200' };
         },
         exportCSV(type) {
             let filename = '';
