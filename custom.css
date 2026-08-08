@@ -111,6 +111,37 @@ body {
     object-position: center;
 }
 
+/* Approved claim PDF: compact one-page layout */
+.claim-print-logo {
+    width: 42mm;
+    height: 16mm;
+    object-fit: contain;
+    object-position: center;
+    flex: 0 0 auto;
+}
+
+@media print {
+    .claim-print {
+        width: 190mm !important;
+        padding: 8mm 10mm !important;
+        box-sizing: border-box;
+        font-size: 10px !important;
+    }
+    .claim-print .mb-6 { margin-bottom: 4mm !important; }
+    .claim-print .mb-5 { margin-bottom: 3mm !important; }
+    .claim-print .pb-5 { padding-bottom: 3mm !important; }
+    .claim-print .p-4 { padding: 3mm !important; }
+    .claim-print .gap-5 { gap: 3mm !important; }
+    .claim-print h1 { font-size: 17px !important; }
+    .claim-print h3 { font-size: 10px !important; }
+    .claim-print .text-lg { font-size: 14px !important; }
+    .claim-print img.max-h-56 {
+        max-height: 38mm !important;
+        max-width: 100% !important;
+        object-fit: contain;
+    }
+}
+
 /* ============================================================
    GAYA KANVAS PAYSLIP (A4 LANDSCAPE 297mm x 210mm)
    ============================================================ */
