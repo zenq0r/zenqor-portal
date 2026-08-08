@@ -607,19 +607,19 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4 items-center">
                             <div class="md:col-span-2">
-                                <label for="claim-description" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">EXPENSE DESCRIPTION</label>
-                                <input id="claim-description" name="claimDescription" type="text" v-model="claimForm.description" placeholder="Example: Client lunch meeting with XYZ Company" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-medium">
+                                <label for="claim-description" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">EXPENSE DESCRIPTION <span class="text-red-500">*</span></label>
+                                <input id="claim-description" name="claimDescription" type="text" v-model="claimForm.description" required placeholder="Example: Client lunch meeting with XYZ Company" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-medium">
                             </div>
 
                             <div class="p-2.5 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500 rounded-xl flex items-center justify-between gap-2">
                                 <div class="overflow-hidden">
-                                    <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight truncate">RECEIPT ATTACHMENT (MAX 2MB)</p>
-                                    <p class="text-[10px] text-slate-400 truncate">{{ claimForm.receiptAttachment ? 'Receipt Attached' : 'No file selected' }}</p>
+                                    <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight truncate">RECEIPT ATTACHMENT (MAX 2MB) <span class="text-red-500">*</span></p>
+                                    <p class="text-[10px] text-slate-400 truncate">{{ claimForm.receiptAttachment ? (claimForm.receiptAttachmentName || 'Receipt Attached') : 'PNG, JPEG/JPG or PDF required' }}</p>
                                 </div>
                                 <div class="flex items-center space-x-1 shrink-0">
                                     <label for="claim-attachment" class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
                                         <span>Select</span>
-                                        <input id="claim-attachment" name="claimAttachment" type="file" @change="handleClaimAttachmentUpload" accept=".pdf,image/*" class="hidden">
+                                        <input id="claim-attachment" name="claimAttachment" type="file" @change="handleClaimAttachmentUpload" accept=".png,.jpeg,.jpg,.pdf,image/png,image/jpeg,application/pdf" required class="hidden">
                                     </label>
                                     <a v-if="claimForm.receiptAttachment" :href="claimForm.receiptAttachment" download="Resit_Tuntutan" target="_blank" class="bg-emerald-600 text-white px-2 py-1.5 rounded-lg text-[11px] font-bold" title="View">
                                         <i class="fa-solid fa-eye"></i>

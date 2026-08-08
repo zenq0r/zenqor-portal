@@ -144,22 +144,51 @@ createApp({
                 'Perubatan (Medical)': [
                     'Rawatan Klinik / Hospital',
                     'Ubat-ubatan (Preskripsi)',
-                    'Pemeriksaan Gigi & Mata'
+                    'Pemeriksaan Gigi & Mata',
+                    'Fisioterapi / Rawatan Pakar',
+                    'Vaksinasi',
+                    'Peralatan Perubatan'
                 ],
                 'Perjalanan & Pengangkutan': [
                     'Tuntutan Mileage (Kilometer)',
                     'Tol & Parkir',
                     'Grab / E-Hailing / Teksi',
-                    'Penginapan Hotel'
+                    'Penginapan Hotel',
+                    'Tiket Penerbangan / Kereta Api / Bas',
+                    'Sewa Kenderaan',
+                    'Minyak Petrol / Diesel',
+                    'Visa / Travel Insurance'
                 ],
                 'Keraian & Pelanggan': [
                     'Belanja Makan Pelanggan',
-                    'Jamuan Jabatan / Syarikat'
+                    'Jamuan Jabatan / Syarikat',
+                    'Hadiah / Cenderamata Pelanggan',
+                    'Acara Korporat / Networking'
+                ],
+                'Latihan & Pembangunan': [
+                    'Kursus / Seminar / Bengkel',
+                    'Yuran Pensijilan Profesional',
+                    'Buku / Bahan Rujukan',
+                    'Langganan Platform Pembelajaran'
+                ],
+                'Operasi & Projek': [
+                    'Peralatan / Bekalan Projek',
+                    'Perisian / Langganan SaaS',
+                    'Pembelian Kecemasan Operasi',
+                    'Penyelenggaraan Peralatan'
+                ],
+                'Komunikasi & Utiliti': [
+                    'Telefon Mudah Alih',
+                    'Internet / Data',
+                    'Mesyuarat Video / Komunikasi',
+                    'Percetakan / Fotokopi'
                 ],
                 'Lain-Lain (Miscellaneous)': [
                     'Alat Tulis & Pejabat',
                     'Elaun Komunikasi / Telefon',
-                    'Kurier & Pos'
+                    'Kurier & Pos',
+                    'Parking / Tol Lain-lain',
+                    'Lain-lain (Nyatakan dalam Penerangan)'
                 ]
             },
 
@@ -202,7 +231,7 @@ createApp({
                 name: '', empNo: '', empEmail: '', dept: '',
                 expenseDate: new Date().toISOString().substr(0, 10),
                 category: 'Perubatan (Medical)', subCategory: 'Rawatan Klinik / Hospital',
-                amount: 0, receiptNo: '', description: '', receiptAttachment: '', status: 'Pending HR',
+                amount: 0, receiptNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', status: 'Pending HR',
                 assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
             },
 
@@ -385,7 +414,7 @@ createApp({
             };
             this.claimForm = {
                 name: '', empNo: '', empEmail: '', dept: '', expenseDate: new Date().toISOString().substr(0, 10), category: 'Perubatan (Medical)', subCategory: 'Rawatan Klinik / Hospital',
-                amount: 0, receiptNo: '', description: '', receiptAttachment: '', status: 'Pending HR',
+                amount: 0, receiptNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', status: 'Pending HR',
                 assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
             };
             this.clientSavedForDocument = false;
@@ -409,9 +438,11 @@ createApp({
         handleClaimAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
+            const allowedTypes = ['image/png', 'image/jpeg', 'application/pdf'];
+            if (!allowedTypes.includes(file.type)) { alert("Only PNG, JPEG/JPG, or PDF files are allowed."); e.target.value = ''; return; }
             if (file.size > 2 * 1024 * 1024) { alert("Attachment size exceeds 2MB limit."); e.target.value = ''; return; }
             const reader = new FileReader();
-            reader.onload = (ev) => { this.claimForm.receiptAttachment = ev.target.result; this.showNotify(`Attachment ready.`); };
+            reader.onload = (ev) => { this.claimForm.receiptAttachment = ev.target.result; this.claimForm.receiptAttachmentName = file.name; this.showNotify(`Receipt attachment ready.`); };
             reader.readAsDataURL(file);
         },
         clearAllDocItems() {
@@ -703,7 +734,7 @@ createApp({
             if (confirm("REJECT this claim application?")) { try { await updateDoc(doc(db, "claims", clm.id), { status: 'Rejected', rejectedByUid: this.userProfile.uid, rejectedByName: this.userProfile.name, rejectedByRole: this.userProfile.role, rejectedAt: new Date().toISOString() }); this.showNotify("Claim rejected."); } catch (error) { this.showNotify('Unable to reject claim.'); } }
         },
         async saveClaimRecord() {
-            if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo) return alert("Enter Name, Emp ID, Amount, and Receipt No.");
+                if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo || !this.claimForm.description.trim() || !this.claimForm.receiptAttachment) return alert("Complete all required claim fields, including Expense Description and Receipt Attachment.");
             try {
                 const applicantUser = this.users.find(u => u.email === (this.claimForm.empEmail || this.userProfile.email));
                 const applicantRole = applicantUser ? applicantUser.role : 'Staff';
@@ -711,7 +742,7 @@ createApp({
                 const assignee = { id: '', name: 'Human Resource Management', email: '', role: 'HR' };
 
                 const claimId = String(this.editingClaimId || Date.now());
-                const payload = { id: claimId, type: 'Claim', date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: this.claimForm.empEmail || this.userProfile.email, dept: this.claimForm.dept, category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
+                const payload = { id: claimId, type: 'Claim', date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: this.claimForm.empEmail || this.userProfile.email, dept: this.claimForm.dept, category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
                 await setDoc(doc(db, "claims", claimId), payload);
                 this.editingClaimId = null; this.showNotify(`Claim submitted.`); this.resetClaimForm();
             } catch (error) {}
