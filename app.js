@@ -211,7 +211,6 @@ createApp({
         canEditDocs() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
         canDelete() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
         canManageRBAC() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
-        claimApprovers() { return this.users.filter(u => ['HR', 'Account', 'Director'].includes(u.role)); },
 
         myPayslips() { return this.payslipHistory.filter(p => p.raw && (p.raw.empEmail === this.userProfile.email || p.name === this.userProfile.name)); },
         myLatestNetSalary() {
@@ -646,12 +645,12 @@ createApp({
 
         openEmployeeModal(emp = null) {
             if (emp) { this.employeeModal.isEdit = true; this.employeeModal.form = JSON.parse(JSON.stringify(emp)); }
-            else { this.employeeModal.isEdit = false; this.employeeModal.form = { empNo: 'ZEN-HR' + String(Math.floor(1000+Math.random()*9000)), name: '', email: '', ic: '', dept: 'Software Engineering', position: 'Developer', status: 'Aktif', epfNo: '', socsoNo: '', eisNo: '', taxNo: '', bankAcc: '', isSenior: false, joinDate: new Date().toISOString().substr(0,10), basicSalary: 3500, allowance: 300, deduction: 0 }; }
+            else { this.employeeModal.isEdit = false; this.employeeModal.form = { empNo: 'ZEN-HR' + String(Math.floor(1000+Math.random()*9000)), name: '', email: '', ic: '', dept: '', position: '', employmentType: 'Probation', status: 'Aktif', epfNo: '', socsoNo: '', eisNo: '', taxNo: '', bankAcc: '', isSenior: false, joinDate: new Date().toISOString().substr(0,10), basicSalary: 0, allowance: 0, deduction: 0 }; }
             this.employeeModal.show = true;
         },
         async saveEmployee() {
             try {
-                if (!this.employeeModal.form.empNo || !this.employeeModal.form.name || !this.employeeModal.form.ic) return alert("Enter Employee ID, Name, and IC.");
+                if (!this.employeeModal.form.empNo || !this.employeeModal.form.name || !this.employeeModal.form.ic || !this.employeeModal.form.dept || !this.employeeModal.form.joinDate || !this.employeeModal.form.employmentType) return alert("Complete the required Basic Information fields.");
                 await setDoc(doc(db, "employees", this.employeeModal.form.empNo.trim()), { ...this.employeeModal.form });
                 this.employeeModal.show = false; this.logAudit(this.employeeModal.isEdit ? 'UPDATE':'CREATE', `Saved employee ${this.employeeModal.form.empNo}`); this.showNotify('Employee data saved!');
             } catch (error) {}
@@ -675,17 +674,13 @@ createApp({
         canEditClaim(clm) {
             return clm.empEmail === this.userProfile.email && clm.status === 'Pending HR';
         },
-        getNextClaimApprover(role) {
-            return this.users.find(u => u.role === role) || null;
-        },
         async approveClaim(clm) {
             const nextRole = { 'Pending HR': 'Account', 'Pending Account': 'Director' }[clm.status];
-            const nextApprover = nextRole ? this.getNextClaimApprover(nextRole) : null;
-            if (nextRole && !nextApprover) { alert(`No ${nextRole} user is available to receive this claim.`); return; }
+            const roleNames = { HR: 'Human Resource Management', Account: 'Finance Account Management', Director: 'Director' };
             const update = nextRole
-                ? { status: `Pending ${nextRole}`, assignedToUid: nextApprover.id, assignedToName: nextApprover.name, assignedToEmail: nextApprover.email, assignedToRole: nextRole }
+                ? { status: `Pending ${nextRole}`, assignedToUid: '', assignedToName: roleNames[nextRole], assignedToEmail: '', assignedToRole: nextRole }
                 : { status: 'Approved', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByRole: 'Director', approvedAt: new Date().toISOString() };
-            try { await updateDoc(doc(db, "claims", clm.id), update); this.logAudit('UPDATE', `Claim ${clm.receiptNo} approved by ${this.userProfile.role}`); this.showNotify(nextRole ? `Claim assigned to ${nextApprover.name} (${nextRole}).` : 'Claim finally approved by Director.'); } catch (error) { this.showNotify('Unable to update claim status.'); }
+            try { await updateDoc(doc(db, "claims", clm.id), update); this.logAudit('UPDATE', `Claim ${clm.receiptNo} approved by ${this.userProfile.role}`); this.showNotify(nextRole ? `Claim assigned to ${roleNames[nextRole]}.` : 'Claim finally approved by Director.'); } catch (error) { this.showNotify('Unable to update claim status.'); }
         },
         async rejectClaim(clm) {
             if (confirm("REJECT this claim application?")) { try { await updateDoc(doc(db, "claims", clm.id), { status: 'Rejected', rejectedByUid: this.userProfile.uid, rejectedByName: this.userProfile.name, rejectedByRole: this.userProfile.role, rejectedAt: new Date().toISOString() }); this.showNotify("Claim rejected."); } catch (error) { this.showNotify('Unable to reject claim.'); } }
@@ -696,8 +691,7 @@ createApp({
                 const applicantUser = this.users.find(u => u.email === (this.claimForm.empEmail || this.userProfile.email));
                 const applicantRole = applicantUser ? applicantUser.role : 'Staff';
                 const initialStatus = 'Pending HR';
-                const assignee = this.users.find(u => u.id === this.claimForm.assignedToUid);
-                if (!assignee || assignee.role !== 'HR') { alert('Please assign this new claim to an HR approver.'); return; }
+                const assignee = { id: '', name: 'Human Resource Management', email: '', role: 'HR' };
 
                 const claimId = String(this.editingClaimId || Date.now());
                 const payload = { id: claimId, type: 'Claim', date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: this.claimForm.empEmail || this.userProfile.email, dept: this.claimForm.dept, category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };

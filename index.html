@@ -606,12 +606,11 @@
                         </div>
 
                         <div class="border-t border-slate-100 dark:border-slate-700 pt-4">
-                            <label for="claim-assignee" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">ASSIGN TO HR APPROVER *</label>
-                            <select id="claim-assignee" name="claimAssignee" v-model="claimForm.assignedToUid" class="w-full sm:w-96 p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold">
-                                <option value="">-- Select HR Approver --</option>
-                                <option v-for="approver in claimApprovers.filter(u => u.role === 'HR')" :key="approver.id" :value="approver.id">{{ approver.name }} — {{ approver.email }}</option>
-                            </select>
-                            <p class="text-[10px] text-slate-400 mt-1">The claim will continue automatically to Account, then Director for final approval.</p>
+                            <p class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">ASSIGN TO HR APPROVER *</p>
+                            <div class="w-full sm:w-96 p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-700/60">
+                                Human Resource Management
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">The claim is assigned to the HR role group. All registered HR users can review it; it then moves to Account and Director for final approval.</p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4 items-center">
@@ -1227,7 +1226,8 @@
                                     <tr v-for="emp in employees" :key="emp.empNo" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                         <td class="py-3 px-3">
                                             <span class="font-bold text-brand-dark dark:text-slate-200 block text-sm">{{ emp.empNo }}</span>
-                                            <span :class="emp.status === 'Aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'" class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold mt-1">{{ emp.status === 'Aktif' ? 'Active' : emp.status }}</span>
+                                             <span :class="emp.status === 'Aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'" class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold mt-1">{{ emp.status === 'Aktif' ? 'Active' : emp.status }}</span>
+                                             <span class="text-slate-400 block text-[10px] mt-1">{{ emp.employmentType || 'Not set' }} · Joined {{ emp.joinDate || '-' }}</span>
                                             <span v-if="emp.isSenior" class="inline-block ml-1 bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-[9px] font-bold">60+ Senior</span>
                                         </td>
                                         <td class="py-3 px-3">
@@ -1508,11 +1508,29 @@
                     <button type="button" @click="employeeModal.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
                 <form @submit.prevent="saveEmployee" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div class="md:col-span-2 border-b dark:border-slate-700 pb-2">
+                        <h4 class="font-extrabold text-brand-dark dark:text-white">Basic Information</h4>
+                        <p class="text-slate-400 mt-0.5">Core employment and department details.</p>
+                    </div>
                     <div><label for="emp-modal-id" class="font-bold mb-1 block dark:text-slate-300">Employee ID * (ZEN-XXXXXXX)</label><input id="emp-modal-id" name="empModalId" v-model="employeeModal.form.empNo" :disabled="employeeModal.isEdit" required class="w-full p-2 border rounded-xl font-bold bg-slate-50 dark:bg-slate-700 dark:text-white"></div>
                     <div><label for="emp-modal-name" class="font-bold mb-1 block dark:text-slate-300">Full Name *</label><input id="emp-modal-name" name="empModalName" v-model="employeeModal.form.name" required class="w-full p-2 border rounded-xl font-semibold dark:bg-slate-700 dark:text-white"></div>
-                    <div><label for="emp-modal-ic" class="font-bold mb-1 block dark:text-slate-300">National ID / Passport *</label><input id="emp-modal-ic" name="empModalIc" v-model="employeeModal.form.ic" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-email" class="font-bold mb-1 block dark:text-slate-300">Work Email</label><input id="emp-modal-email" name="empModalEmail" type="email" v-model="employeeModal.form.email" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
                     <div><label for="emp-modal-position" class="font-bold mb-1 block dark:text-slate-300">Position</label><input id="emp-modal-position" name="empModalPosition" v-model="employeeModal.form.position" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
-                    <div><label for="emp-modal-salary" class="font-bold mb-1 block dark:text-slate-300">Basic Salary (RM) *</label><input id="emp-modal-salary" name="empModalSalary" type="number" v-model="employeeModal.form.basicSalary" step="0.01" required class="w-full p-2 border rounded-xl font-bold dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-dept" class="font-bold mb-1 block dark:text-slate-300">Department *</label><input id="emp-modal-dept" name="empModalDept" v-model="employeeModal.form.dept" required placeholder="e.g. Human Resource" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-type" class="font-bold mb-1 block dark:text-slate-300">Employment Type *</label><select id="emp-modal-type" name="empModalType" v-model="employeeModal.form.employmentType" required class="w-full p-2 border rounded-xl font-semibold dark:bg-slate-700 dark:text-white"><option value="Probation">Probation</option><option value="Permanent">Permanent</option><option value="Part-time">Part-time</option><option value="Intern">Intern</option></select></div>
+                    <div><label for="emp-modal-join-date" class="font-bold mb-1 block dark:text-slate-300">Join Date *</label><input id="emp-modal-join-date" name="empModalJoinDate" type="date" v-model="employeeModal.form.joinDate" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div class="md:col-span-2 border-b dark:border-slate-700 pb-2 pt-2">
+                        <h4 class="font-extrabold text-brand-dark dark:text-white">Advanced Information</h4>
+                        <p class="text-slate-400 mt-0.5">Identity, statutory, banking and payroll details.</p>
+                    </div>
+                    <div><label for="emp-modal-ic" class="font-bold mb-1 block dark:text-slate-300">National ID / Passport *</label><input id="emp-modal-ic" name="empModalIc" v-model="employeeModal.form.ic" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-bank" class="font-bold mb-1 block dark:text-slate-300">Bank Account</label><input id="emp-modal-bank" name="empModalBank" v-model="employeeModal.form.bankAcc" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-epf" class="font-bold mb-1 block dark:text-slate-300">EPF No.</label><input id="emp-modal-epf" name="empModalEpf" v-model="employeeModal.form.epfNo" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-socso" class="font-bold mb-1 block dark:text-slate-300">SOCSO No.</label><input id="emp-modal-socso" name="empModalSocso" v-model="employeeModal.form.socsoNo" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-tax" class="font-bold mb-1 block dark:text-slate-300">Tax / PCB No.</label><input id="emp-modal-tax" name="empModalTax" v-model="employeeModal.form.taxNo" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-salary" class="font-bold mb-1 block dark:text-slate-300">Basic Salary (RM)</label><input id="emp-modal-salary" name="empModalSalary" type="number" v-model="employeeModal.form.basicSalary" min="0" step="0.01" class="w-full p-2 border rounded-xl font-bold dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-allowance" class="font-bold mb-1 block dark:text-slate-300">Monthly Allowance (RM)</label><input id="emp-modal-allowance" name="empModalAllowance" type="number" v-model="employeeModal.form.allowance" min="0" step="0.01" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div><label for="emp-modal-deduction" class="font-bold mb-1 block dark:text-slate-300">Fixed Deduction (RM)</label><input id="emp-modal-deduction" name="empModalDeduction" type="number" v-model="employeeModal.form.deduction" min="0" step="0.01" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
                     <div class="flex items-center space-x-2 pt-2">
                         <input type="checkbox" id="isSenior" name="empModalSenior" v-model="employeeModal.form.isSenior" class="w-4 h-4 rounded text-brand-dark">
                         <label for="isSenior" class="font-bold text-slate-700 dark:text-slate-300">Senior Citizen (60+ Years - EPF/SOCSO Exemption)</label>
