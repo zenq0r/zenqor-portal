@@ -100,7 +100,17 @@ service cloud.firestore {
         (isStaff() && resource.data.empEmail == request.auth.token.email)
       );
       allow create: if isAuthenticated() && request.resource.data.empEmail == request.auth.token.email;
-      allow update, delete: if isAdmin() || isHR() || isAccount();
+      allow update: if (
+        isHR() && resource.data.status == 'Pending HR' &&
+        request.resource.data.status in ['Pending Account', 'Rejected']
+      ) || (
+        isAccount() && resource.data.status == 'Pending Account' &&
+        request.resource.data.status in ['Pending Director', 'Rejected']
+      ) || (
+        isDirector() && resource.data.status == 'Pending Director' &&
+        request.resource.data.status in ['Approved', 'Rejected']
+      );
+      allow delete: if isAdmin();
     }
 
     match /audit_logs/{logId} {

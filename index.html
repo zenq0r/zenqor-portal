@@ -605,6 +605,15 @@
                             </div>
                         </div>
 
+                        <div class="border-t border-slate-100 dark:border-slate-700 pt-4">
+                            <label for="claim-assignee" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">ASSIGN TO HR APPROVER *</label>
+                            <select id="claim-assignee" name="claimAssignee" v-model="claimForm.assignedToUid" class="w-full sm:w-96 p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold">
+                                <option value="">-- Select HR Approver --</option>
+                                <option v-for="approver in claimApprovers.filter(u => u.role === 'HR')" :key="approver.id" :value="approver.id">{{ approver.name }} — {{ approver.email }}</option>
+                            </select>
+                            <p class="text-[10px] text-slate-400 mt-1">The claim will continue automatically to Account, then Director for final approval.</p>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4 items-center">
                             <div class="md:col-span-2">
                                 <label for="claim-description" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">EXPENSE DESCRIPTION</label>
@@ -655,9 +664,10 @@
                                         <th class="py-3 px-3">Date &amp; Receipt No.</th>
                                         <th class="py-3 px-3">Employee</th>
                                         <th class="py-3 px-3">Category &amp; Sub-Category</th>
-                                        <th class="py-3 px-3 text-right">Amount (RM)</th>
-                                        <th class="py-3 px-3 text-center">Status</th>
-                                        <th class="py-3 px-3 text-center w-36">Actions</th>
+                                         <th class="py-3 px-3 text-right">Amount (RM)</th>
+                                         <th class="py-3 px-3 text-center">Status</th>
+                                         <th class="py-3 px-3">Assigned To</th>
+                                         <th class="py-3 px-3 text-center w-36">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
@@ -677,21 +687,25 @@
                                         <td class="py-3 px-3 text-right font-extrabold text-sm text-brand-dark dark:text-slate-100">
                                             {{ formatCurrency(clm.amount) }}
                                         </td>
-                                        <td class="py-3 px-3 text-center">
+                                         <td class="py-3 px-3 text-center">
                                             <span :class="{
                                                 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300': clm.status === 'Pending',
                                                 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300': clm.status === 'Approved',
                                                 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': clm.status === 'Rejected'
                                             }" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase">{{ clm.status }}</span>
-                                        </td>
-                                        <td class="py-3 px-3 text-center space-x-1">
-                                            <button v-if="canCreateEdit && canApproveClaim(clm)" @click="approveClaim(clm)" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 p-1.5 rounded" title="Approve">
-                                                <i class="fa-solid fa-check"></i>
-                                            </button>
-                                            <button v-if="canCreateEdit && canApproveClaim(clm)" @click="rejectClaim(clm.id)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Reject">
-                                                <i class="fa-solid fa-xmark"></i>
-                                            </button>
-                                            <button v-if="canCreateEdit" @click="editClaimRecord(clm)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit">
+                                         </td>
+                                         <td class="py-3 px-3">
+                                             <span class="font-bold text-slate-700 dark:text-slate-200 block">{{ clm.assignedToName || '-' }}</span>
+                                             <span class="text-slate-400 text-[10px] block">{{ clm.assignedToRole || '-' }}</span>
+                                         </td>
+                                         <td class="py-3 px-3 text-center space-x-1">
+                                             <button v-if="canApproveClaim(clm)" @click="approveClaim(clm)" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 p-1.5 rounded" :title="userProfile.role === 'Director' ? 'Final Approve' : 'Approve & Forward'">
+                                                 <i class="fa-solid fa-check"></i>
+                                             </button>
+                                             <button v-if="canApproveClaim(clm)" @click="rejectClaim(clm)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Reject">
+                                                 <i class="fa-solid fa-xmark"></i>
+                                             </button>
+                                             <button v-if="canEditClaim(clm)" @click="editClaimRecord(clm)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit">
                                                 <i class="fa-solid fa-pen"></i>
                                             </button>
                                             <button v-if="canDelete" @click="deleteClaimRecord(clm.id)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Delete">
@@ -700,7 +714,7 @@
                                         </td>
                                     </tr>
                                     <tr v-if="filteredSortedClaims.length === 0">
-                                        <td colspan="6" class="py-8 text-center text-slate-400">No expense claim records found.</td>
+                                        <td colspan="7" class="py-8 text-center text-slate-400">No expense claim records found.</td>
                                     </tr>
                                 </tbody>
                             </table>
