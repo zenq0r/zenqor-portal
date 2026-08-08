@@ -77,7 +77,7 @@ createApp({
             notification: { show: false, message: '' },
 
             activePrintModule: null,
-            recordPreview: { show: false, item: null },
+            recordPreview: { show: false, html: '' },
             unsubscribers: [],
             revenueChartInstance: null,
             statusChartInstance: null,
@@ -754,11 +754,31 @@ createApp({
             this.payCalc = { gross, deduct, net, epfEmpr, socsoEmpr, eisEmpr };
         },
         cancelEditPay() { this.editingPayId = null; },
-        viewRecord(item) {
+        async viewRecord(item) {
             const previewItem = JSON.parse(JSON.stringify(item));
             if (!previewItem.isDoc && !previewItem.isPay) previewItem.isPay = previewItem.type === 'Payslip';
             if (!previewItem.isDoc && !previewItem.isPay) previewItem.isDoc = true;
-            this.recordPreview = { show: true, item: previewItem };
+            if (!previewItem.raw) { this.showNotify('Record preview is unavailable.'); return; }
+            const originalDoc = JSON.parse(JSON.stringify(this.docForm));
+            const originalPay = JSON.parse(JSON.stringify(this.payForm));
+            const originalModule = this.activePrintModule;
+            if (previewItem.isDoc) {
+                this.docForm = JSON.parse(JSON.stringify(previewItem.raw));
+                this.activePrintModule = previewItem.type === 'Quotation' ? 'QUOTATION' : 'INVOICE';
+            } else {
+                this.payForm = JSON.parse(JSON.stringify(previewItem.raw));
+                this.autoCalculatePayroll();
+                this.activePrintModule = 'PAYSLIP';
+            }
+            await this.$nextTick();
+            const templateId = previewItem.isDoc ? (previewItem.type === 'Quotation' ? 'print-template-quotation' : 'print-template-invoice') : 'print-template-payslip';
+            const template = document.getElementById(templateId);
+            const html = template ? template.outerHTML.replace(/\bprint-only\b/g, '') : '';
+            this.docForm = originalDoc;
+            this.payForm = originalPay;
+            this.activePrintModule = originalModule;
+            this.autoCalculatePayroll();
+            this.recordPreview = { show: true, html };
         },
         editRecord(item) {
             if (item.isDoc) { this.editingDocId = item.id; if (item.raw) { this.docForm = JSON.parse(JSON.stringify(item.raw)); this.docForm.status = item.raw.status || item.status || (item.type === 'Invoice' ? 'Unpaid' : 'Open'); } this.currentTab = 'doc-generator'; }
