@@ -905,7 +905,7 @@ createApp({
 
         renderCharts() {
             if (typeof Chart === 'undefined' || this.currentTab !== 'dashboard') return;
-            if (['otms', 'cust'].includes(this.userProfile.role)) return;
+            if (['Staff', 'Client'].includes(this.userProfile.role)) return;
 
             this.$nextTick(() => {
                 const revCanvas = document.getElementById('revenueChart'); const statusCanvas = document.getElementById('statusChart');

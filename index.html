@@ -728,7 +728,7 @@
                 <div v-show="currentTab === 'dashboard'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8">
                     
                     <!-- 1. VIEW PEKERJA (STAFF DASHBOARD) -->
-                    <div v-if="userProfile.role === 'otms'" class="space-y-6">
+                    <div v-if="userProfile.role === 'Staff'" class="space-y-6">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Staff Employee Dashboard</h2>
@@ -803,7 +803,7 @@
                     </div>
 
                     <!-- 2. VIEW PELANGGAN (CLIENT DASHBOARD) -->
-                    <div v-else-if="userProfile.role === 'cust'" class="space-y-6">
+                    <div v-else-if="userProfile.role === 'Client'" class="space-y-6">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Executive Dashboard</h2>

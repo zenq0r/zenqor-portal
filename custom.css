@@ -4,6 +4,8 @@
 
 body { 
     font-family: 'Inter', sans-serif; 
+    background: #f8fafc;
+    text-rendering: optimizeLegibility;
 }
 
 [v-cloak] { 
@@ -18,6 +20,100 @@ body {
     box-shadow: 0 4px 12px rgba(30, 58, 138, 0.4);
     border-left: 4px solid #D4AF37;
     pointer-events: auto;
+}
+
+/* ============================================================
+   PORTAL UI POLISH — consistent, calm and accessible surfaces
+   ============================================================ */
+@media screen {
+    #app {
+        min-height: 100vh;
+    }
+
+    #app main {
+        background-image: radial-gradient(circle at top right, rgba(212, 175, 55, 0.08), transparent 24rem);
+    }
+
+    #app input,
+    #app select,
+    #app textarea {
+        transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+    }
+
+    #app input:hover,
+    #app select:hover,
+    #app textarea:hover {
+        border-color: #94a3b8;
+    }
+
+    #app input:focus-visible,
+    #app select:focus-visible,
+    #app textarea:focus-visible,
+    #app button:focus-visible,
+    #app a:focus-visible {
+        outline: 3px solid rgba(212, 175, 55, 0.38);
+        outline-offset: 2px;
+    }
+
+    #app button {
+        transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, color 160ms ease;
+    }
+
+    #app button:not(:disabled):active {
+        transform: translateY(1px);
+    }
+
+    #app .bg-white.rounded-2xl,
+    #app .dark\:bg-slate-800.rounded-2xl {
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
+    }
+
+    #app table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    #app table tbody tr {
+        transition: background-color 150ms ease;
+    }
+
+    #app .fixed.inset-0 > .bg-white,
+    #app .fixed.inset-0 > .dark\:bg-slate-800 {
+        box-shadow: 0 24px 64px rgba(15, 23, 42, 0.25);
+    }
+
+    .sidebar-item-active {
+        background-image: linear-gradient(135deg, #1e3a8a, #1d4ed8);
+    }
+
+    .sidebar-item-active i {
+        color: #f8d66d;
+    }
+
+    @media (max-width: 767px) {
+        #app main {
+            background-image: none;
+        }
+
+        #app header {
+            padding-top: 0.7rem;
+            padding-bottom: 0.7rem;
+        }
+
+        #app .overflow-x-auto {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #app table th,
+        #app table td {
+            white-space: nowrap;
+        }
+
+        #app .fixed.inset-0 {
+            padding: 0.75rem;
+        }
+    }
 }
 
 /* Penyesuaian Bar Skrol (Scrollbar styling) */
