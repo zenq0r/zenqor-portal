@@ -118,6 +118,7 @@ createApp({
             auditLogs: [],
 
             editingDocId: null,
+            clientSavedForDocument: false,
             editingPayId: null,
             editingClaimId: null,
 
@@ -387,6 +388,7 @@ createApp({
                 amount: 0, receiptNo: '', description: '', receiptAttachment: '', status: 'Pending HR',
                 assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
             };
+            this.clientSavedForDocument = false;
             this.editingDocId = null; this.editingPayId = null; this.editingClaimId = null;
             this.autoCalculatePayroll();
             this.generateDocNo();
@@ -640,7 +642,7 @@ createApp({
             try {
                 const docId = this.docForm.clientName.trim().replace(/\s+/g, '_').toLowerCase();
                 const newCust = { clientName: this.docForm.clientName, clientPhone: this.docForm.clientPhone, clientSSM: this.docForm.clientSSM, clientAddress: this.docForm.clientAddress, clientCity: this.docForm.clientCity, clientState: this.docForm.clientState, clientPostcode: this.docForm.clientPostcode, clientCountry: this.docForm.clientCountry, clientEmail: this.docForm.clientEmail, clientContactPerson: this.docForm.clientContactPerson, clientPosition: this.docForm.clientPosition };
-                await setDoc(doc(db, "customers", docId), newCust); this.logAudit('CREATE', `Saved customer ${this.docForm.clientName}`); this.showNotify('Client saved!');
+            await setDoc(doc(db, "customers", docId), newCust); this.clientSavedForDocument = true; this.logAudit('CREATE', `Saved customer ${this.docForm.clientName}`); this.showNotify('Client saved. You can now add document items.'); return true;
             } catch (error) {}
         },
         selectCustomerFromTable(cust) {
@@ -713,7 +715,7 @@ createApp({
         async deleteClaimRecord(claimId) { if (confirm("Delete this claim record?")) { try { await deleteDoc(doc(db, "claims", claimId)); this.showNotify("Claim deleted."); } catch (error) {} } },
 
         setPrintOrientation(orientation, margin) { const styleEl = document.getElementById('dynamic-print-orientation'); if (styleEl) styleEl.innerHTML = `@media print { @page { size: A4 ${orientation}; margin: ${margin} !important; } }`; },
-        async printDocumentModule() { if (!this.docForm.clientName) return alert('Enter client name.'); const isSaved = await this.saveDocRecord(); if (!isSaved) return; this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE'; this.setPrintOrientation('portrait', '15mm'); setTimeout(() => { window.print(); }, 250); },
+        async printDocumentModule() { if (!this.clientSavedForDocument) return alert('Save Client information before previewing or printing this document.'); this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE'; this.setPrintOrientation('portrait', '15mm'); setTimeout(() => { window.print(); }, 250); },
         async printPayslipModule() { if (!this.payForm.name || !this.payForm.empNo) return alert('Enter Name and Emp ID.'); this.autoCalculatePayroll(); this.activePrintModule = 'PAYSLIP'; this.setPrintOrientation('landscape', '0mm'); await this.savePayslipRecord(); setTimeout(() => { window.print(); }, 250); },
         
         async saveDocRecord() {
@@ -721,7 +723,8 @@ createApp({
                 if (['Paid', 'Partial'].includes(this.docForm.status) && (!this.docForm.paymentRefNo || this.docForm.paymentRefNo.trim() === '')) { alert("Payment Reference No. is REQUIRED."); return false; }
                 const docId = String(this.editingDocId || Date.now());
                 const payload = { id: docId, type: this.docForm.type, docNo: this.docForm.docNo, status: this.docForm.status || (this.docForm.type === 'Invoice' ? 'Unpaid' : 'Open'), paymentMethod: this.docForm.paymentMethod || 'Bank Transfer', paymentBank: this.docForm.paymentBank || '', paymentReceiver: this.docForm.paymentReceiver || '', paymentRefNo: this.docForm.paymentRefNo || '', paymentAttachment: this.docForm.paymentAttachment || '', date: this.docForm.date, name: this.docForm.clientName, amount: this.docGrandTotal, raw: JSON.parse(JSON.stringify(this.docForm)) };
-                await setDoc(doc(db, "docs", docId), payload); await this.saveCustomerToDatabase(); this.editingDocId = docId; this.showNotify(`Document saved.`); return true;
+                if (!this.clientSavedForDocument) { alert('Save Client information before saving this document.'); return false; }
+                await setDoc(doc(db, "docs", docId), payload); this.editingDocId = docId; this.showNotify(`Document saved.`); return true;
             } catch (error) { return false; }
         },
         async savePayslipRecord() {
