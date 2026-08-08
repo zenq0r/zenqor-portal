@@ -750,7 +750,19 @@ createApp({
             const update = nextRole
                 ? { status: `Pending ${nextRole}`, assignedToUid: '', assignedToName: roleNames[nextRole], assignedToEmail: '', assignedToRole: nextRole }
                 : { status: 'Approved', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByRole: this.userProfile.role, approvedAt: new Date().toISOString(), directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName };
-            try { await updateDoc(doc(db, "claims", clm.id), update); this.logAudit('UPDATE', `Claim ${clm.receiptNo} approved by ${this.userProfile.role}`); this.showNotify(nextRole ? `Claim assigned to ${roleNames[nextRole]}.` : 'Claim finally approved by Director.'); } catch (error) { this.showNotify('Unable to update claim status.'); }
+            try {
+                await updateDoc(doc(db, "claims", clm.id), update);
+                this.logAudit('UPDATE', `Claim ${clm.receiptNo} approved by ${this.userProfile.role}`);
+                this.showNotify(nextRole ? `Claim assigned to ${roleNames[nextRole]}.` : 'Claim finally approved by Director.');
+                return true;
+            } catch (error) {
+                this.showNotify('Unable to update claim status.');
+                return false;
+            }
+        },
+        async approveClaimFromPreview() {
+            const approved = await this.approveClaim(this.claimPreview.claim);
+            if (approved) this.claimPreview.show = false;
         },
         async rejectClaim(clm) {
             if (confirm("REJECT this claim application?")) { try { await updateDoc(doc(db, "claims", clm.id), { status: 'Rejected', rejectedByUid: this.userProfile.uid, rejectedByName: this.userProfile.name, rejectedByRole: this.userProfile.role, rejectedAt: new Date().toISOString() }); this.showNotify("Claim rejected."); } catch (error) { this.showNotify('Unable to reject claim.'); } }
