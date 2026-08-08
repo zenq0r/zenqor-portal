@@ -77,6 +77,7 @@ createApp({
             notification: { show: false, message: '' },
 
             activePrintModule: null,
+            claimPrint: null,
             recordPreview: { show: false, html: '' },
             claimPreview: { show: false, claim: null, directorApprovalAttachment: '', directorApprovalAttachmentName: '' },
             unsubscribers: [],
@@ -774,6 +775,14 @@ createApp({
 
         setPrintOrientation(orientation, margin) { const styleEl = document.getElementById('dynamic-print-orientation'); if (styleEl) styleEl.innerHTML = `@media print { @page { size: A4 ${orientation}; margin: ${margin} !important; } }`; },
         async printDocumentModule() { if (!this.clientSavedForDocument) return alert('Save Client information before previewing or printing this document.'); this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE'; this.setPrintOrientation('portrait', '15mm'); setTimeout(() => { window.print(); }, 250); },
+        async printApprovedClaim(claim) {
+            if (!claim || claim.status !== 'Approved') { alert('Only approved claims can be printed.'); return; }
+            this.claimPrint = JSON.parse(JSON.stringify(claim));
+            this.activePrintModule = 'CLAIM';
+            this.setPrintOrientation('portrait', '15mm');
+            await this.$nextTick();
+            window.print();
+        },
         async printPayslipModule() { if (!this.payForm.name || !this.payForm.empNo) return alert('Enter Name and Emp ID.'); this.autoCalculatePayroll(); this.activePrintModule = 'PAYSLIP'; this.setPrintOrientation('landscape', '0mm'); await this.savePayslipRecord(); setTimeout(() => { window.print(); }, 250); },
         
         async saveDocRecord() {
