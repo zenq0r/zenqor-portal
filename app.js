@@ -635,7 +635,13 @@ createApp({
 
         selectCustomerForDoc(e) {
             const cust = this.customers.find(c => c.clientName === e.target.value);
-            if (cust) { Object.keys(cust).forEach(k => { if (this.docForm.hasOwnProperty(k)) this.docForm[k] = cust[k]; }); this.showNotify(`Client loaded.`); }
+            if (cust) {
+                Object.keys(cust).forEach(k => { if (this.docForm.hasOwnProperty(k)) this.docForm[k] = cust[k]; });
+                this.clientSavedForDocument = true;
+                this.showNotify(`Saved client loaded. You can now add document items.`);
+            } else {
+                this.clientSavedForDocument = false;
+            }
         },
         async saveCustomerToDatabase() {
             if (!this.docForm.clientName || !this.docForm.clientPhone || !this.docForm.clientAddress) return alert('Enter Client Name, Phone, and Address.');
