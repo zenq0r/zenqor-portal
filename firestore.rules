@@ -106,7 +106,7 @@ service cloud.firestore {
         isAccount() && resource.data.status == 'Pending Account' &&
         request.resource.data.status in ['Pending Director', 'Rejected']
       ) || (
-        isDirector() && resource.data.status == 'Pending Director' &&
+        isDirector() && resource.data.status in ['Pending HR', 'Pending Account', 'Pending Director'] &&
         request.resource.data.status in ['Approved', 'Rejected']
       );
       allow delete: if isAdmin();

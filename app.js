@@ -78,6 +78,7 @@ createApp({
 
             activePrintModule: null,
             recordPreview: { show: false, html: '' },
+            claimPreview: { show: false, claim: null },
             unsubscribers: [],
             revenueChartInstance: null,
             statusChartInstance: null,
@@ -480,6 +481,9 @@ createApp({
         formatCurrency(val) {
             return new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR' }).format(val || 0);
         },
+        formatDateTime(val) {
+            return val ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(val)) : '-';
+        },
         showNotify(msg) {
             this.notification = { show: true, message: msg };
             setTimeout(() => { this.notification.show = false; }, 3500);
@@ -721,6 +725,7 @@ createApp({
         // WORKFLOW: Staff/Client -> HR -> Account -> Director (final approval)
         canApproveClaim(clm) {
             const role = this.userProfile.role;
+            if (role === 'Director') return typeof clm.status === 'string' && clm.status.startsWith('Pending');
             const expectedStatus = { HR: 'Pending HR', Account: 'Pending Account', Director: 'Pending Director' }[role];
             return !!expectedStatus && clm.status === expectedStatus && (!clm.assignedToEmail || clm.assignedToEmail === this.userProfile.email);
         },
@@ -728,11 +733,11 @@ createApp({
             return clm.empEmail === this.userProfile.email && clm.status === 'Pending HR';
         },
         async approveClaim(clm) {
-            const nextRole = { 'Pending HR': 'Account', 'Pending Account': 'Director' }[clm.status];
+            const nextRole = this.userProfile.role === 'Director' ? null : { 'Pending HR': 'Account', 'Pending Account': 'Director' }[clm.status];
             const roleNames = { HR: 'Human Resource Management', Account: 'Finance Account Management', Director: 'Director' };
             const update = nextRole
                 ? { status: `Pending ${nextRole}`, assignedToUid: '', assignedToName: roleNames[nextRole], assignedToEmail: '', assignedToRole: nextRole }
-                : { status: 'Approved', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByRole: 'Director', approvedAt: new Date().toISOString() };
+                : { status: 'Approved', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByRole: this.userProfile.role, approvedAt: new Date().toISOString() };
             try { await updateDoc(doc(db, "claims", clm.id), update); this.logAudit('UPDATE', `Claim ${clm.receiptNo} approved by ${this.userProfile.role}`); this.showNotify(nextRole ? `Claim assigned to ${roleNames[nextRole]}.` : 'Claim finally approved by Director.'); } catch (error) { this.showNotify('Unable to update claim status.'); }
         },
         async rejectClaim(clm) {
@@ -832,6 +837,9 @@ createApp({
             this.activePrintModule = originalModule;
             this.autoCalculatePayroll();
             this.recordPreview = { show: true, html };
+        },
+        viewClaimRecord(claim) {
+            this.claimPreview = { show: true, claim: JSON.parse(JSON.stringify(claim)) };
         },
         editRecord(item) {
             if (item.isDoc) { this.editingDocId = item.id; if (item.raw) { this.docForm = JSON.parse(JSON.stringify(item.raw)); this.docForm.status = item.raw.status || item.status || (item.type === 'Invoice' ? 'Unpaid' : 'Open'); } this.currentTab = 'doc-generator'; }

@@ -680,29 +680,22 @@
                                         </td>
                                          <td class="py-3 px-3 text-center">
                                             <span :class="{
-                                                'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300': clm.status === 'Pending',
+                                                'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300': clm.status && clm.status.startsWith('Pending'),
                                                 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300': clm.status === 'Approved',
                                                 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': clm.status === 'Rejected'
                                             }" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase">{{ clm.status }}</span>
+                                            <p v-if="clm.approvedByName" class="mt-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">Approved by {{ clm.approvedByName }} ({{ clm.approvedByRole }})</p>
+                                            <p v-if="clm.approvedAt" class="text-[10px] text-slate-400">{{ formatDateTime(clm.approvedAt) }}</p>
                                          </td>
                                          <td class="py-3 px-3">
                                              <span class="font-bold text-slate-700 dark:text-slate-200 block">{{ clm.assignedToName || '-' }}</span>
                                              <span class="text-slate-400 text-[10px] block">{{ clm.assignedToRole || '-' }}</span>
                                          </td>
                                          <td class="py-3 px-3 text-center space-x-1">
-                                             <button v-if="canApproveClaim(clm)" @click="approveClaim(clm)" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 p-1.5 rounded" :title="userProfile.role === 'Director' ? 'Final Approve' : 'Approve & Forward'">
-                                                 <i class="fa-solid fa-check"></i>
+                                             <button type="button" @click="viewClaimRecord(clm)" class="bg-blue-50 text-brand-blue hover:bg-blue-100 p-1.5 rounded" title="View Claim Record">
+                                                 <i class="fa-solid fa-eye"></i>
                                              </button>
-                                             <button v-if="canApproveClaim(clm)" @click="rejectClaim(clm)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Reject">
-                                                 <i class="fa-solid fa-xmark"></i>
-                                             </button>
-                                             <button v-if="canEditClaim(clm)" @click="editClaimRecord(clm)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit">
-                                                <i class="fa-solid fa-pen"></i>
-                                            </button>
-                                            <button v-if="canDelete" @click="deleteClaimRecord(clm.id)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Delete">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                        </td>
+                                         </td>
                                     </tr>
                                     <tr v-if="filteredSortedClaims.length === 0">
                                         <td colspan="7" class="py-8 text-center text-slate-400">No expense claim records found.</td>
@@ -1497,6 +1490,41 @@
                 </div>
 
             </main>
+        </div>
+
+        <!-- CLAIM RECORD PREVIEW -->
+        <div v-if="claimPreview.show && claimPreview.claim" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4 no-print">
+            <div class="bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 z-10 flex items-center justify-between bg-brand-dark text-white px-6 py-4 rounded-t-2xl">
+                    <div><p class="text-[10px] font-bold tracking-widest text-brand-gold uppercase">Read-only</p><h3 class="text-base font-extrabold"><i class="fa-solid fa-receipt mr-2 text-brand-gold"></i>Claim Record Preview</h3></div>
+                    <button type="button" @click="claimPreview.show = false" class="bg-white/10 hover:bg-white/20 p-2 rounded-lg" title="Close preview"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="p-5 md:p-7 space-y-6 text-xs">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div><p class="text-slate-400 font-bold uppercase tracking-wide">Receipt / Reference No.</p><p class="text-lg font-extrabold text-brand-dark dark:text-white mt-1">{{ claimPreview.claim.receiptNo }}</p><p class="text-slate-500 mt-1">Expense Date: {{ claimPreview.claim.expenseDate }}</p></div>
+                        <span :class="{
+                            'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300': claimPreview.claim.status && claimPreview.claim.status.startsWith('Pending'),
+                            'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300': claimPreview.claim.status === 'Approved',
+                            'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': claimPreview.claim.status === 'Rejected'
+                        }" class="px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase">{{ claimPreview.claim.status }}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-3"><i class="fa-solid fa-user mr-2 text-brand-blue"></i>Applicant</h4><p class="font-bold text-slate-800 dark:text-slate-100">{{ claimPreview.claim.name }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.empNo }} · {{ claimPreview.claim.dept || '-' }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.empEmail }}</p></section>
+                        <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-3"><i class="fa-solid fa-money-bill-wave mr-2 text-emerald-600"></i>Expense Details</h4><p class="font-bold text-slate-800 dark:text-slate-100">{{ claimPreview.claim.category }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.subCategory }}</p><p class="text-xl font-extrabold text-brand-dark dark:text-white mt-3">{{ formatCurrency(claimPreview.claim.amount) }}</p></section>
+                    </div>
+
+                    <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-2"><i class="fa-solid fa-align-left mr-2 text-brand-gold"></i>Expense Description</h4><p class="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{{ claimPreview.claim.description }}</p></section>
+
+                    <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-4"><i class="fa-solid fa-route mr-2 text-brand-blue"></i>Approval Workflow</h4><div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><div v-for="step in [{ role: 'HR', label: 'Human Resource' }, { role: 'Account', label: 'Finance Account' }, { role: 'Director', label: 'Director (Final)' }]" :key="step.role" :class="claimPreview.claim.assignedToRole === step.role ? 'border-brand-gold bg-amber-50 dark:bg-amber-950/20' : 'border-slate-200 dark:border-slate-700'" class="border rounded-xl p-3"><p class="font-extrabold text-brand-dark dark:text-white">{{ step.label }}</p><p class="text-[10px] text-slate-400 mt-1">{{ claimPreview.claim.assignedToRole === step.role ? 'Current approver' : 'Workflow stage' }}</p></div></div><div v-if="claimPreview.claim.approvedByName" class="mt-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3 text-emerald-800 dark:text-emerald-200"><p class="font-bold">Approved by {{ claimPreview.claim.approvedByName }} ({{ claimPreview.claim.approvedByRole }}).</p><p class="text-[10px] mt-1">{{ formatDateTime(claimPreview.claim.approvedAt) }}</p></div><p v-if="claimPreview.claim.rejectedByName" class="mt-4 text-red-600 dark:text-red-300 font-bold">Rejected by {{ claimPreview.claim.rejectedByName }} ({{ claimPreview.claim.rejectedByRole }}).</p></section>
+
+                    <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><div class="flex items-center justify-between gap-3"><div><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-paperclip mr-2 text-brand-gold"></i>Receipt Attachment</h4><p class="text-slate-400 mt-1">{{ claimPreview.claim.receiptAttachmentName || 'Attached receipt' }}</p></div><a v-if="claimPreview.claim.receiptAttachment" :href="claimPreview.claim.receiptAttachment" target="_blank" rel="noopener" class="bg-brand-dark hover:bg-brand-blue text-white px-3 py-2 rounded-lg font-bold text-xs"><i class="fa-solid fa-eye mr-1"></i>View Attachment</a></div><img v-if="claimPreview.claim.receiptAttachment && claimPreview.claim.receiptAttachment.startsWith('data:image')" :src="claimPreview.claim.receiptAttachment" alt="Claim receipt preview" class="mt-4 max-h-72 rounded-lg border border-slate-200 mx-auto"></section>
+                    <div v-if="canApproveClaim(claimPreview.claim)" class="flex flex-col sm:flex-row justify-end gap-3 border-t border-slate-200 dark:border-slate-700 pt-5">
+                        <button type="button" @click="rejectClaim(claimPreview.claim); claimPreview.show = false" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-4 py-2.5 rounded-xl text-xs"><i class="fa-solid fa-xmark mr-1"></i>Reject Claim</button>
+                        <button type="button" @click="approveClaim(claimPreview.claim); claimPreview.show = false" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs"><i class="fa-solid fa-check mr-1"></i>{{ userProfile.role === 'Director' ? 'Final Approve' : 'Approve & Forward' }}</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- READ-ONLY RECORD PREVIEW -->
