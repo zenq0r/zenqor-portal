@@ -141,54 +141,54 @@ createApp({
             },
 
             claimSubCategories: {
-                'Perubatan (Medical)': [
-                    'Rawatan Klinik / Hospital',
-                    'Ubat-ubatan (Preskripsi)',
-                    'Pemeriksaan Gigi & Mata',
-                    'Fisioterapi / Rawatan Pakar',
-                    'Vaksinasi',
-                    'Peralatan Perubatan'
+                'Medical': [
+                    'Clinic / Hospital Treatment',
+                    'Prescription Medication',
+                    'Dental and Eye Care',
+                    'Physiotherapy / Specialist Treatment',
+                    'Vaccination',
+                    'Medical Equipment'
                 ],
-                'Perjalanan & Pengangkutan': [
-                    'Tuntutan Mileage (Kilometer)',
-                    'Tol & Parkir',
-                    'Grab / E-Hailing / Teksi',
-                    'Penginapan Hotel',
-                    'Tiket Penerbangan / Kereta Api / Bas',
-                    'Sewa Kenderaan',
-                    'Minyak Petrol / Diesel',
+                'Travel and Transportation': [
+                    'Mileage Claim',
+                    'Tolls and Parking',
+                    'Ride-Hailing / Taxi',
+                    'Hotel Accommodation',
+                    'Flight / Train / Bus Ticket',
+                    'Vehicle Rental',
+                    'Fuel',
                     'Visa / Travel Insurance'
                 ],
-                'Keraian & Pelanggan': [
-                    'Belanja Makan Pelanggan',
-                    'Jamuan Jabatan / Syarikat',
-                    'Hadiah / Cenderamata Pelanggan',
-                    'Acara Korporat / Networking'
+                'Entertainment and Client Relations': [
+                    'Client Meal',
+                    'Department / Company Event',
+                    'Client Gift / Souvenir',
+                    'Corporate / Networking Event'
                 ],
-                'Latihan & Pembangunan': [
-                    'Kursus / Seminar / Bengkel',
-                    'Yuran Pensijilan Profesional',
-                    'Buku / Bahan Rujukan',
-                    'Langganan Platform Pembelajaran'
+                'Training and Development': [
+                    'Course / Seminar / Workshop',
+                    'Professional Certification Fee',
+                    'Books / Reference Materials',
+                    'Learning Platform Subscription'
                 ],
-                'Operasi & Projek': [
-                    'Peralatan / Bekalan Projek',
-                    'Perisian / Langganan SaaS',
-                    'Pembelian Kecemasan Operasi',
-                    'Penyelenggaraan Peralatan'
+                'Operations and Projects': [
+                    'Project Equipment / Supplies',
+                    'Software / SaaS Subscription',
+                    'Emergency Operations Purchase',
+                    'Equipment Maintenance'
                 ],
-                'Komunikasi & Utiliti': [
-                    'Telefon Mudah Alih',
+                'Communications and Utilities': [
+                    'Mobile Phone',
                     'Internet / Data',
-                    'Mesyuarat Video / Komunikasi',
-                    'Percetakan / Fotokopi'
+                    'Video Meeting / Communications',
+                    'Printing / Photocopying'
                 ],
-                'Lain-Lain (Miscellaneous)': [
-                    'Alat Tulis & Pejabat',
-                    'Elaun Komunikasi / Telefon',
-                    'Kurier & Pos',
-                    'Parking / Tol Lain-lain',
-                    'Lain-lain (Nyatakan dalam Penerangan)'
+                'Miscellaneous': [
+                    'Stationery and Office Supplies',
+                    'Communication Allowance',
+                    'Courier and Postage',
+                    'Other Parking / Toll',
+                    'Other (Specify in Description)'
                 ]
             },
 
@@ -230,7 +230,7 @@ createApp({
             claimForm: {
                 name: '', empNo: '', empEmail: '', dept: '',
                 expenseDate: new Date().toISOString().substr(0, 10),
-                category: 'Perubatan (Medical)', subCategory: 'Rawatan Klinik / Hospital',
+                category: 'Medical', subCategory: 'Clinic / Hospital Treatment',
                 amount: 0, receiptNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', status: 'Pending HR',
                 assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
             },
@@ -413,7 +413,7 @@ createApp({
                 basic: 0, ot: 0, phone: 0, transport: 0, meal: 0, bonus: 0, dedEpf: 0, dedSocso: 0, dedEis: 0, dedPcb: 0, dedAdvance: 0, dedOther: 0
             };
             this.claimForm = {
-                name: '', empNo: '', empEmail: '', dept: '', expenseDate: new Date().toISOString().substr(0, 10), category: 'Perubatan (Medical)', subCategory: 'Rawatan Klinik / Hospital',
+                name: '', empNo: '', empEmail: '', dept: '', expenseDate: new Date().toISOString().substr(0, 10), category: 'Medical', subCategory: 'Clinic / Hospital Treatment',
                 amount: 0, receiptNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', status: 'Pending HR',
                 assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
             };
