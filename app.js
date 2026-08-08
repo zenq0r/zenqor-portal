@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.1)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.2)
 // ============================================================
 
 import {
