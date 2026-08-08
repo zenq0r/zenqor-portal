@@ -1500,6 +1500,29 @@
             </main>
         </div>
 
+        <!-- READ-ONLY RECORD PREVIEW -->
+        <div v-if="recordPreview.show && recordPreview.item" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex flex-col p-3 md:p-6 no-print">
+            <div class="flex items-center justify-between bg-slate-800 text-white px-4 py-3 rounded-t-xl max-w-5xl w-full mx-auto">
+                <div class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-file-pdf text-red-400"></i> Read-only PDF Preview</div>
+                <button type="button" @click="recordPreview.show = false" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold"><i class="fa-solid fa-xmark mr-1"></i>Close</button>
+            </div>
+            <div class="bg-slate-700 overflow-auto flex-1 max-w-5xl w-full mx-auto rounded-b-xl p-4 md:p-8">
+                <article class="bg-white text-slate-900 shadow-2xl mx-auto max-w-3xl min-h-[900px] p-8 md:p-12 text-sm">
+                    <template v-if="recordPreview.item.isDoc">
+                        <div class="flex justify-between border-b-2 border-slate-800 pb-5 mb-8"><div><h1 class="text-2xl font-extrabold">ZENQOR TECHNOLOGIES</h1><p class="text-slate-500 mt-1">{{ recordPreview.item.type }}</p></div><div class="text-right"><p class="font-bold">{{ recordPreview.item.docNo }}</p><p class="text-slate-500">{{ recordPreview.item.date }}</p></div></div>
+                        <h2 class="font-bold text-slate-500 uppercase text-xs">Bill To</h2><p class="font-extrabold text-lg mt-1">{{ recordPreview.item.name }}</p><p class="text-slate-600 whitespace-pre-line">{{ recordPreview.item.raw && recordPreview.item.raw.clientAddress }}</p>
+                        <table class="w-full mt-8 border-collapse"><thead><tr class="border-y border-slate-300 text-left text-xs uppercase text-slate-500"><th class="py-3">Description</th><th class="py-3 text-center">Qty</th><th class="py-3 text-right">Amount</th></tr></thead><tbody><tr v-for="(line, index) in (recordPreview.item.raw && recordPreview.item.raw.items) || []" :key="index" class="border-b border-slate-200"><td class="py-3">{{ line.desc }}</td><td class="py-3 text-center">{{ line.qty }}</td><td class="py-3 text-right">{{ formatCurrency(line.qty * line.price) }}</td></tr></tbody></table>
+                        <div class="text-right mt-8 border-t pt-4"><span class="text-slate-500 mr-6">Total</span><span class="font-extrabold text-xl">{{ formatCurrency(recordPreview.item.amount) }}</span></div>
+                    </template>
+                    <template v-else-if="recordPreview.item.isPay">
+                        <div class="flex justify-between border-b-2 border-slate-800 pb-5 mb-8"><div><h1 class="text-2xl font-extrabold">ZENQOR TECHNOLOGIES</h1><p class="text-slate-500 mt-1">PAYSLIP</p></div><div class="text-right"><p class="font-bold">{{ recordPreview.item.docNo }}</p><p class="text-slate-500">{{ recordPreview.item.date }}</p></div></div>
+                        <div class="grid grid-cols-2 gap-6"><div><p class="text-xs uppercase text-slate-500">Employee</p><p class="font-extrabold text-lg">{{ recordPreview.item.name }}</p><p>{{ recordPreview.item.raw && recordPreview.item.raw.empNo }}</p></div><div><p class="text-xs uppercase text-slate-500">Department / Position</p><p class="font-bold">{{ recordPreview.item.raw && recordPreview.item.raw.dept }}</p><p>{{ recordPreview.item.raw && recordPreview.item.raw.position }}</p></div></div>
+                        <div class="mt-10 border-y border-slate-300 py-5 flex justify-between"><span class="font-bold">Net Pay</span><span class="font-extrabold text-xl">{{ formatCurrency(recordPreview.item.amount) }}</span></div>
+                    </template>
+                </article>
+            </div>
+        </div>
+
         <!-- MODAL PEKERJA & AKSES -->
         <div v-if="employeeModal.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4">

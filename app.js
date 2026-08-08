@@ -77,6 +77,7 @@ createApp({
             notification: { show: false, message: '' },
 
             activePrintModule: null,
+            recordPreview: { show: false, item: null },
             unsubscribers: [],
             revenueChartInstance: null,
             statusChartInstance: null,
@@ -754,9 +755,10 @@ createApp({
         },
         cancelEditPay() { this.editingPayId = null; },
         viewRecord(item) {
-            if (item.isDoc && item.raw) { this.editingDocId = item.id; this.docForm = JSON.parse(JSON.stringify(item.raw)); this.activePrintModule = item.type === 'Quotation' ? 'QUOTATION' : 'INVOICE'; this.setPrintOrientation('portrait', '15mm'); this.currentTab = 'doc-generator'; }
-            else if (item.isPay && item.raw) { this.editingPayId = item.id; this.payForm = JSON.parse(JSON.stringify(item.raw)); this.autoCalculatePayroll(); this.activePrintModule = 'PAYSLIP'; this.setPrintOrientation('landscape', '0mm'); this.currentTab = 'payslip-generator'; }
-            window.scrollTo({ top: 0, behavior: 'smooth' }); this.showNotify(`Record loaded.`);
+            const previewItem = JSON.parse(JSON.stringify(item));
+            if (!previewItem.isDoc && !previewItem.isPay) previewItem.isPay = previewItem.type === 'Payslip';
+            if (!previewItem.isDoc && !previewItem.isPay) previewItem.isDoc = true;
+            this.recordPreview = { show: true, item: previewItem };
         },
         editRecord(item) {
             if (item.isDoc) { this.editingDocId = item.id; if (item.raw) { this.docForm = JSON.parse(JSON.stringify(item.raw)); this.docForm.status = item.raw.status || item.status || (item.type === 'Invoice' ? 'Unpaid' : 'Open'); } this.currentTab = 'doc-generator'; }
