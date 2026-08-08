@@ -1570,7 +1570,7 @@
                 <form @submit.prevent="savePortalUser" class="space-y-4 text-xs">
                     <div><label for="usr-modal-name" class="font-bold mb-1 block dark:text-slate-300">Username *</label><input id="usr-modal-name" name="usrModalName" v-model="userModal.form.name" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
                     <div><label for="usr-modal-email" class="font-bold mb-1 block dark:text-slate-300">Sign-In Email *</label><input id="usr-modal-email" name="usrModalEmail" type="email" v-model="userModal.form.email" :disabled="userModal.isEdit" required placeholder="name@zenq0r.com" pattern="^[a-zA-Z0-9._%+-]+@zenq0r\.com$" title="Must use official company domain @zenq0r.com" class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"><p class="text-[10px] text-slate-400 mt-1">Must use official company domain (@zenq0r.com).</p></div>
-                    <div><label for="usr-modal-pass" class="font-bold mb-1 block dark:text-slate-300">Password *</label><input id="usr-modal-pass" name="usrModalPass" type="text" v-model="userModal.form.password" required class="w-full p-2 border rounded-xl dark:bg-slate-700 dark:text-white"></div>
+                    <div v-if="!userModal.isEdit"><label for="usr-modal-pass" class="font-bold mb-1 block dark:text-slate-300">Temporary Password</label><input id="usr-modal-pass" name="usrModalPass" type="text" v-model="userModal.form.password" readonly aria-readonly="true" class="w-full p-2 border rounded-xl bg-slate-100 text-slate-500 cursor-not-allowed dark:bg-slate-700 dark:text-slate-300"><p class="text-[10px] text-slate-400 mt-1">Generated automatically and locked. The user must change it after first sign-in.</p></div>
                     <div>
                         <label for="usr-modal-role" class="font-bold mb-1 block dark:text-slate-300">Role *</label>
                         <select id="usr-modal-role" name="usrModalRole" v-model="userModal.form.role" class="w-full p-2 border rounded-xl font-bold dark:bg-slate-700 dark:text-white">
@@ -1599,7 +1599,7 @@
                         <i class="fa-solid fa-shield-halved text-brand-gold mr-2 text-base"></i>
                         Kemaskini Kata Laluan Akaun
                     </h3>
-                    <button type="button" @click="changePasswordModal.show = false; changePasswordModal.error = ''" class="text-slate-400 hover:text-slate-600">
+                    <button v-if="!changePasswordModal.required" type="button" @click="changePasswordModal.show = false; changePasswordModal.error = ''" class="text-slate-400 hover:text-slate-600">
                         <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
                 </div>
@@ -1623,7 +1623,7 @@
                     </div>
 
                     <div class="flex justify-end space-x-2 pt-3 border-t dark:border-slate-700">
-                        <button type="button" @click="changePasswordModal.show = false; changePasswordModal.error = ''" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-xl font-bold">Batal</button>
+                        <button v-if="!changePasswordModal.required" type="button" @click="changePasswordModal.show = false; changePasswordModal.error = ''" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-xl font-bold">Batal</button>
                         <button type="submit" :disabled="changePasswordModal.loading" class="px-5 py-2 bg-brand-dark hover:bg-brand-blue text-white rounded-xl font-bold transition">
                             {{ changePasswordModal.loading ? 'Mengesahkan...' : 'Simpan Kata Laluan' }}
                         </button>

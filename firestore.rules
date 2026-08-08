@@ -63,7 +63,7 @@ service cloud.firestore {
       allow create, delete: if isAdmin();
       allow update: if isAdmin() || (
         request.auth.uid == userId &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photo'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photo', 'mustChangePassword'])
       );
     }
 

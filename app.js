@@ -88,7 +88,8 @@ createApp({
                 newPassword: '',
                 confirmPassword: '',
                 error: '',
-                loading: false
+                loading: false,
+                required: false
             },
 
             company: {
@@ -511,10 +512,11 @@ createApp({
                 let name = firebaseUser.displayName || firebaseUser.email;
                 let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
 
+                const mustChangePassword = userSnap.exists() && userSnap.data().mustChangePassword === true;
                 if (userSnap.exists()) { role = userSnap.data().role || 'Staff'; name = userSnap.data().name || name; photo = userSnap.data().photo || photo; }
                 if (firebaseUser.email === 'admin@zenq0r.com') role = 'Superadmin';
 
-                this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo };
+                this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword };
                 if (this.loginForm.rememberMe) localStorage.setItem('zenqor_remember_email', this.loginForm.email);
                 else localStorage.removeItem('zenqor_remember_email');
 
@@ -522,7 +524,9 @@ createApp({
                 localStorage.setItem('zenqor_theme', this.isDarkMode ? 'dark' : 'light');
                 this.logAudit('LOGIN', `User logged in with role ${this.getRoleDisplayName(role)}`);
                 this.showNotify(`Welcome back (${this.getRoleDisplayName(role)}): ${name}`);
-                this.currentTab = 'dashboard'; this.$nextTick(() => { this.renderCharts(); });
+                this.currentTab = mustChangePassword ? 'profile' : 'dashboard';
+                if (mustChangePassword) { this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
+                this.$nextTick(() => { this.renderCharts(); });
             } catch (error) {
                 this.loginError = 'Invalid email or password credentials / System Error.';
             }
@@ -548,7 +552,9 @@ createApp({
                 const credential = EmailAuthProvider.credential(user.email, currentPassword);
                 await reauthenticateWithCredential(user, credential);
                 await updatePassword(user, newPassword);
-                this.changePasswordModal.show = false; this.changePasswordModal.currentPassword = ''; this.changePasswordModal.newPassword = ''; this.changePasswordModal.confirmPassword = '';
+                await setDoc(doc(db, "users", user.uid), { mustChangePassword: false }, { merge: true });
+                this.userProfile.mustChangePassword = false;
+                this.changePasswordModal.show = false; this.changePasswordModal.required = false; this.changePasswordModal.currentPassword = ''; this.changePasswordModal.newPassword = ''; this.changePasswordModal.confirmPassword = '';
                 this.logAudit('UPDATE', 'User changed their password'); this.showNotify('Password updated successfully!');
             } catch (error) { this.changePasswordModal.error = 'Current password is incorrect or System error.'; } finally { this.changePasswordModal.loading = false; }
         },
@@ -571,14 +577,14 @@ createApp({
         sendWelcomeEmail(userForm) {
             const originEmail = "admin@zenq0r.com";
             const subject = encodeURIComponent(`[ZENQOR ENTERPRISE] Official Account & Portal Access Information (${this.getRoleDisplayName(userForm.role)})`);
-                const emailBody = encodeURIComponent(`Greetings ${userForm.name},\n\nYour user account for the ZENQOR TECHNOLOGIES Enterprise Portal v2.0 has been created.\n\nSign-In Email: ${userForm.email}\nAssigned Role: ${this.getRoleDisplayName(userForm.role)}\nPortal Link: https://hrms-portal.zenq0r.com\n\nPlease use the password provided through your approved secure channel, then change it immediately after signing in.\n\nBest regards,\nSystem Administrator`);
+                const emailBody = encodeURIComponent(`Greetings ${userForm.name},\n\nYour user account for the ZENQOR TECHNOLOGIES Enterprise Portal v2.0 has been created.\n\nSign-In Email: ${userForm.email}\nTemporary Password: ${userForm.password}\nAssigned Role: ${this.getRoleDisplayName(userForm.role)}\nPortal Link: https://hrms-portal.zenq0r.com\n\nYou will be required to change this temporary password immediately after your first sign-in.\n\nBest regards,\nSystem Administrator`);
             window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(userForm.email)}&su=${subject}&body=${emailBody}`, '_blank');
             this.showNotify(`Google Gmail compose window opened.`);
         },
 
         async savePortalUser() {
             try {
-                if (!this.userModal.form.name || !this.userModal.form.email || !this.userModal.form.password) { alert("Please fill out all required fields."); return; }
+                if (!this.userModal.form.name || !this.userModal.form.email || (this.userModal.isEdit === false && !this.userModal.form.password)) { alert("Please fill out all required fields."); return; }
                 if (!this.isOfficialEmail(this.userModal.form.email)) { alert(`Email must use domain (@${this.officialEmailDomain}).`); return; }
 
                 const isNewUser = !this.userModal.isEdit;
@@ -599,7 +605,7 @@ createApp({
                 }
 
                 if (!userId) { alert("User UID is required to update this record."); return; }
-                await setDoc(doc(db, "users", userId), { email: email, name: this.userModal.form.name, photo: photoUrl, role: this.userModal.form.role }, { merge: true });
+                await setDoc(doc(db, "users", userId), { email: email, name: this.userModal.form.name, photo: photoUrl, role: this.userModal.form.role, ...(isNewUser ? { mustChangePassword: true } : {}) }, { merge: true });
                 this.userModal.show = false;
                 this.logAudit(isNewUser ? 'CREATE' : 'UPDATE', `User role/metadata for ${email}`);
                 if (isNewUser) { this.sendWelcomeEmail(this.userModal.form); this.showNotify('Akaun berjaya dicipta!'); }
@@ -867,6 +873,7 @@ createApp({
                     let name = firebaseUser.displayName || firebaseUser.email;
                     let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
 
+                    const mustChangePassword = userSnap.exists() && userSnap.data().mustChangePassword === true;
                     if (userSnap.exists()) {
                         role = userSnap.data().role || 'Staff';
                         name = userSnap.data().name || name;
@@ -875,9 +882,10 @@ createApp({
                     if (firebaseUser.email === 'admin@zenq0r.com') {
                         role = 'Superadmin';
                     }
-                    this.userProfile = { name, email: firebaseUser.email, role, uid: firebaseUser.uid, photo };
+                    this.userProfile = { name, email: firebaseUser.email, role, uid: firebaseUser.uid, photo, mustChangePassword };
                     this.resetAllForms();
                     this.isLoggedIn = true;
+                    if (mustChangePassword) { this.currentTab = 'profile'; this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
                     this.initFirebaseRealtime();
                     this.$nextTick(() => { this.renderCharts(); });
                 } catch (e) {
