@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.0 - RBAC UPDATE)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.1)
 // ============================================================
 
 import {
@@ -37,9 +37,8 @@ const STATUTORY_RATES = {
     }
 };
 
-// KEMAS KINI STRUKTUR RBAC BAHARU
 const RBAC_ROLES = {
-    'boss': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
+    'boss': ['dashboard', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'spad': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'hrms': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
     'fams': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
@@ -69,6 +68,12 @@ createApp({
             searchQuery: '',
             currentPage: 1,
             itemsPerPage: 5,
+            
+            // PAGINATION & SORTING UNTUK CLAIMS
+            claimsSortOption: 'latest',
+            claimsCurrentPage: 1,
+            claimsItemsPerPage: 10,
+
             notification: { show: false, message: '' },
 
             activePrintModule: null,
@@ -206,36 +211,20 @@ createApp({
         canDelete() { return ['spad', 'boss', 'hrms'].includes(this.userProfile.role); },
         canManageRBAC() { return ['spad', 'boss', 'hrms'].includes(this.userProfile.role); },
 
-        myPayslips() {
-            return this.payslipHistory.filter(p => p.raw && (p.raw.empEmail === this.userProfile.email || p.name === this.userProfile.name));
-        },
+        myPayslips() { return this.payslipHistory.filter(p => p.raw && (p.raw.empEmail === this.userProfile.email || p.name === this.userProfile.name)); },
         myLatestNetSalary() {
             if (this.myPayslips.length === 0) return 0;
             const sorted = [...this.myPayslips].sort((a, b) => new Date(b.date) - new Date(a.date));
             return Number(sorted[0].amount) || 0;
         },
-        myClaims() {
-            return this.claimsHistory.filter(c => c.empEmail === this.userProfile.email || c.name === this.userProfile.name);
-        },
-        myPendingClaimsCount() {
-            return this.myClaims.filter(c => c.status && c.status.includes('Pending')).length;
-        },
-        myApprovedClaimsAmount() {
-            return this.myClaims.filter(c => c.status === 'Approved').reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
-        },
+        myClaims() { return this.claimsHistory.filter(c => c.empEmail === this.userProfile.email || c.name === this.userProfile.name); },
+        myPendingClaimsCount() { return this.myClaims.filter(c => c.status && c.status.includes('Pending')).length; },
+        myApprovedClaimsAmount() { return this.myClaims.filter(c => c.status === 'Approved').reduce((sum, c) => sum + (Number(c.amount) || 0), 0); },
 
-        myClientDocs() {
-            return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email);
-        },
-        myUnpaidInvoicesCount() {
-            return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').length;
-        },
-        myUnpaidInvoicesAmount() {
-            return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
-        },
-        myPaidInvoicesAmount() {
-            return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status === 'Paid').reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
-        },
+        myClientDocs() { return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email); },
+        myUnpaidInvoicesCount() { return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').length; },
+        myUnpaidInvoicesAmount() { return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').reduce((sum, d) => sum + (Number(d.amount) || 0), 0); },
+        myPaidInvoicesAmount() { return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status === 'Paid').reduce((sum, d) => sum + (Number(d.amount) || 0), 0); },
 
         docSubtotal() { return this.docForm.items.reduce((s, i) => s + (i.qty * i.price), 0); },
         docSST() { return this.docSubtotal * 0.08; },
@@ -265,15 +254,43 @@ createApp({
             return this.docHistory;
         },
 
+        // PAGINATION & SORTING UNTUK CLAIMS MODULE
+        filteredSortedClaims() {
+            let list = [...this.claimsHistory];
+            
+            list.sort((a, b) => {
+                if (this.claimsSortOption === 'latest') return new Date(b.expenseDate) - new Date(a.expenseDate);
+                if (this.claimsSortOption === 'oldest') return new Date(a.expenseDate) - new Date(b.expenseDate);
+                if (this.claimsSortOption === 'category') return (a.category || '').localeCompare(b.category || '');
+                if (this.claimsSortOption === 'amount_high') return (Number(b.amount) || 0) - (Number(a.amount) || 0);
+                if (this.claimsSortOption === 'amount_low') return (Number(a.amount) || 0) - (Number(b.amount) || 0);
+                return new Date(b.expenseDate) - new Date(a.expenseDate);
+            });
+
+            if (this.searchQuery) {
+                const q = this.searchQuery.toLowerCase();
+                list = list.filter(c => 
+                    (c.receiptNo && c.receiptNo.toLowerCase().includes(q)) ||
+                    (c.name && c.name.toLowerCase().includes(q)) ||
+                    (c.empNo && c.empNo.toLowerCase().includes(q)) ||
+                    (c.category && c.category.toLowerCase().includes(q))
+                );
+            }
+            return list;
+        },
+        claimsTotalPages() { return Math.ceil(this.filteredSortedClaims.length / this.claimsItemsPerPage) || 1; },
+        paginatedClaims() {
+            const start = (this.claimsCurrentPage - 1) * this.claimsItemsPerPage;
+            return this.filteredSortedClaims.slice(start, start + this.claimsItemsPerPage);
+        },
+
         filteredRecentActivities() {
             const combined = [
                 ...this.docHistory.map(d => ({ ...d, tagClass: d.type === 'Invoice' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200', isDoc: true })),
                 ...this.payslipHistory.map(p => ({ ...p, tagClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200', isPay: true })),
                 ...this.claimsHistory.map(c => ({ ...c, tagClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200', isClaim: true, docNo: c.receiptNo, amount: c.amount, date: c.expenseDate }))
             ];
-
             const typePriority = { 'Payslip': 1, 'Quotation': 2, 'Invoice': 3, 'Claim': 4 };
-
             let list = combined.sort((a, b) => {
                 if (this.sortOption === 'latest') return new Date(b.date) - new Date(a.date);
                 if (this.sortOption === 'oldest') return new Date(a.date) - new Date(b.date);
@@ -287,16 +304,9 @@ createApp({
                 if (this.sortOption === 'amount_low') return (Number(a.amount) || 0) - (Number(b.amount) || 0);
                 return new Date(b.date) - new Date(a.date);
             });
-
             if (this.searchQuery) {
                 const q = this.searchQuery.toLowerCase();
-                list = list.filter(c =>
-                    (c.docNo && c.docNo.toLowerCase().includes(q)) ||
-                    (c.name && c.name.toLowerCase().includes(q)) ||
-                    (c.type && c.type.toLowerCase().includes(q)) ||
-                    (c.raw && c.raw.clientSSM && c.raw.clientSSM.toLowerCase().includes(q)) ||
-                    (c.raw && c.raw.ic && c.raw.ic.toLowerCase().includes(q))
-                );
+                list = list.filter(c => (c.docNo && c.docNo.toLowerCase().includes(q)) || (c.name && c.name.toLowerCase().includes(q)) || (c.type && c.type.toLowerCase().includes(q)) || (c.raw && c.raw.clientSSM && c.raw.clientSSM.toLowerCase().includes(q)) || (c.raw && c.raw.ic && c.raw.ic.toLowerCase().includes(q)));
             }
             return list;
         },
@@ -856,3 +866,6 @@ createApp({
         this.unsubscribers.forEach(unsub => unsub && unsub());
     }
 }).mount('#app');
+    </script>
+</body>
+</html>
