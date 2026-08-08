@@ -242,7 +242,7 @@ createApp({
         canCreateEdit() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
         canEditDocs() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
         canDelete() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
-        canManageRBAC() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
+        canManageRBAC() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageCompanySettings() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
 
         myPayslips() { return this.payslipHistory.filter(p => p.raw && (p.raw.empEmail === this.userProfile.email || p.name === this.userProfile.name)); },
@@ -639,6 +639,11 @@ createApp({
 
                 if (!userId) { alert("User UID is required to update this record."); return; }
                 await setDoc(doc(db, "users", userId), { email: email, name: this.userModal.form.name, photo: photoUrl, role: this.userModal.form.role, ...(isNewUser ? { mustChangePassword: true } : {}) }, { merge: true });
+                if (userId === this.userProfile.uid) {
+                    this.userProfile.role = this.userModal.form.role;
+                    this.userProfile.name = this.userModal.form.name;
+                    this.userProfile.photo = photoUrl;
+                }
                 this.userModal.show = false;
                 this.logAudit(isNewUser ? 'CREATE' : 'UPDATE', `User role/metadata for ${email}`);
                 if (isNewUser) { this.sendWelcomeEmail(this.userModal.form); this.showNotify('Akaun berjaya dicipta!'); }
@@ -891,7 +896,15 @@ createApp({
             const unsubDocs = onSnapshot(collection(db, "docs"), (snapshot) => { this.docHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); this.generateDocNo(); this.$nextTick(() => { this.renderCharts(); }); });
             const unsubPayslips = onSnapshot(collection(db, "payslips"), (snapshot) => { this.payslipHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); });
             const unsubClaims = onSnapshot(collection(db, "claims"), (snapshot) => { this.claimsHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); });
-            const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => { this.users = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); });
+            const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+                this.users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                const currentUser = this.users.find(user => user.id === this.userProfile.uid);
+                if (currentUser) {
+                    this.userProfile.role = currentUser.role || this.userProfile.role;
+                    this.userProfile.name = currentUser.name || this.userProfile.name;
+                    this.userProfile.photo = currentUser.photo || this.userProfile.photo;
+                }
+            });
             const unsubAudit = onSnapshot(collection(db, "audit_logs"), (snapshot) => { this.auditLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.id - a.id); });
             this.unsubscribers.push(unsubSettings, unsubEmployees, unsubCustomers, unsubDocs, unsubPayslips, unsubClaims, unsubUsers, unsubAudit);
         }
