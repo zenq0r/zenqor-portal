@@ -1738,4 +1738,134 @@
                             <tr><td class="font-bold pr-4">Account No.:</td><td class="font-bold">{{ company.bankAccount }}</td></tr>
                             <tr><td class="font-bold pr-4">DuitNow QR / UEN:</td><td class="font-bold">{{ company.ssm }}</td></tr>
                         </table>
-                    Sorry, something went wrong. Please try your request again.
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-brand-dark mb-1">Sales Notes &amp; Terms:</h3>
+                        <p class="text-slate-600 leading-relaxed">
+                            1. Goods or services sold are non-refundable.<br>
+                            2. Official receipts will be issued once payment clears.
+                        </p>
+                    </div>
+                </div>
+                <div class="w-72 text-sm space-y-1.5">
+                    <div class="flex justify-between text-slate-700"><span>Subtotal:</span><strong class="font-bold">RM {{ docSubtotal.toFixed(2) }}</strong></div>
+                    <div class="flex justify-between text-slate-700"><span>Discount:</span><strong class="font-bold">RM {{ docForm.discount.toFixed(2) }}</strong></div>
+                    <div class="flex justify-between text-slate-700"><span>SST (8%):</span><strong class="font-bold">RM {{ docSST.toFixed(2) }}</strong></div>
+                    <div class="flex justify-between font-extrabold text-base print-total-box p-3 mt-2 rounded"><span>GRAND TOTAL:</span><span>RM {{ docGrandTotal.toFixed(2) }}</span></div>
+                </div>
+            </div>
+
+            <div class="mt-14 grid grid-cols-3 gap-6 text-xs text-center">
+                <div class="border-t border-slate-400 pt-2"><p class="font-bold text-brand-dark">Prepared By</p><p class="text-slate-500 mt-1">Accounts &amp; Finance Dept.</p></div>
+                <div class="border-t border-slate-400 pt-2"><p class="font-bold text-brand-dark">Approved By</p><p class="text-slate-500 mt-1">Company Stamp &amp; Signature</p></div>
+                <div class="border-t border-slate-400 pt-2"><p class="font-bold text-brand-dark">Client Acceptance</p><p class="text-slate-500 mt-1">Signature &amp; Stamp</p></div>
+            </div>
+        </div>
+
+        <!-- TEMPLATE CETAKAN 3: PAYSLIP (A4 LANDSCAPE) -->
+        <div v-if="activePrintModule === 'PAYSLIP'" id="print-template-payslip" class="print-only print-container">
+            <div class="payslip-paper">
+                <div class="payslip-header">
+                    <div class="company-brand">
+                        <img src="./logo.png" onerror="this.style.display='none'" alt="Logo Syarikat">
+                        <div class="company-brand-text">
+                            <h1>{{ company.name }}</h1>
+                            <p>Business Registration No.: {{ company.ssm }}</p>
+                            <p>{{ company.address }} | Tel: {{ company.phone }} | Web: {{ company.website || 'www.zenq0r.com' }}</p>
+                        </div>
+                    </div>
+                    <div class="payslip-title">
+                        <h2>PAYSLIP</h2>
+                        <p>Month: <strong>{{ payForm.month }}</strong></p>
+                        <p>Payslip No.: <strong>PS-2026-{{ payForm.empNo || 'ZEN-0000000' }}</strong></p>
+                        <p>Payment Date: <strong>{{ payForm.payDate }}</strong></p>
+                    </div>
+                </div>
+
+                <div class="info-table-container">
+                    <table class="info-table">
+                        <tr>
+                            <th>Employee Name</th><td>{{ payForm.name }}</td>
+                            <th>ID / Passport</th><td>{{ maskIC(payForm.ic) }}</td>
+                            <th>Employee ID</th><td>{{ payForm.empNo }}</td>
+                        </tr>
+                        <tr>
+                            <th>Position</th><td>{{ payForm.position }}</td>
+                            <th>Department</th><td>{{ payForm.dept }}</td>
+                            <th>Join Date</th><td>{{ payForm.joinDate }}</td>
+                        </tr>
+                        <tr>
+                            <th>Bank / Account No.</th><td>{{ maskBank(payForm.bankAcc) }}</td>
+                            <th>EPF / SOCSO No.</th><td colspan="3">{{ payForm.epfSocso }}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="salary-breakdown">
+                    <div class="salary-col">
+                        <table class="calc-table">
+                            <thead><tr><th colspan="2">EARNINGS</th></tr></thead>
+                            <tbody>
+                                <tr v-if="payForm.basic"><td>Basic Salary</td><td class="amount">{{ formatCurrency(payForm.basic) }}</td></tr>
+                                <tr v-if="payForm.ot"><td>OT (Overtime)</td><td class="amount">{{ formatCurrency(payForm.ot) }}</td></tr>
+                                <tr v-if="payForm.phone"><td>Phone Allowance</td><td class="amount">{{ formatCurrency(payForm.phone) }}</td></tr>
+                                <tr v-if="payForm.transport"><td>Transport Allowance</td><td class="amount">{{ formatCurrency(payForm.transport) }}</td></tr>
+                                <tr v-if="payForm.meal"><td>Meal Allowance</td><td class="amount">{{ formatCurrency(payForm.meal) }}</td></tr>
+                                <tr v-if="payForm.bonus"><td>Bonus / Commission</td><td class="amount">{{ formatCurrency(payForm.bonus) }}</td></tr>
+                            </tbody>
+                            <tfoot><tr><th>GROSS SALARY</th><td class="amount">{{ formatCurrency(payCalc.gross) }}</td></tr></tfoot>
+                        </table>
+                    </div>
+                    <div class="salary-col">
+                        <table class="calc-table">
+                            <thead><tr><th colspan="2">EMPLOYEE DEDUCTIONS</th></tr></thead>
+                            <tbody>
+                                <tr><td>Employee EPF {{ payForm.isSenior ? '(0%)' : '(11%)' }}</td><td class="amount">{{ formatCurrency(payForm.dedEpf) }}</td></tr>
+                                <tr><td>Employee SOCSO</td><td class="amount">{{ formatCurrency(payForm.dedSocso) }}</td></tr>
+                                <tr><td>Employee EIS</td><td class="amount">{{ formatCurrency(payForm.dedEis) }}</td></tr>
+                                <tr v-if="payForm.dedPcb"><td>MTD / PCB (Tax)</td><td class="amount">{{ formatCurrency(payForm.dedPcb) }}</td></tr>
+                                <tr v-if="payForm.dedAdvance"><td>Advance / Loan</td><td class="amount">{{ formatCurrency(payForm.dedAdvance) }}</td></tr>
+                            </tbody>
+                            <tfoot><tr><th>TOTAL DEDUCTION</th><td class="amount">{{ formatCurrency(payCalc.deduct) }}</td></tr></tfoot>
+                        </table>
+                        <div class="net-pay-section">
+                            <table class="net-pay-table"><tr class="final-net"><td>NET SALARY</td><td class="amount">{{ formatCurrency(payCalc.net) }}</td></tr></table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contributions-section">
+                    <div class="contrib-grid">
+                        <div class="contrib-col">
+                            <h3>MONTH TO DATE (MTD)</h3>
+                            <table class="contrib-table">
+                                <thead><tr><th>Contribution Type</th><th class="amount">Employee</th><th class="amount">Employer</th></tr></thead>
+                                <tbody>
+                                    <tr><td>EPF</td><td class="amount">{{ formatCurrency(payForm.dedEpf) }}</td><td class="amount">{{ formatCurrency(payCalc.epfEmpr) }}</td></tr>
+                                    <tr><td>SOCSO</td><td class="amount">{{ formatCurrency(payForm.dedSocso) }}</td><td class="amount">{{ formatCurrency(payCalc.socsoEmpr) }}</td></tr>
+                                    <tr><td>EIS</td><td class="amount">{{ formatCurrency(payForm.dedEis) }}</td><td class="amount">{{ formatCurrency(payCalc.eisEmpr) }}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="contrib-col">
+                            <h3>YEAR TO DATE (YTD - Estimations)</h3>
+                            <table class="contrib-table">
+                                <thead><tr><th>Contribution Type</th><th class="amount">Employee</th><th class="amount">Employer</th></tr></thead>
+                                <tbody>
+                                    <tr><td>EPF</td><td class="amount">{{ formatCurrency(payForm.dedEpf * 8) }}</td><td class="amount">{{ formatCurrency(payCalc.epfEmpr * 8) }}</td></tr>
+                                    <tr><td>SOCSO</td><td class="amount">{{ formatCurrency(payForm.dedSocso * 8) }}</td><td class="amount">{{ formatCurrency(payCalc.socsoEmpr * 8) }}</td></tr>
+                                    <tr><td>EIS</td><td class="amount">{{ formatCurrency(payForm.dedEis * 8) }}</td><td class="amount">{{ formatCurrency(payCalc.eisEmpr * 8) }}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="electronic-footer">This payslip is computer-generated by ZENQOR TECHNOLOGIES and requires no signature or company stamp.</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module" src="./app.js"></script>
+</body>
+</html>
