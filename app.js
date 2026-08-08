@@ -344,6 +344,69 @@ createApp({
         }
     },
     methods: {
+        exportCSV(type) {
+            let filename = '';
+            let rows = [];
+            const todayStr = new Date().toISOString().slice(0, 10);
+            
+            if (type === 'payroll') {
+                filename = `Laporan_Payroll_ZENQOR_${todayStr}.csv`;
+                rows = [
+                    ['Payslip No', 'Tarikh Bayaran', 'Nama Pekerja', 'Gaji Bersih (MYR)'],
+                    ...this.payslipHistory.map(p => [
+                        p.docNo || '',
+                        p.date || '',
+                        p.name || '',
+                        Number(p.amount || 0).toFixed(2)
+                    ])
+                ];
+            } else if (type === 'employees') {
+                filename = `Direktori_Pekerja_ZENQOR_${todayStr}.csv`;
+                rows = [
+                    ['ID Pekerja', 'Nama Lengkap', 'Jawatan', 'Jabatan', 'Status', 'Gaji Asas (MYR)'],
+                    ...this.employees.map(e => [
+                        e.empNo || '',
+                        e.name || '',
+                        e.position || '',
+                        e.dept || '',
+                        e.status || 'Aktif',
+                        Number(e.basicSalary || 0).toFixed(2)
+                    ])
+                ];
+            } else if (type === 'docs') {
+                filename = `Laporan_Invois_SebutHarga_ZENQOR_${todayStr}.csv`;
+                rows = [
+                    ['No Dokumen', 'Jenis', 'Tarikh Issue', 'Nama Pelanggan', 'Status', 'Jumlah (MYR)'],
+                    ...this.docHistory.map(d => [
+                        d.docNo || '',
+                        d.type || '',
+                        d.date || '',
+                        d.name || '',
+                        d.status || '',
+                        Number(d.amount || 0).toFixed(2)
+                    ])
+                ];
+            }
+
+            if (rows.length === 0) {
+                alert("Tiada rekod data untuk dieksport.");
+                return;
+            }
+
+            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+                + rows.map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+                
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.logAudit('EXPORT', `Mengeksport fail CSV bagi modul: ${type.toUpperCase()}`);
+            this.showNotify(`Laporan CSV (${type}) berjaya dimuat turun.`);
+        },
         generateRandomPassword(length = 8) {
             const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             const lowercase = "abcdefghijklmnopqrstuvwxyz";
