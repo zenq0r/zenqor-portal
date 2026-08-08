@@ -636,7 +636,7 @@ createApp({
         },
 
         openUserAccessModal(usr = null) {
-            if (usr) { this.userModal.isEdit = true; this.userModal.form = { uid: usr.id, name: usr.name || '', email: usr.email || '', password: '', role: usr.role || 'Staff' }; }
+            if (usr) { this.userModal.isEdit = true; this.userModal.form = { uid: usr.uid || usr.id || '', name: usr.name || '', email: usr.email || '', password: '', role: usr.role || 'Staff' }; }
             else { this.userModal.isEdit = false; this.userModal.form = { uid: '', name: '', email: '', password: this.generateRandomPassword(8), role: 'Staff' }; }
             this.userModal.show = true;
         },
@@ -657,7 +657,7 @@ createApp({
                 const isNewUser = !this.userModal.isEdit;
                 const email = this.userModal.form.email.trim(); const password = this.userModal.form.password.trim();
                 const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.userModal.form.name)}&background=0B1E36&color=D4AF37`;
-                let userId = this.userModal.form.uid;
+                let userId = this.userModal.form.uid || this.users.find(user => (user.email || '').toLowerCase() === email.toLowerCase())?.uid || this.users.find(user => (user.email || '').toLowerCase() === email.toLowerCase())?.id;
 
                 if (isNewUser) {
                     try {
@@ -671,7 +671,7 @@ createApp({
                     } catch (authErr) { if (authErr.code !== 'auth/email-already-in-use') { alert("Gagal mendaftar ke Firebase: " + authErr.message); return; } }
                 }
 
-                if (!userId) { alert("User UID is required to update this record."); return; }
+                if (!userId) { alert("This user record has no Firebase UID. Please create the portal access again or migrate the legacy user record using its Firebase Authentication UID."); return; }
                 await setDoc(doc(db, "users", userId), { email: email, name: this.userModal.form.name, photo: photoUrl, role: this.userModal.form.role, ...(isNewUser ? { mustChangePassword: true } : {}) }, { merge: true });
                 if (userId === this.userProfile.uid) {
                     this.userProfile.role = this.userModal.form.role;
@@ -956,7 +956,8 @@ createApp({
             const unsubPayslips = onSnapshot(collection(db, "payslips"), (snapshot) => { this.payslipHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); });
             const unsubClaims = onSnapshot(collection(db, "claims"), (snapshot) => { this.claimsHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); });
             const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
-                this.users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                // Keep Firestore document ID authoritative; legacy data may also contain an empty `id` field.
+                this.users = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
                 const currentUser = this.users.find(user => user.id === this.userProfile.uid);
                 if (currentUser) {
                     this.userProfile.role = currentUser.role || this.userProfile.role;
