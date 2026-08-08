@@ -1415,11 +1415,18 @@
                     </div>
                     
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
-                        <template v-if="currentTab === 'settings'">
-                            <div class="grid grid-cols-2 gap-4">
+                        <template v-if="currentTab === 'settings' && canManageCompanySettings">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="md:col-span-2 border-b dark:border-slate-700 pb-2"><h3 class="font-extrabold text-brand-dark dark:text-white">Company Profile</h3><p class="text-xs text-slate-400 mt-1">Global information used across company documents.</p></div>
                                 <div><label for="setting-comp-name" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Company Name</label><input id="setting-comp-name" name="companyName" type="text" v-model="company.name" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold"></div>
                                 <div><label for="setting-comp-ssm" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Business Registration No.</label><input id="setting-comp-ssm" name="companySSM" type="text" v-model="company.ssm" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
-                                <div class="col-span-2"><label for="setting-comp-addr" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Full Address</label><textarea id="setting-comp-addr" name="companyAddr" rows="3" v-model="company.address" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></textarea></div>
+                                <div class="md:col-span-2"><label for="setting-comp-addr" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Full Address</label><textarea id="setting-comp-addr" name="companyAddr" rows="3" v-model="company.address" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></textarea></div>
+                                <div><label for="setting-comp-phone" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Company Phone</label><input id="setting-comp-phone" name="companyPhone" type="tel" v-model="company.phone" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div><label for="setting-comp-email" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Company Email</label><input id="setting-comp-email" name="companyEmail" type="email" v-model="company.email" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div class="md:col-span-2"><label for="setting-comp-web" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Website</label><input id="setting-comp-web" name="companyWebsite" type="text" v-model="company.website" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div class="md:col-span-2 border-b dark:border-slate-700 pb-2 pt-2"><h3 class="font-extrabold text-brand-dark dark:text-white">Banking &amp; Payment Information</h3><p class="text-xs text-slate-400 mt-1">Displayed on quotations and invoices.</p></div>
+                                <div><label for="setting-bank-name" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Bank Name</label><input id="setting-bank-name" name="companyBankName" type="text" v-model="company.bankName" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div><label for="setting-bank-account" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Bank Account Number</label><input id="setting-bank-account" name="companyBankAccount" type="text" v-model="company.bankAccount" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold"></div>
                             </div>
                             <div class="flex justify-between items-center pt-4 border-t dark:border-slate-700">
                                 <button type="button" @click="backupDatabase" class="bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center space-x-1.5"><i class="fa-solid fa-download"></i><span>Backup Database</span></button>
@@ -1427,7 +1434,7 @@
                             </div>
                         </template>
 
-                        <template v-else>
+                        <template v-else-if="currentTab === 'profile'">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6">
                                 <div><label for="prof-name" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Existing Username</label><input id="prof-name" name="profName" type="text" v-model="userProfile.name" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold"></div>
                                 <div><label for="prof-email" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Sign-In Email</label><input id="prof-email" name="profEmail" type="email" v-model="userProfile.email" disabled class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-400 rounded-xl text-xs cursor-not-allowed"></div>

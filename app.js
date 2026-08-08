@@ -212,6 +212,7 @@ createApp({
         canEditDocs() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
         canDelete() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
         canManageRBAC() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
+        canManageCompanySettings() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
 
         myPayslips() { return this.payslipHistory.filter(p => p.raw && (p.raw.empEmail === this.userProfile.email || p.name === this.userProfile.name)); },
         myLatestNetSalary() {
@@ -620,7 +621,8 @@ createApp({
         },
 
         async saveSettings() {
-            try { await setDoc(doc(db, "settings", "company_profile"), { ...this.company }); this.logAudit('UPDATE', 'Updated settings'); this.showNotify('Settings updated!'); } catch (error) {}
+            if (!this.canManageCompanySettings) { this.showNotify('You do not have permission to update company settings.'); return; }
+            try { await setDoc(doc(db, "settings", "company_profile"), { ...this.company }); this.logAudit('UPDATE', 'Updated settings'); this.showNotify('Settings updated!'); } catch (error) { this.showNotify('Unable to save company settings.'); }
         },
 
         selectCustomerForDoc(e) {
@@ -835,7 +837,9 @@ createApp({
         },
 
         initFirebaseRealtime() {
-            const unsubSettings = onSnapshot(doc(db, "settings", "company_profile"), (snapshot) => { if (snapshot.exists()) this.company = snapshot.data(); });
+            const unsubSettings = this.canManageCompanySettings
+                ? onSnapshot(doc(db, "settings", "company_profile"), (snapshot) => { if (snapshot.exists()) this.company = snapshot.data(); })
+                : () => {};
             const unsubEmployees = onSnapshot(collection(db, "employees"), (snapshot) => { this.employees = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); });
             const unsubCustomers = onSnapshot(collection(db, "customers"), (snapshot) => { this.customers = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); });
             const unsubDocs = onSnapshot(collection(db, "docs"), (snapshot) => { this.docHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); this.generateDocNo(); this.$nextTick(() => { this.renderCharts(); }); });
