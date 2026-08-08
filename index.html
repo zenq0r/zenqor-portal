@@ -202,9 +202,9 @@
 
                     <div class="flex items-center space-x-3 shrink-0">
                         <div class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-600">
-                            <button type="button" @click="switchTab('doc-generator')" :class="currentTab === 'doc-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Documents</button>
-                            <button type="button" @click="switchTab('payslip-generator')" :class="currentTab === 'payslip-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Payroll</button>
-                            <button type="button" @click="switchTab('claims')" :class="currentTab === 'claims' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Claims</button>
+                            <button v-if="hasAccess('doc-generator')" type="button" @click="switchTab('doc-generator')" :class="currentTab === 'doc-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Documents</button>
+                            <button v-if="hasAccess('payslip-generator')" type="button" @click="switchTab('payslip-generator')" :class="currentTab === 'payslip-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Payroll</button>
+                            <button v-if="hasAccess('claims')" type="button" @click="switchTab('claims')" :class="currentTab === 'claims' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Claims</button>
                         </div>
 
                         <button type="button" @click="toggleDarkMode" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-amber-400 hover:bg-slate-200 transition" title="Toggle Dark/Light Theme">
@@ -213,7 +213,7 @@
 
                         <div class="text-right hidden md:block">
                             <p class="text-xs font-bold text-slate-800 dark:text-slate-100">{{ userProfile.name }}</p>
-                            <span class="inline-block bg-brand-gold/20 text-brand-dark dark:text-brand-gold text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase">{{ userProfile.role }}</span>
+                            <span class="inline-block bg-brand-gold/20 text-brand-dark dark:text-brand-gold text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase">{{ getRoleDisplayName(userProfile.role) }}</span>
                         </div>
                         <img :src="userProfile.photo" class="w-8 h-8 rounded-full object-cover border-2 border-brand-gold shrink-0 shadow-sm">
                     </div>
@@ -630,10 +630,24 @@
                     </div>
 
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-sm font-extrabold text-brand-dark dark:text-white tracking-wide"><i class="fa-solid fa-list-check text-brand-blue mr-2"></i>CLAIM RECORDS &amp; APPROVAL STATUS</h3>
-                            <span class="text-xs text-slate-400 font-bold">Total Records: {{ claimsHistory.length }}</span>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                            <h3 class="text-sm font-extrabold text-brand-dark dark:text-white tracking-wide flex items-center"><i class="fa-solid fa-list-check text-brand-blue mr-2"></i>CLAIM RECORDS &amp; APPROVAL STATUS</h3>
+                            
+                            <div class="flex items-center space-x-3">
+                                <div class="flex items-center space-x-1.5">
+                                    <label for="claims-sort" class="text-xs font-semibold text-slate-400">Sort By:</label>
+                                    <select id="claims-sort" name="claimsSort" v-model="claimsSortOption" class="p-1.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white rounded-lg text-xs font-bold focus:ring-2 focus:ring-brand-gold">
+                                        <option value="latest">Latest Date (Default)</option>
+                                        <option value="oldest">Oldest Date</option>
+                                        <option value="category">Category</option>
+                                        <option value="amount_high">Highest Amount</option>
+                                        <option value="amount_low">Lowest Amount</option>
+                                    </select>
+                                </div>
+                                <span class="text-xs text-slate-400 hidden sm:inline">Showing: {{ filteredSortedClaims.length }} records</span>
+                            </div>
                         </div>
+                        
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
@@ -647,7 +661,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
-                                    <tr v-for="clm in claimsHistory" :key="clm.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                    <tr v-for="clm in paginatedClaims" :key="clm.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                         <td class="py-3 px-3">
                                             <span class="font-bold text-slate-800 dark:text-slate-200 block">{{ clm.expenseDate }}</span>
                                             <span class="text-slate-400 font-mono text-[10px] block">REF: {{ clm.receiptNo }}</span>
@@ -685,11 +699,29 @@
                                             </button>
                                         </td>
                                     </tr>
-                                    <tr v-if="claimsHistory.length === 0">
+                                    <tr v-if="filteredSortedClaims.length === 0">
                                         <td colspan="6" class="py-8 text-center text-slate-400">No expense claim records found.</td>
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- PAGINATION CONTROLS UNTUK CLAIMS -->
+                        <div v-if="claimsTotalPages > 1" class="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-4 mt-4">
+                            <span class="text-xs font-semibold text-slate-400">
+                                Page {{ claimsCurrentPage }} of {{ claimsTotalPages }}
+                            </span>
+                            <div class="flex items-center space-x-1">
+                                <button type="button" @click="claimsCurrentPage > 1 && claimsCurrentPage--" :disabled="claimsCurrentPage === 1" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <button v-for="page in claimsTotalPages" :key="page" type="button" @click="claimsCurrentPage = page" :class="claimsCurrentPage === page ? 'bg-brand-dark text-white dark:bg-brand-gold dark:text-brand-dark font-extrabold shadow' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'" class="px-3 py-1 rounded-lg text-xs font-bold transition">
+                                    {{ page }}
+                                </button>
+                                <button type="button" @click="claimsCurrentPage < claimsTotalPages && claimsCurrentPage++" :disabled="claimsCurrentPage === claimsTotalPages" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -698,7 +730,7 @@
                 <div v-show="currentTab === 'dashboard'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8">
                     
                     <!-- 1. VIEW PEKERJA (STAFF DASHBOARD) -->
-                    <div v-if="userProfile.role === 'Staff'" class="space-y-6">
+                    <div v-if="userProfile.role === 'otms'" class="space-y-6">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Staff Employee Dashboard</h2>
@@ -773,7 +805,7 @@
                     </div>
 
                     <!-- 2. VIEW PELANGGAN (CLIENT DASHBOARD) -->
-                    <div v-else-if="userProfile.role === 'Client'" class="space-y-6">
+                    <div v-else-if="userProfile.role === 'cust'" class="space-y-6">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Executive Dashboard</h2>
@@ -1388,12 +1420,13 @@
                                 <div>
                                     <label for="prof-role" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">User Role (RBAC)</label>
                                     <select id="prof-role" name="profRole" v-model="userProfile.role" :disabled="!canManageRBAC" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold bg-slate-50 disabled:bg-slate-100 dark:disabled:bg-slate-700/50 disabled:cursor-not-allowed">
-                                        <option value="Superadmin">Superadmin</option>
-                                        <option value="HR">HR</option>
-                                        <option value="Account">Account</option>
-                                        <option value="IT">IT</option>
-                                        <option value="Client">Client</option>
-                                        <option value="Staff">Staff</option>
+                                        <option value="boss">Director</option>
+                                        <option value="spad">Super Admin</option>
+                                        <option value="hrms">Human Resource Management</option>
+                                        <option value="fams">Finance Account Management</option>
+                                        <option value="itms">Intelligence Team Management</option>
+                                        <option value="otms">Operation Team Management</option>
+                                        <option value="cust">Client Users System Terminal</option>
                                     </select>
                                 </div>
                                 <div><label for="prof-photo" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Avatar / Photo URL</label><input id="prof-photo" name="profPhoto" type="text" v-model="userProfile.photo" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
@@ -1431,7 +1464,7 @@
                                                 <td class="p-3 font-bold text-slate-800 dark:text-slate-200">{{ usr.name }}</td>
                                                 <td class="p-3 font-medium text-slate-700 dark:text-slate-300">{{ usr.email }}</td>
                                                 <td class="p-3">
-                                                    <span class="bg-brand-gold/20 text-brand-dark dark:text-brand-gold font-extrabold px-2 py-0.5 rounded text-[10px] uppercase">{{ usr.role }}</span>
+                                                    <span class="bg-brand-gold/20 text-brand-dark dark:text-brand-gold font-extrabold px-2 py-0.5 rounded text-[10px] uppercase">{{ getRoleDisplayName(usr.role) }}</span>
                                                 </td>
                                                 <td class="p-3 text-center space-x-1">
                                                     <button type="button" @click="openUserAccessModal(usr)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit Access">
@@ -1491,13 +1524,13 @@
                     <div>
                         <label for="usr-modal-role" class="font-bold mb-1 block dark:text-slate-300">Role *</label>
                         <select id="usr-modal-role" name="usrModalRole" v-model="userModal.form.role" class="w-full p-2 border rounded-xl font-bold dark:bg-slate-700 dark:text-white">
-                            <option v-if="userProfile.role === 'Superadmin'" value="Owner">Owner (Director)</option>
-                            <option value="Superadmin">Superadmin</option>
-                            <option value="HR">HR</option>
-                            <option value="Account">Account</option>
-                            <option value="IT">IT</option>
-                            <option value="Client">Client</option>
-                            <option value="Staff">Staff</option>
+                            <option v-if="userProfile.role === 'spad' || userProfile.role === 'boss'" value="boss">Director</option>
+                            <option value="spad">Super Admin</option>
+                            <option value="hrms">Human Resource Management</option>
+                            <option value="fams">Finance Account Management</option>
+                            <option value="itms">Intelligence Team Management</option>
+                            <option value="otms">Operation Team Management</option>
+                            <option value="cust">Client Users System Terminal</option>
                         </select>
                     </div>
                     <div class="flex justify-end space-x-2 pt-3 border-t dark:border-slate-700">
