@@ -518,6 +518,23 @@ createApp({
             setTimeout(() => { this.notification.show = false; }, 3500);
         },
 
+        openAttachment(attachment, label = 'Attachment') {
+            const isSafeDataFile = typeof attachment === 'string' && (/^data:image\//i.test(attachment) || /^data:application\/pdf(?:;base64)?,/i.test(attachment));
+            const isSafeUrl = typeof attachment === 'string' && /^https:\/\//i.test(attachment);
+            if (!isSafeDataFile && !isSafeUrl) {
+                this.showNotify(`${label} is unavailable or has an unsupported format.`);
+                return;
+            }
+
+            const previewWindow = window.open('', '_blank');
+            if (!previewWindow) {
+                alert('Unable to open the attachment. Please allow pop-ups for this portal and try again.');
+                return;
+            }
+            previewWindow.opener = null;
+            previewWindow.location.replace(attachment);
+        },
+
         toggleSidebar() {
             if (window.innerWidth < 768) this.mobileMenuOpen = !this.mobileMenuOpen;
             else this.desktopSidebarOpen = !this.desktopSidebarOpen;
