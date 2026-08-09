@@ -526,13 +526,13 @@ createApp({
                 return;
             }
 
-            const previewWindow = window.open('', '_blank');
+            // Open the attachment URL directly so the browser never remains on about:blank.
+            const previewWindow = window.open(attachment, '_blank');
             if (!previewWindow) {
                 alert('Unable to open the attachment. Please allow pop-ups for this portal and try again.');
                 return;
             }
             previewWindow.opener = null;
-            previewWindow.location.replace(attachment);
         },
 
         toggleSidebar() {
