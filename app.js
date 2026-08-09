@@ -450,6 +450,8 @@ createApp({
         handleAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
+            const allowedTypes = ['image/png', 'image/jpeg'];
+            if (!allowedTypes.includes(file.type)) { alert('Only PNG, JPEG/JPG files are allowed.'); e.target.value = ''; return; }
             if (file.size > 2 * 1024 * 1024) { alert("Attachment size exceeds 2MB limit."); e.target.value = ''; return; }
             const reader = new FileReader();
             reader.onload = (ev) => { this.docForm.paymentAttachment = ev.target.result; this.showNotify(`Attachment ready.`); };
@@ -458,8 +460,8 @@ createApp({
         handleClaimAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-            const allowedTypes = ['image/png', 'image/jpeg', 'application/pdf'];
-            if (!allowedTypes.includes(file.type)) { alert("Only PNG, JPEG/JPG, or PDF files are allowed."); e.target.value = ''; return; }
+            const allowedTypes = ['image/png', 'image/jpeg'];
+            if (!allowedTypes.includes(file.type)) { alert("Only PNG, JPEG/JPG files are allowed."); e.target.value = ''; return; }
             if (file.size > 2 * 1024 * 1024) { alert("Attachment size exceeds 2MB limit."); e.target.value = ''; return; }
             const reader = new FileReader();
             reader.onload = (ev) => { this.claimForm.receiptAttachment = ev.target.result; this.claimForm.receiptAttachmentName = file.name; this.showNotify(`Receipt attachment ready.`); };
@@ -468,8 +470,8 @@ createApp({
         handleDirectorApprovalAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-            const allowedTypes = ['image/png', 'image/jpeg', 'application/pdf'];
-            if (!allowedTypes.includes(file.type)) { alert('Only PNG, JPEG/JPG, or PDF files are allowed.'); e.target.value = ''; return; }
+            const allowedTypes = ['image/png', 'image/jpeg'];
+            if (!allowedTypes.includes(file.type)) { alert('Only PNG, JPEG/JPG files are allowed.'); e.target.value = ''; return; }
             if (file.size > 2 * 1024 * 1024) { alert('Attachment size exceeds 2MB limit.'); e.target.value = ''; return; }
             const reader = new FileReader();
             reader.onload = (ev) => { this.claimPreview.directorApprovalAttachment = ev.target.result; this.claimPreview.directorApprovalAttachmentName = file.name; this.showNotify('Director approval document ready.'); };
@@ -519,10 +521,9 @@ createApp({
         },
 
         openAttachment(attachment, label = 'Attachment') {
-            const isSafeDataFile = typeof attachment === 'string' && (/^data:image\//i.test(attachment) || /^data:application\/pdf(?:;base64)?,/i.test(attachment));
-            const isSafeUrl = typeof attachment === 'string' && /^https:\/\//i.test(attachment);
-            if (!isSafeDataFile && !isSafeUrl) {
-                this.showNotify(`${label} is unavailable or has an unsupported format.`);
+            const isSupportedImage = typeof attachment === 'string' && /^data:image\/(png|jpeg);base64,/i.test(attachment);
+            if (!isSupportedImage) {
+                this.showNotify(`${label} is unavailable. Only PNG and JPEG/JPG attachments are supported.`);
                 return;
             }
 
