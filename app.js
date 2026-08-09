@@ -64,7 +64,6 @@ createApp({
             desktopSidebarOpen: false,
             chartTimeFilter: 'monthly',
             sortOption: 'latest',
-            isDarkMode: true,
             searchQuery: '',
             currentPage: 1,
             itemsPerPage: 5,
@@ -519,17 +518,6 @@ createApp({
             setTimeout(() => { this.notification.show = false; }, 3500);
         },
 
-        toggleDarkMode() {
-            this.isDarkMode = !this.isDarkMode;
-            localStorage.setItem('zenqor_theme', this.isDarkMode ? 'dark' : 'light');
-            this.applyThemeClass();
-            this.$nextTick(() => { this.renderCharts(); });
-            this.showNotify(`Theme switched to: ${this.isDarkMode ? 'Corporate Dark Mode' : 'Light Mode'}`);
-        },
-        applyThemeClass() {
-            if (this.isDarkMode) document.documentElement.classList.add('dark');
-            else document.documentElement.classList.remove('dark');
-        },
         toggleSidebar() {
             if (window.innerWidth < 768) this.mobileMenuOpen = !this.mobileMenuOpen;
             else this.desktopSidebarOpen = !this.desktopSidebarOpen;
@@ -588,7 +576,6 @@ createApp({
                 else localStorage.removeItem('zenqor_remember_email');
 
                 this.resetAllForms(); this.isLoggedIn = true; this.desktopSidebarOpen = false; this.mobileMenuOpen = false;
-                localStorage.setItem('zenqor_theme', this.isDarkMode ? 'dark' : 'light');
                 this.logAudit('LOGIN', `User logged in with role ${this.getRoleDisplayName(role)}`);
                 this.showNotify(`Welcome back (${this.getRoleDisplayName(role)}): ${name}`);
                 this.currentTab = mustChangePassword ? 'profile' : 'dashboard';
@@ -914,8 +901,8 @@ createApp({
                 if (!ctxRev || !ctxStatus) return;
 
                 const revData = this.getFilteredRevenueData();
-                const gridColor = this.isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
-                const textColor = this.isDarkMode ? '#CBD5E1' : '#475569';
+                const gridColor = 'rgba(0,0,0,0.06)';
+                const textColor = '#475569';
 
                 if (this.revenueChartInstance) this.revenueChartInstance.destroy();
                 this.revenueChartInstance = new Chart(ctxRev, {
@@ -970,7 +957,8 @@ createApp({
         }
     },
     mounted() {
-        this.applyThemeClass();
+        document.documentElement.classList.remove('dark');
+        localStorage.removeItem('zenqor_theme');
         this.autoCalculatePayroll();
         this.generateDocNo();
 

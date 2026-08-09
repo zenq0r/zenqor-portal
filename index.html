@@ -43,7 +43,7 @@
     <link rel="stylesheet" href="./custom.css">
     <style id="dynamic-print-orientation"></style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased selection:bg-brand-gold selection:text-brand-dark transition-colors duration-200" :class="{'dark bg-brand-bg text-slate-100': isDarkMode}">
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-brand-gold selection:text-brand-dark transition-colors duration-200">
     <div id="app" v-cloak class="min-h-screen flex flex-col">
 
         <!-- NOTIFICATION BAR -->
@@ -206,10 +206,6 @@
                             <button v-if="hasAccess('payslip-generator')" type="button" @click="switchTab('payslip-generator')" :class="currentTab === 'payslip-generator' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Payroll</button>
                             <button v-if="hasAccess('claims')" type="button" @click="switchTab('claims')" :class="currentTab === 'claims' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Claims</button>
                         </div>
-
-                        <button type="button" @click="toggleDarkMode" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-amber-400 hover:bg-slate-200 transition" title="Toggle Dark/Light Theme">
-                            <i :class="isDarkMode ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"></i>
-                        </button>
 
                         <div class="text-right hidden md:block">
                             <p class="text-xs font-bold text-slate-800 dark:text-slate-100">{{ userProfile.name }}</p>
