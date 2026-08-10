@@ -698,7 +698,6 @@ createApp({
 
         async handleLogin() {
             this.loginError = '';
-            if (!this.isOfficialEmail(this.loginForm.email)) { this.loginError = `Email must use the official domain (@${this.officialEmailDomain}).`; return; }
             this.loginLoading = true;
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, this.loginForm.email, this.loginForm.password);
@@ -713,6 +712,12 @@ createApp({
                 const mustChangePassword = userSnap.exists() && userSnap.data().mustChangePassword === true;
                 if (userSnap.exists()) { role = userSnap.data().role || 'Staff'; name = userSnap.data().name || name; photo = userSnap.data().photo || photo; }
                 if (firebaseUser.email === 'admin@zenq0r.com') role = 'Superadmin';
+                if (role !== 'Client' && !this.isOfficialEmail(firebaseUser.email)) {
+                    await signOut(auth);
+                    this.loginError = `Only Client Users System Terminal may use an external email. Other roles must use @${this.officialEmailDomain}.`;
+                    this.loginLoading = false;
+                    return;
+                }
 
                 this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword };
 
@@ -813,10 +818,14 @@ createApp({
         async savePortalUser() {
             try {
                 if (!this.userModal.form.name || !this.userModal.form.email || (this.userModal.isEdit === false && !this.userModal.form.password)) { alert("Please fill out all required fields."); return; }
-                if (!this.isOfficialEmail(this.userModal.form.email)) { alert(`Email must use domain (@${this.officialEmailDomain}).`); return; }
+                if (this.userModal.form.role !== 'Client' && !this.isOfficialEmail(this.userModal.form.email)) {
+                    alert(`Only Client Users System Terminal may use Gmail or another external domain. This role must use @${this.officialEmailDomain}.`);
+                    return;
+                }
 
                 const isNewUser = !this.userModal.isEdit;
-                const email = this.userModal.form.email.trim(); const password = this.userModal.form.password.trim();
+                const email = this.userModal.form.email.trim().toLowerCase(); const password = this.userModal.form.password.trim();
+                this.userModal.form.email = email;
                 const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.userModal.form.name)}&background=0B1E36&color=D4AF37`;
                 let userId = this.userModal.form.uid || this.users.find(user => (user.email || '').toLowerCase() === email.toLowerCase())?.uid || this.users.find(user => (user.email || '').toLowerCase() === email.toLowerCase())?.id;
 
@@ -1266,6 +1275,11 @@ createApp({
                     }
                     if (firebaseUser.email === 'admin@zenq0r.com') {
                         role = 'Superadmin';
+                    }
+                    if (role !== 'Client' && !this.isOfficialEmail(firebaseUser.email)) {
+                        this.loginError = `Only Client Users System Terminal may use an external email. Other roles must use @${this.officialEmailDomain}.`;
+                        await signOut(auth);
+                        return;
                     }
                     this.userProfile = { name, email: firebaseUser.email, role, uid: firebaseUser.uid, photo, mustChangePassword };
                     this.resetAllForms();
