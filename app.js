@@ -53,6 +53,8 @@ createApp({
             isLoggedIn: false,
             authLoading: true,
             loginLoading: false,
+            logoutConfirm: false,
+            browserBackHandler: null,
             showPassword: false,
             loginForm: { 
                 email: '', 
@@ -540,9 +542,19 @@ createApp({
         },
         switchTab(tabName) {
             if (!this.hasAccess(tabName)) { this.showNotify('Access Denied: Your role does not permit access to this module.'); return; }
+            if (tabName === 'dashboard') { this.returnToDashboard(); return; }
+            if (this.currentTab !== tabName) window.history.pushState({ zenqorPortal: true }, '', window.location.href);
             this.currentTab = tabName; this.mobileMenuOpen = false;
-            if (tabName === 'dashboard') this.$nextTick(() => { this.renderCharts(); });
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        returnToDashboard() {
+            this.currentTab = 'dashboard';
+            this.mobileMenuOpen = false;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            this.$nextTick(() => { this.renderCharts(); });
+        },
+        requestLogout() {
+            this.logoutConfirm = true;
         },
         setChartFilter(timeframe) {
             this.chartTimeFilter = timeframe; this.renderCharts();
@@ -609,6 +621,7 @@ createApp({
 
         async handleLogout() {
             try {
+                this.logoutConfirm = false;
                 this.logAudit('LOGOUT', 'User logged out');
                 await signOut(auth);
                 this.isLoggedIn = false; this.loginLoading = false; this.portalDataReady = false; this.portalDataReadyPromise = null; this.userProfile = { name: '', email: '', role: '', photo: '' };
@@ -1003,6 +1016,11 @@ createApp({
         localStorage.removeItem('zenqor_theme');
         this.autoCalculatePayroll();
         this.generateDocNo();
+        window.history.replaceState({ zenqorPortal: true }, '', window.location.href);
+        this.browserBackHandler = () => {
+            if (this.isLoggedIn && this.currentTab !== 'dashboard') this.returnToDashboard();
+        };
+        window.addEventListener('popstate', this.browserBackHandler);
 
         const savedEmail = localStorage.getItem('zenqor_remember_email');
         if (savedEmail) { this.loginForm.email = savedEmail; this.loginForm.rememberMe = true; }
@@ -1053,5 +1071,6 @@ createApp({
     },
     unmounted() {
         this.unsubscribers.forEach(unsub => unsub && unsub());
+        if (this.browserBackHandler) window.removeEventListener('popstate', this.browserBackHandler);
     }
 }).mount('#app');
