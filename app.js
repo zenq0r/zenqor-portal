@@ -17,6 +17,7 @@ import {
     deleteDoc,
     onSnapshot,
     query,
+    where,
     orderBy,
     signInWithEmailAndPassword,
     signOut,
@@ -86,6 +87,7 @@ createApp({
             recordPreview: { show: false, html: '' },
             claimPreview: { show: false, claim: null, directorApprovalAttachment: '', directorApprovalAttachmentName: '' },
             attachmentPreview: { show: false, url: '', label: '' },
+            attachmentUploadState: { payment: false, receipt: false, director: false },
             unsubscribers: [],
             portalDataReady: false,
             portalDataReadyPromise: null,
@@ -218,7 +220,7 @@ createApp({
 
             docForm: {
                 type: 'Invoice',
-                docNo: 'INV-2026-01001',
+                docNo: `INV-${new Date().getFullYear()}-01001`,
                 status: 'Unpaid',
                 paymentMethod: 'Bank Transfer (EFT)',
                 paymentBank: '',
@@ -273,6 +275,12 @@ createApp({
         canDelete() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageRBAC() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageCompanySettings() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
+        canBackupDatabase() { return ['Director', 'Superadmin'].includes(this.userProfile.role); },
+        currentYear() { return new Date().getFullYear(); },
+        payslipYtdMultiplier() {
+            const month = Number(String(this.payForm.month || '').split('-')[1]);
+            return month >= 1 && month <= 12 ? month : new Date().getMonth() + 1;
+        },
         employeeViewLiveRecord() {
             return this.employees.find(emp => emp.empNo === this.employeeView.employee.empNo) || this.employeeView.employee;
         },
@@ -478,35 +486,67 @@ createApp({
             if (!email) return false;
             return email.toLowerCase().trim().endsWith('@' + this.officialEmailDomain.toLowerCase());
         },
-        handleAttachmentUpload(e) {
+        async uploadImageAttachment(file, category) {
+            if (!auth.currentUser) throw new Error('Authentication is required before uploading an attachment.');
+            const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const attachmentRef = ref(storage, `portal_attachments/${category}/${auth.currentUser.uid}/${Date.now()}_${cleanName}`);
+            await uploadBytes(attachmentRef, file, { contentType: file.type });
+            return getDownloadURL(attachmentRef);
+        },
+        async handleAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
             const allowedTypes = ['image/png', 'image/jpeg'];
             if (!allowedTypes.includes(file.type)) { alert('Only PNG, JPEG/JPG files are allowed.'); e.target.value = ''; return; }
             if (file.size > 2 * 1024 * 1024) { alert("Attachment size exceeds 2MB limit."); e.target.value = ''; return; }
-            const reader = new FileReader();
-            reader.onload = (ev) => { this.docForm.paymentAttachment = ev.target.result; this.showNotify(`Attachment ready.`); };
-            reader.readAsDataURL(file);
+            this.attachmentUploadState.payment = true;
+            try {
+                this.docForm.paymentAttachment = await this.uploadImageAttachment(file, 'payments');
+                this.showNotify('Payment attachment uploaded securely.');
+            } catch (error) {
+                console.error('Payment attachment upload failed:', error);
+                this.docForm.paymentAttachment = '';
+                this.showNotify('Unable to upload payment attachment.');
+                e.target.value = '';
+            } finally { this.attachmentUploadState.payment = false; }
         },
-        handleClaimAttachmentUpload(e) {
+        async handleClaimAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
             const allowedTypes = ['image/png', 'image/jpeg'];
             if (!allowedTypes.includes(file.type)) { alert("Only PNG, JPEG/JPG files are allowed."); e.target.value = ''; return; }
             if (file.size > 2 * 1024 * 1024) { alert("Attachment size exceeds 2MB limit."); e.target.value = ''; return; }
-            const reader = new FileReader();
-            reader.onload = (ev) => { this.claimForm.receiptAttachment = ev.target.result; this.claimForm.receiptAttachmentName = file.name; this.showNotify(`Receipt attachment ready.`); };
-            reader.readAsDataURL(file);
+            this.attachmentUploadState.receipt = true;
+            try {
+                this.claimForm.receiptAttachment = await this.uploadImageAttachment(file, 'claim_receipts');
+                this.claimForm.receiptAttachmentName = file.name;
+                this.showNotify('Receipt attachment uploaded securely.');
+            } catch (error) {
+                console.error('Receipt attachment upload failed:', error);
+                this.claimForm.receiptAttachment = '';
+                this.claimForm.receiptAttachmentName = '';
+                this.showNotify('Unable to upload receipt attachment.');
+                e.target.value = '';
+            } finally { this.attachmentUploadState.receipt = false; }
         },
-        handleDirectorApprovalAttachmentUpload(e) {
+        async handleDirectorApprovalAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
             const allowedTypes = ['image/png', 'image/jpeg'];
             if (!allowedTypes.includes(file.type)) { alert('Only PNG, JPEG/JPG files are allowed.'); e.target.value = ''; return; }
             if (file.size > 2 * 1024 * 1024) { alert('Attachment size exceeds 2MB limit.'); e.target.value = ''; return; }
-            const reader = new FileReader();
-            reader.onload = (ev) => { this.claimPreview.directorApprovalAttachment = ev.target.result; this.claimPreview.directorApprovalAttachmentName = file.name; this.showNotify('Director approval document ready.'); };
-            reader.readAsDataURL(file);
+            this.attachmentUploadState.director = true;
+            try {
+                this.claimPreview.directorApprovalAttachment = await this.uploadImageAttachment(file, 'director_approvals');
+                this.claimPreview.directorApprovalAttachmentName = file.name;
+                this.showNotify('Director approval document uploaded securely.');
+            } catch (error) {
+                console.error('Director attachment upload failed:', error);
+                this.claimPreview.directorApprovalAttachment = '';
+                this.claimPreview.directorApprovalAttachmentName = '';
+                this.showNotify('Unable to upload Director approval document.');
+                e.target.value = '';
+            } finally { this.attachmentUploadState.director = false; }
         },
         clearAllDocItems() {
             if (confirm("Are you sure you want to clear all product/service items?")) { this.docForm.items = [{ desc: '', qty: 1, price: 0 }]; this.showNotify("All items cleared."); }
@@ -614,8 +654,14 @@ createApp({
             setTimeout(() => { this.notification.show = false; }, 3500);
         },
 
+        isSupportedImageAttachment(attachment) {
+            return typeof attachment === 'string' && (
+                /^data:image\/(png|jpeg);base64,/i.test(attachment) ||
+                /^https:\/\/firebasestorage\.googleapis\.com\//i.test(attachment)
+            );
+        },
         openAttachment(attachment, label = 'Attachment') {
-            const isSupportedImage = typeof attachment === 'string' && /^data:image\/(png|jpeg);base64,/i.test(attachment);
+            const isSupportedImage = this.isSupportedImageAttachment(attachment);
             if (!isSupportedImage) {
                 this.showNotify(`${label} is unavailable. Only PNG and JPEG/JPG attachments are supported.`);
                 return;
@@ -910,11 +956,12 @@ createApp({
 
         async deletePortalUser(uid, email) {
             if (confirm(`Are you sure you want to delete portal access for: ${email}?`)) {
-                try { await deleteDoc(doc(db, "users", uid)); this.logAudit('DELETE', `Deleted user metadata for ${email}`); this.showNotify('User record deleted.'); } catch (error) {}
+                try { await deleteDoc(doc(db, "users", uid)); this.logAudit('DELETE', `Deleted user metadata for ${email}`); this.showNotify('User record deleted.'); } catch (error) { console.error('Portal user deletion failed:', error); this.showNotify('Unable to delete portal access.'); }
             }
         },
 
         backupDatabase() {
+            if (!this.canBackupDatabase) { this.showNotify('Only Superadmin and Director can export a database backup.'); return; }
             const data = { company: this.company, employees: this.employees, customers: this.customers, docHistory: this.docHistory, payslipHistory: this.payslipHistory, claimsHistory: this.claimsHistory, users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })), exportDate: new Date().toISOString() };
             const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", jsonStr); dlAnchorElem.setAttribute("download", `zenqor_backup_${new Date().toISOString().substr(0,10)}.json`); dlAnchorElem.click();
@@ -943,7 +990,7 @@ createApp({
                 const docId = this.docForm.clientName.trim().replace(/\s+/g, '_').toLowerCase();
                 const newCust = { clientName: this.docForm.clientName, clientPhone: this.docForm.clientPhone, clientSSM: this.docForm.clientSSM, clientAddress: this.docForm.clientAddress, clientCity: this.docForm.clientCity, clientState: this.docForm.clientState, clientPostcode: this.docForm.clientPostcode, clientCountry: this.docForm.clientCountry, clientEmail: this.docForm.clientEmail, clientContactPerson: this.docForm.clientContactPerson, clientPosition: this.docForm.clientPosition };
             await setDoc(doc(db, "customers", docId), newCust); this.clientSavedForDocument = true; this.logAudit('CREATE', `Saved customer ${this.docForm.clientName}`); this.showNotify('Client saved. You can now add document items.'); return true;
-            } catch (error) {}
+            } catch (error) { console.error('Client save failed:', error); this.showNotify('Unable to save client information.'); return false; }
         },
         selectCustomerFromTable(cust) {
             ['clientName','clientPhone','clientSSM','clientAddress','clientCity','clientState','clientPostcode','clientCountry','clientEmail','clientContactPerson','clientPosition'].forEach(k => { this.docForm[k] = cust[k] || (k === 'clientCountry' ? 'Malaysia' : ''); });
@@ -1010,7 +1057,7 @@ createApp({
                 });
                 await setDoc(doc(db, "employees", this.employeeModal.form.empNo.trim()), { ...this.employeeModal.form });
                 this.employeeModal.show = false; this.logAudit(this.employeeModal.isEdit ? 'UPDATE':'CREATE', `Saved employee ${this.employeeModal.form.empNo}`); this.showNotify('Employee data saved!');
-            } catch (error) {}
+            } catch (error) { console.error('Employee save failed:', error); this.showNotify('Unable to save employee information.'); }
         },
         openEmployeeView(emp) {
             this.employeeView.employee = {
@@ -1060,6 +1107,7 @@ createApp({
             return clm.empEmail === this.userProfile.email && clm.status === 'Pending HR';
         },
         async approveClaim(clm) {
+            if (this.attachmentUploadState.director) { this.showNotify('Wait for the Director approval document upload to finish.'); return false; }
             const nextRole = this.userProfile.role === 'Director' ? null : { 'Pending HR': 'Account', 'Pending Account': 'Director' }[clm.status];
             const roleNames = { HR: 'Human Resource Management', Account: 'Finance Account Management', Director: 'Director' };
             if (this.userProfile.role === 'Director' && !this.claimPreview.directorApprovalAttachment) { alert('Director approval requires a supporting document attachment.'); return; }
@@ -1084,6 +1132,7 @@ createApp({
             if (confirm("REJECT this claim application?")) { try { await updateDoc(doc(db, "claims", clm.id), { status: 'Rejected', rejectedByUid: this.userProfile.uid, rejectedByName: this.userProfile.name, rejectedByRole: this.userProfile.role, rejectedAt: new Date().toISOString() }); this.showNotify("Claim rejected."); } catch (error) { this.showNotify('Unable to reject claim.'); } }
         },
         async saveClaimRecord() {
+                if (this.attachmentUploadState.receipt) return alert('Wait for the receipt upload to finish.');
                 if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo || !this.claimForm.description.trim() || !this.claimForm.receiptAttachment) return alert("Complete all required claim fields, including Expense Description and Receipt Attachment.");
             try {
                 const applicantUser = this.users.find(u => u.email === (this.claimForm.empEmail || this.userProfile.email));
@@ -1095,11 +1144,11 @@ createApp({
                 const payload = { id: claimId, type: 'Claim', date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: this.claimForm.empEmail || this.userProfile.email, dept: this.claimForm.dept, category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
                 await setDoc(doc(db, "claims", claimId), payload);
                 this.editingClaimId = null; this.showNotify(`Claim submitted.`); this.resetClaimForm();
-            } catch (error) {}
+            } catch (error) { console.error('Claim save failed:', error); this.showNotify('Unable to submit claim. Check the attachment size and try again.'); }
         },
         editClaimRecord(clm) { this.editingClaimId = clm.id; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; window.scrollTo({ top:0, behavior:'smooth' }); },
         cancelEditClaim() { this.editingClaimId = null; this.resetClaimForm(); },
-        async deleteClaimRecord(claimId) { if (confirm("Delete this claim record?")) { try { await deleteDoc(doc(db, "claims", claimId)); this.showNotify("Claim deleted."); } catch (error) {} } },
+        async deleteClaimRecord(claimId) { if (confirm("Delete this claim record?")) { try { await deleteDoc(doc(db, "claims", claimId)); this.showNotify("Claim deleted."); } catch (error) { console.error('Claim deletion failed:', error); this.showNotify('Unable to delete claim.'); } } },
 
         setPrintOrientation(orientation, margin) { const styleEl = document.getElementById('dynamic-print-orientation'); if (styleEl) styleEl.innerHTML = `@media print { @page { size: A4 ${orientation}; margin: ${margin} !important; } }`; },
         async printDocumentModule() { if (!this.clientSavedForDocument) return alert('Save Client information before previewing or printing this document.'); this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE'; this.setPrintOrientation('portrait', '15mm'); setTimeout(() => { window.print(); }, 250); },
@@ -1115,31 +1164,32 @@ createApp({
         
         async saveDocRecord() {
             try {
+                if (this.attachmentUploadState.payment) { this.showNotify('Wait for the payment attachment upload to finish.'); return false; }
                 if (!this.canManageDocuments) { this.showNotify('You do not have permission to save documents.'); return false; }
                 if (['Paid', 'Partial'].includes(this.docForm.status) && (!this.docForm.paymentRefNo || this.docForm.paymentRefNo.trim() === '')) { alert("Payment Reference No. is REQUIRED."); return false; }
                 const docId = String(this.editingDocId || Date.now());
                 const payload = { id: docId, type: this.docForm.type, docNo: this.docForm.docNo, status: this.docForm.status || (this.docForm.type === 'Invoice' ? 'Unpaid' : 'Open'), paymentMethod: this.docForm.paymentMethod || 'Bank Transfer', paymentBank: this.docForm.paymentBank || '', paymentReceiver: this.docForm.paymentReceiver || '', paymentRefNo: this.docForm.paymentRefNo || '', paymentAttachment: this.docForm.paymentAttachment || '', date: this.docForm.date, name: this.docForm.clientName, amount: this.docGrandTotal, raw: JSON.parse(JSON.stringify(this.docForm)) };
                 if (!this.clientSavedForDocument) { alert('Save Client information before saving this document.'); return false; }
                 await setDoc(doc(db, "docs", docId), payload); this.editingDocId = docId; this.showNotify(`Document saved.`); return true;
-            } catch (error) { return false; }
+            } catch (error) { console.error('Document save failed:', error); this.showNotify('Unable to save document. Check the attachment size and try again.'); return false; }
         },
         async savePayslipRecord() {
             try {
                 if (!this.canManagePayroll) { this.showNotify('You do not have permission to save payslips.'); return; }
                 const docId = String(this.editingPayId || Date.now());
-                const payload = { id: docId, type: 'Payslip', docNo: `PS-2026-${this.payForm.empNo}`, date: this.payForm.payDate, name: this.payForm.name, amount: this.payCalc.net, raw: JSON.parse(JSON.stringify(this.payForm)) };
+                const payload = { id: docId, type: 'Payslip', docNo: `PS-${this.currentYear}-${this.payForm.empNo}`, date: this.payForm.payDate, name: this.payForm.name, amount: this.payCalc.net, raw: JSON.parse(JSON.stringify(this.payForm)) };
                 await setDoc(doc(db, "payslips", docId), payload); this.editingPayId = null; this.showNotify(`Payslip saved.`);
-            } catch (error) {}
+            } catch (error) { console.error('Payslip save failed:', error); this.showNotify('Unable to save payslip.'); }
         },
         addDocItem() { this.docForm.items.push({ desc: '', qty: 1, price: 0 }); },
         removeDocItem(idx) { this.docForm.items.splice(idx, 1); },
         generateDocNo() {
             if (this.editingDocId) return;
             const prefix = this.docForm.type === 'Invoice' ? 'INV' : 'QT';
-            const relevantDocs = this.docHistory.filter(d => d.type === this.docForm.type);
+            const relevantDocs = this.docHistory.filter(d => d.type === this.docForm.type && String(d.docNo || '').includes(`-${this.currentYear}-`));
             let maxNum = 1000;
             relevantDocs.forEach(d => { if (d.docNo) { const num = parseInt(d.docNo.split('-').pop(), 10); if (!isNaN(num) && num > maxNum) maxNum = num; } });
-            this.docForm.docNo = `${prefix}-2026-${String(maxNum + 1).padStart(5, '0')}`;
+            this.docForm.docNo = `${prefix}-${this.currentYear}-${String(maxNum + 1).padStart(5, '0')}`;
         },
         cancelEditDoc() { this.editingDocId = null; this.generateDocNo(); },
 
@@ -1198,7 +1248,7 @@ createApp({
         },
         async confirmDeleteRecord(item) {
             if (confirm(`WARNING: Delete record?`)) {
-                try { if (item.isDoc) await deleteDoc(doc(db, "docs", item.id)); else if (item.isPay) await deleteDoc(doc(db, "payslips", item.id)); else if (item.isClaim) await deleteDoc(doc(db, "claims", item.id)); this.showNotify('Record deleted.'); } catch (error) {}
+                try { if (item.isDoc) await deleteDoc(doc(db, "docs", item.id)); else if (item.isPay) await deleteDoc(doc(db, "payslips", item.id)); else if (item.isClaim) await deleteDoc(doc(db, "claims", item.id)); this.showNotify('Record deleted.'); } catch (error) { console.error('Record deletion failed:', error); this.showNotify('Unable to delete record.'); }
             }
         },
 
@@ -1270,17 +1320,36 @@ createApp({
                 this.unsubscribers.push(unsubscribe);
             });
 
-            const initialLoads = [
-                this.canManageCompanySettings
-                    ? subscribeWithReadySignal(doc(db, "settings", "company_profile"), (snapshot) => { if (snapshot.exists()) this.company = snapshot.data(); }, 'company settings')
-                    : Promise.resolve(),
-                subscribeWithReadySignal(collection(db, "employees"), (snapshot) => { this.employees = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'employees'),
-                subscribeWithReadySignal(collection(db, "customers"), (snapshot) => { this.customers = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'clients'),
-                subscribeWithReadySignal(collection(db, "docs"), (snapshot) => { this.docHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); this.generateDocNo(); this.refreshDashboardCharts(); }, 'documents'),
-                subscribeWithReadySignal(collection(db, "payslips"), (snapshot) => { this.payslipHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'payslips'),
-                subscribeWithReadySignal(collection(db, "claims"), (snapshot) => { this.claimsHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'claims'),
-                subscribeWithReadySignal(collection(db, "users"), (snapshot) => {
-                    // Keep Firestore document ID authoritative; legacy data may also contain an empty `id` field.
+            const role = this.userProfile.role;
+            const canReadAllDocuments = ['Superadmin', 'Director', 'HR', 'Account', 'IT'].includes(role);
+            const canReadAllPayslips = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
+            const canReadAllClaims = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
+            const canReadAllEmployees = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
+            const canReadAllUsers = ['Superadmin', 'Director', 'HR'].includes(role);
+            const canReadAuditLogs = ['Superadmin', 'Director', 'IT'].includes(role);
+            const documentsSource = canReadAllDocuments
+                ? collection(db, 'docs')
+                : role === 'Client'
+                    ? query(collection(db, 'docs'), where('raw.clientEmail', '==', this.userProfile.email))
+                    : null;
+            const payslipsSource = canReadAllPayslips
+                ? collection(db, 'payslips')
+                : role === 'Staff'
+                    ? query(collection(db, 'payslips'), where('raw.empEmail', '==', this.userProfile.email))
+                    : null;
+            const claimsSource = canReadAllClaims
+                ? collection(db, 'claims')
+                : role === 'Staff'
+                    ? query(collection(db, 'claims'), where('empEmail', '==', this.userProfile.email))
+                    : null;
+            const employeesSource = canReadAllEmployees
+                ? collection(db, 'employees')
+                : ['Staff', 'IT'].includes(role)
+                    ? query(collection(db, 'employees'), where('email', '==', this.userProfile.email))
+                    : null;
+
+            const userSubscription = canReadAllUsers
+                ? subscribeWithReadySignal(collection(db, 'users'), (snapshot) => {
                     this.users = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
                     const currentUser = this.users.find(user => user.id === this.userProfile.uid);
                     if (currentUser) {
@@ -1288,8 +1357,39 @@ createApp({
                         this.userProfile.name = currentUser.name || this.userProfile.name;
                         this.userProfile.photo = currentUser.photo || this.userProfile.photo;
                     }
-                }, 'portal users'),
-                subscribeWithReadySignal(collection(db, "audit_logs"), (snapshot) => { this.auditLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.id - a.id); }, 'audit logs')
+                }, 'portal users')
+                : subscribeWithReadySignal(doc(db, 'users', this.userProfile.uid), (snapshot) => {
+                    if (!snapshot.exists()) return;
+                    const currentUser = { ...snapshot.data(), id: snapshot.id };
+                    this.users = [currentUser];
+                    this.userProfile.role = currentUser.role || this.userProfile.role;
+                    this.userProfile.name = currentUser.name || this.userProfile.name;
+                    this.userProfile.photo = currentUser.photo || this.userProfile.photo;
+                }, 'current portal user');
+
+            const initialLoads = [
+                this.canManageCompanySettings
+                    ? subscribeWithReadySignal(doc(db, "settings", "company_profile"), (snapshot) => { if (snapshot.exists()) this.company = snapshot.data(); }, 'company settings')
+                    : Promise.resolve(),
+                employeesSource
+                    ? subscribeWithReadySignal(employeesSource, (snapshot) => { this.employees = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'employees')
+                    : Promise.resolve(),
+                (this.hasAccess('client-directory') || this.hasAccess('doc-generator'))
+                    ? subscribeWithReadySignal(collection(db, "customers"), (snapshot) => { this.customers = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'clients')
+                    : Promise.resolve(),
+                documentsSource
+                    ? subscribeWithReadySignal(documentsSource, (snapshot) => { this.docHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); this.generateDocNo(); this.refreshDashboardCharts(); }, 'documents')
+                    : Promise.resolve(),
+                payslipsSource
+                    ? subscribeWithReadySignal(payslipsSource, (snapshot) => { this.payslipHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'payslips')
+                    : Promise.resolve(),
+                claimsSource
+                    ? subscribeWithReadySignal(claimsSource, (snapshot) => { this.claimsHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'claims')
+                    : Promise.resolve(),
+                userSubscription,
+                canReadAuditLogs
+                    ? subscribeWithReadySignal(collection(db, "audit_logs"), (snapshot) => { this.auditLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.id - a.id); }, 'audit logs')
+                    : Promise.resolve()
             ];
 
             this.portalDataReadyPromise = Promise.all(initialLoads).then(() => {

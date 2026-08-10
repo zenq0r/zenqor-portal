@@ -3,7 +3,7 @@
 // ============================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+import { getAnalytics, isSupported as isAnalyticsSupported } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
 import {
     getFirestore,
     collection,
@@ -14,6 +14,7 @@ import {
     deleteDoc,
     onSnapshot,
     query,
+    where,
     orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
@@ -33,19 +34,25 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const env = window.__ENV__ || {};
+const getEnvValue = (key, fallback) => {
+    const value = env[key];
+    return typeof value === 'string' && value.trim() && !value.includes('%%') ? value.trim() : fallback;
+};
 
 const firebaseConfig = {
-    apiKey: env.FIREBASE_API_KEY || "AIzaSyCJyjvlm8jG-mT_1mDYsyF562L6XuskFxU",
-    authDomain: env.FIREBASE_AUTH_DOMAIN || "zenqor-web.firebaseapp.com",
-    projectId: env.FIREBASE_PROJECT_ID || "zenqor-web",
-    storageBucket: env.FIREBASE_STORAGE_BUCKET || "zenqor-web.firebasestorage.app",
-    messagingSenderId: env.FIREBASE_MESSAGING_ID || "785478368719",
-    appId: env.FIREBASE_APP_ID || "1:785478368719:web:c20d5c3ecc891c692566ba",
-    measurementId: env.FIREBASE_MEASUREMENT_ID || "G-NLFPW2ECR9"
+    apiKey: getEnvValue('FIREBASE_API_KEY', "AIzaSyCJyjvlm8jG-mT_1mDYsyF562L6XuskFxU"),
+    authDomain: getEnvValue('FIREBASE_AUTH_DOMAIN', "zenqor-web.firebaseapp.com"),
+    projectId: getEnvValue('FIREBASE_PROJECT_ID', "zenqor-web"),
+    storageBucket: getEnvValue('FIREBASE_STORAGE_BUCKET', "zenqor-web.firebasestorage.app"),
+    messagingSenderId: getEnvValue('FIREBASE_MESSAGING_ID', "785478368719"),
+    appId: getEnvValue('FIREBASE_APP_ID', "1:785478368719:web:c20d5c3ecc891c692566ba"),
+    measurementId: getEnvValue('FIREBASE_MEASUREMENT_ID', "G-NLFPW2ECR9")
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+isAnalyticsSupported().then((supported) => {
+    if (supported) getAnalytics(app);
+}).catch(() => {});
 
 const db = getFirestore(app);
 const storage = getStorage(app);
@@ -67,6 +74,7 @@ export {
     deleteDoc,
     onSnapshot,
     query,
+    where,
     orderBy,
     signInWithEmailAndPassword,
     signOut,
