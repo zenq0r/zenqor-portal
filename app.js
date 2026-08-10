@@ -551,7 +551,13 @@ createApp({
             this.currentTab = 'dashboard';
             this.mobileMenuOpen = false;
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            this.$nextTick(() => { this.renderCharts(); });
+            this.refreshDashboardCharts();
+        },
+        refreshDashboardCharts() {
+            if (!this.portalDataReady || this.currentTab !== 'dashboard') return;
+            this.$nextTick(() => {
+                requestAnimationFrame(() => requestAnimationFrame(() => this.renderCharts()));
+            });
         },
         requestLogout() {
             this.logoutConfirm = true;
@@ -610,9 +616,8 @@ createApp({
                 this.currentTab = mustChangePassword ? 'profile' : 'dashboard';
                 if (mustChangePassword) { this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
                 await this.initFirebaseRealtime();
-                await this.$nextTick();
-                this.renderCharts();
                 this.loginLoading = false;
+                this.refreshDashboardCharts();
             } catch (error) {
                 this.loginError = 'Invalid email or password credentials / System Error.';
                 this.loginLoading = false;
@@ -944,9 +949,11 @@ createApp({
                     options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { beginAtZero: true, min: 0, grid: { color: gridColor }, ticks: { color: textColor, callback: function(value) { return 'RM ' + value.toLocaleString(); } } } }, plugins: { legend: { labels: { color: textColor } } } }
                 });
 
+                const statusValues = [this.paidInvoicesCount, this.unpaidInvoicesCount, this.totalQuotations];
+                const hasStatusData = statusValues.some(value => value > 0);
                 if (this.statusChartInstance) this.statusChartInstance.destroy();
                 this.statusChartInstance = new Chart(ctxStatus, {
-                    type: 'doughnut', data: { labels: ['Paid Invoices', 'Unpaid Invoices', 'Quotations'], datasets: [{ data: [this.paidInvoicesCount, this.unpaidInvoicesCount, this.totalQuotations], backgroundColor: ['#10B981', '#EF4444', '#F59E0B'], borderWidth: 2 }] },
+                    type: 'doughnut', data: { labels: hasStatusData ? ['Paid Invoices', 'Unpaid Invoices', 'Quotations'] : ['No document data yet'], datasets: [{ data: hasStatusData ? statusValues : [1], backgroundColor: hasStatusData ? ['#10B981', '#EF4444', '#F59E0B'] : ['#CBD5E1'], borderWidth: 2 }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
                 });
             });
@@ -988,7 +995,7 @@ createApp({
                     : Promise.resolve(),
                 subscribeWithReadySignal(collection(db, "employees"), (snapshot) => { this.employees = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'employees'),
                 subscribeWithReadySignal(collection(db, "customers"), (snapshot) => { this.customers = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'clients'),
-                subscribeWithReadySignal(collection(db, "docs"), (snapshot) => { this.docHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); this.generateDocNo(); }, 'documents'),
+                subscribeWithReadySignal(collection(db, "docs"), (snapshot) => { this.docHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); this.generateDocNo(); this.refreshDashboardCharts(); }, 'documents'),
                 subscribeWithReadySignal(collection(db, "payslips"), (snapshot) => { this.payslipHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'payslips'),
                 subscribeWithReadySignal(collection(db, "claims"), (snapshot) => { this.claimsHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'claims'),
                 subscribeWithReadySignal(collection(db, "users"), (snapshot) => {
@@ -1049,9 +1056,8 @@ createApp({
                     this.isLoggedIn = true;
                     if (mustChangePassword) { this.currentTab = 'profile'; this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
                     await this.initFirebaseRealtime();
-                    await this.$nextTick();
-                    this.renderCharts();
                     this.loginLoading = false;
+                    this.refreshDashboardCharts();
                 } catch (e) {
                     console.error("Error fetching user metadata:", e);
                     this.isLoggedIn = false;
