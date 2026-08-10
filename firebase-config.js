@@ -5,8 +5,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
 import {
-    initializeFirestore,
-    persistentLocalCache,
+    getFirestore,
     collection,
     doc,
     setDoc,
@@ -17,6 +16,12 @@ import {
     query,
     orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+    getStorage,
+    ref,
+    uploadBytes,
+    getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import {
     getAuth,
     signInWithEmailAndPassword,
@@ -42,15 +47,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-const db = initializeFirestore(app, {
-    localCache: persistentLocalCache()
-});
+const db = getFirestore(app);
+const storage = getStorage(app);
 
 const auth = getAuth(app);
 
 export {
     db,
     auth,
+    storage,
+    ref,
+    uploadBytes,
+    getDownloadURL,
     collection,
     doc,
     setDoc,

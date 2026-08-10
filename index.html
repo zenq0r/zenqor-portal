@@ -115,11 +115,7 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between text-xs pt-1">
-                        <label for="remember-me" class="flex items-center space-x-2 cursor-pointer text-slate-600 dark:text-slate-300 font-medium">
-                            <input id="remember-me" name="rememberMe" type="checkbox" v-model="loginForm.rememberMe" class="w-4 h-4 rounded border-slate-300 text-brand-dark focus:ring-brand-blue">
-                            <span>Remember me</span>
-                        </label>
+                    <div class="flex justify-end text-xs pt-1">
                         <a href="#" @click.prevent="handleForgotPassword" class="text-brand-gold hover:underline font-bold">
                             Forgot my password?
                         </a>
@@ -1458,7 +1454,18 @@
                                          <option value="Client">Client Users System Terminal</option>
                                     </select>
                                 </div>
-                                <div><label for="prof-photo" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Avatar / Photo URL</label><input id="prof-photo" name="profPhoto" type="text" v-model="userProfile.photo" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div class="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 p-4">
+                                    <label for="prof-photo" class="block text-xs font-bold uppercase mb-2 dark:text-slate-300">Avatar / Profile Photo</label>
+                                    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                                        <img :src="userProfile.photo" alt="Profile photo preview" class="h-16 w-16 rounded-full object-cover border-2 border-brand-gold bg-white shadow-sm">
+                                        <div class="flex-1">
+                                            <input id="prof-photo" name="profPhoto" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" @change="handleProfilePhotoUpload" :disabled="profilePhotoUpload.loading" class="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-dark file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-brand-blue disabled:opacity-60">
+                                            <p class="mt-2 text-[10px] text-slate-500">PNG, JPEG or JPG only. Maximum file size: 2 MB. The image is saved securely in Firebase Storage.</p>
+                                            <p v-if="profilePhotoUpload.loading" class="mt-1 text-[10px] font-bold text-brand-blue">Uploading and saving photo…</p>
+                                            <p v-if="profilePhotoUpload.error" class="mt-1 text-[10px] font-bold text-red-600">{{ profilePhotoUpload.error }}</p>
+                                        </div>
+                                    </div>
+                                </div>
                                 
                                 <div class="sm:col-span-2 flex justify-end pt-1 space-x-2">
                                     <button type="button" @click="changePasswordModal.show = true" class="bg-brand-gold hover:bg-yellow-500 text-brand-dark font-extrabold px-5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1.5">

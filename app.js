@@ -5,6 +5,10 @@
 import {
     db,
     auth,
+    storage,
+    ref,
+    uploadBytes,
+    getDownloadURL,
     collection,
     doc,
     setDoc,
@@ -58,8 +62,7 @@ createApp({
             showPassword: false,
             loginForm: { 
                 email: '', 
-                password: '', 
-                rememberMe: false
+                password: ''
             },
             loginError: '',
             currentTab: 'dashboard',
@@ -117,6 +120,7 @@ createApp({
                 role: '',
                 photo: ''
             },
+            profilePhotoUpload: { loading: false, error: '' },
 
             docHistory: [],
             payslipHistory: [],
@@ -637,8 +641,6 @@ createApp({
                 if (firebaseUser.email === 'admin@zenq0r.com') role = 'Superadmin';
 
                 this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword };
-                if (this.loginForm.rememberMe) localStorage.setItem('zenqor_remember_email', this.loginForm.email);
-                else localStorage.removeItem('zenqor_remember_email');
 
                 this.resetAllForms(); this.isLoggedIn = true; this.desktopSidebarOpen = false; this.mobileMenuOpen = false;
                 this.logAudit('LOGIN', `User logged in with role ${this.getRoleDisplayName(role)}`);
@@ -661,7 +663,7 @@ createApp({
                 await signOut(auth);
                 this.destroyDashboardCharts();
                 this.isLoggedIn = false; this.loginLoading = false; this.portalDataReady = false; this.portalDataReadyPromise = null; this.userProfile = { name: '', email: '', role: '', photo: '' };
-                this.resetAllForms(); this.currentTab = 'dashboard'; this.loginForm = { email: '', password: '', rememberMe: false }; this.searchQuery = '';
+                this.resetAllForms(); this.currentTab = 'dashboard'; this.loginForm = { email: '', password: '' }; this.searchQuery = '';
             } catch (error) { console.error("Logout error:", error); }
         },
 
@@ -690,6 +692,31 @@ createApp({
                 await setDoc(userRef, { name: this.userProfile.name, email: this.userProfile.email, role: this.userProfile.role, photo: this.userProfile.photo }, { merge: true });
                 this.logAudit('UPDATE', `User updated own profile: ${this.userProfile.email}`); this.showNotify('Your profile has been updated successfully!');
             } catch (error) { this.showNotify('Error updating profile.'); }
+        },
+        async handleProfilePhotoUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            this.profilePhotoUpload.error = '';
+            if (!file) return;
+            if (!['image/png', 'image/jpeg'].includes(file.type)) { this.profilePhotoUpload.error = 'Only PNG, JPEG or JPG files are allowed.'; event.target.value = ''; return; }
+            if (file.size > 2 * 1024 * 1024) { this.profilePhotoUpload.error = 'Image size must not exceed 2 MB.'; event.target.value = ''; return; }
+            if (!this.userProfile.uid) { this.profilePhotoUpload.error = 'Please sign in again before uploading a photo.'; return; }
+            this.profilePhotoUpload.loading = true;
+            try {
+                const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                const photoRef = ref(storage, `profile_photos/${this.userProfile.uid}/${Date.now()}_${cleanName}`);
+                await uploadBytes(photoRef, file, { contentType: file.type });
+                const photoUrl = await getDownloadURL(photoRef);
+                await setDoc(doc(db, 'users', this.userProfile.uid), { photo: photoUrl }, { merge: true });
+                this.userProfile.photo = photoUrl;
+                this.logAudit('UPDATE', 'Uploaded profile photo');
+                this.showNotify('Profile photo uploaded and saved successfully.');
+            } catch (error) {
+                console.error('Profile photo upload failed:', error);
+                this.profilePhotoUpload.error = 'Unable to upload image. Please try again.';
+            } finally {
+                this.profilePhotoUpload.loading = false;
+                event.target.value = '';
+            }
         },
 
         openUserAccessModal(usr = null) {
@@ -1135,7 +1162,6 @@ createApp({
     },
     mounted() {
         document.documentElement.classList.remove('dark');
-        localStorage.removeItem('zenqor_theme');
         this.autoCalculatePayroll();
         this.generateDocNo();
         window.history.replaceState({ zenqorPortal: true }, '', window.location.href);
@@ -1143,9 +1169,6 @@ createApp({
             if (this.isLoggedIn && this.currentTab !== 'dashboard') this.returnToDashboard();
         };
         window.addEventListener('popstate', this.browserBackHandler);
-
-        const savedEmail = localStorage.getItem('zenqor_remember_email');
-        if (savedEmail) { this.loginForm.email = savedEmail; this.loginForm.rememberMe = true; }
 
         onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
