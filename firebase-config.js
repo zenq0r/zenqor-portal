@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firebase-config.js (SAFE AUTH & DB v2.7)
+// ZENQOR TECHNOLOGIES - firebase-config.js (SAFE AUTH & DB v2.8)
 // ============================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -13,6 +13,8 @@ import {
     updateDoc,
     deleteDoc,
     onSnapshot,
+    getDocs,
+    writeBatch,
     query,
     where,
     orderBy
@@ -73,6 +75,8 @@ export {
     updateDoc,
     deleteDoc,
     onSnapshot,
+    getDocs,
+    writeBatch,
     query,
     where,
     orderBy,

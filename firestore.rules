@@ -7,6 +7,7 @@
 //   - Pengguna hanya boleh kemas kini status presence rekod pekerja sendiri.
 //   - Hanya role Client dibenarkan menggunakan domain email luar.
 //   - Sokong migrasi UID automatik melalui pending_access semasa login.
+//   - Benarkan penyelarasan identiti claim berdasarkan Employee ID kekal.
 //   - Hadkan bacaan koleksi pekerja dan pelanggan mengikut role/pemilik.
 // ============================================================
 rules_version = '2';
@@ -148,6 +149,11 @@ service cloud.firestore {
       );
       allow create: if isAuthenticated() && request.resource.data.empEmail == request.auth.token.email;
       allow update: if (
+        (isAdmin() || isHR()) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'position', 'dept', 'empEmail'
+        ])
+      ) || (
         isHR() && resource.data.status == 'Pending HR' &&
         request.resource.data.status in ['Pending Account', 'Rejected']
       ) || (

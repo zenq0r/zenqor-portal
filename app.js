@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.1)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.2)
 // ============================================================
 
 import {
@@ -16,6 +16,8 @@ import {
     updateDoc,
     deleteDoc,
     onSnapshot,
+    getDocs,
+    writeBatch,
     query,
     where,
     orderBy,
@@ -604,7 +606,8 @@ createApp({
         async setCurrentEmployeePresence(isOnline) {
             if (!auth.currentUser || !this.userProfile.email || !this.employees.length) return false;
             const email = this.userProfile.email.trim().toLowerCase();
-            const employee = this.employees.find(emp => String(emp.email || '').trim().toLowerCase() === email);
+            const employee = this.employees.find(emp => emp.presenceUid === auth.currentUser.uid)
+                || this.employees.find(emp => String(emp.email || '').trim().toLowerCase() === email);
             if (!employee) return false;
             const timestamp = new Date().toISOString();
             try {
@@ -1055,9 +1058,47 @@ createApp({
                 sensitiveFields.forEach(field => {
                     if (this.employeeModal.isEdit && !String(form[field] || '').trim()) form[field] = this.employeeModal.originalSensitive[field] || '';
                 });
-                await setDoc(doc(db, "employees", this.employeeModal.form.empNo.trim()), { ...this.employeeModal.form });
-                this.employeeModal.show = false; this.logAudit(this.employeeModal.isEdit ? 'UPDATE':'CREATE', `Saved employee ${this.employeeModal.form.empNo}`); this.showNotify('Employee data saved!');
+                const employeeId = form.empNo.trim();
+                const wasEdit = this.employeeModal.isEdit;
+                await setDoc(doc(db, "employees", employeeId), { ...form, empNo: employeeId });
+                if (wasEdit) await this.syncEmployeeIdentityReferences({ ...form, empNo: employeeId });
+                this.employeeModal.show = false; this.logAudit(wasEdit ? 'UPDATE':'CREATE', `Saved employee ${employeeId}`); this.showNotify(wasEdit ? 'Employee and linked records updated.' : 'Employee data saved!');
             } catch (error) { console.error('Employee save failed:', error); this.showNotify('Unable to save employee information.'); }
+        },
+        async syncEmployeeIdentityReferences(employee) {
+            const employeeId = String(employee.empNo || '').trim();
+            if (!employeeId) throw new Error('Employee ID is required to synchronize linked records.');
+
+            const [claimsSnapshot, payslipsSnapshot] = await Promise.all([
+                getDocs(query(collection(db, 'claims'), where('empNo', '==', employeeId))),
+                getDocs(query(collection(db, 'payslips'), where('raw.empNo', '==', employeeId)))
+            ]);
+            const writes = [];
+            claimsSnapshot.forEach(record => writes.push({
+                ref: record.ref,
+                data: {
+                    name: employee.name || '',
+                    position: employee.position || '',
+                    dept: employee.dept || '',
+                    empEmail: employee.email || ''
+                }
+            }));
+            payslipsSnapshot.forEach(record => writes.push({
+                ref: record.ref,
+                data: {
+                    name: employee.name || '',
+                    'raw.name': employee.name || '',
+                    'raw.position': employee.position || '',
+                    'raw.dept': employee.dept || '',
+                    'raw.empEmail': employee.email || ''
+                }
+            }));
+
+            for (let start = 0; start < writes.length; start += 450) {
+                const batch = writeBatch(db);
+                writes.slice(start, start + 450).forEach(item => batch.update(item.ref, item.data));
+                await batch.commit();
+            }
         },
         openEmployeeView(emp) {
             this.employeeView.employee = {
@@ -1141,7 +1182,7 @@ createApp({
                 const assignee = { id: '', name: 'Human Resource Management', email: '', role: 'HR' };
 
                 const claimId = String(this.editingClaimId || Date.now());
-                const payload = { id: claimId, type: 'Claim', date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: this.claimForm.empEmail || this.userProfile.email, dept: this.claimForm.dept, category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
+                const payload = { id: claimId, type: 'Claim', date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: this.claimForm.empEmail || this.userProfile.email, position: this.claimForm.position || '', dept: this.claimForm.dept, category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
                 await setDoc(doc(db, "claims", claimId), payload);
                 this.editingClaimId = null; this.showNotify(`Claim submitted.`); this.resetClaimForm();
             } catch (error) { console.error('Claim save failed:', error); this.showNotify('Unable to submit claim. Check the attachment size and try again.'); }
