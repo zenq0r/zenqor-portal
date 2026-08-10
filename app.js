@@ -93,6 +93,12 @@ createApp({
             statusChartInstance: null,
             chartRenderTimer: null,
             chartRenderAttempts: 0,
+            presenceHeartbeatTimer: null,
+            presenceClockTimer: null,
+            presenceNow: Date.now(),
+            presencePageHideHandler: null,
+            presencePageShowHandler: null,
+            presenceVisibilityHandler: null,
 
             changePasswordModal: {
                 show: false,
@@ -267,6 +273,9 @@ createApp({
         canDelete() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageRBAC() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageCompanySettings() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
+        employeeViewLiveRecord() {
+            return this.employees.find(emp => emp.empNo === this.employeeView.employee.empNo) || this.employeeView.employee;
+        },
 
         myPayslips() { return this.payslipHistory.filter(p => p.raw && (p.raw.empEmail === this.userProfile.email || p.name === this.userProfile.name)); },
         myLatestNetSalary() {
@@ -535,6 +544,71 @@ createApp({
         formatDateTime(val) {
             return val ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(val)) : '-';
         },
+        getPresenceTime(value) {
+            if (!value) return 0;
+            if (typeof value.toDate === 'function') return value.toDate().getTime();
+            const parsed = new Date(value).getTime();
+            return Number.isFinite(parsed) ? parsed : 0;
+        },
+        isEmployeeOnline(emp) {
+            const lastUpdate = this.getPresenceTime(emp.presenceUpdatedAt || emp.lastSeen);
+            return emp.presenceStatus === 'Online' && lastUpdate > 0 && (this.presenceNow - lastUpdate) < 90000;
+        },
+        employeePresenceLabel(emp) {
+            return this.isEmployeeOnline(emp) ? 'Online' : 'Offline';
+        },
+        employeeLastSeen(emp) {
+            if (this.isEmployeeOnline(emp)) return 'Active now';
+            return emp.lastSeen ? `Last seen ${this.formatDateTime(emp.lastSeen)}` : 'No login activity';
+        },
+        async setCurrentEmployeePresence(isOnline) {
+            if (!auth.currentUser || !this.userProfile.email || !this.employees.length) return false;
+            const email = this.userProfile.email.trim().toLowerCase();
+            const employee = this.employees.find(emp => String(emp.email || '').trim().toLowerCase() === email);
+            if (!employee) return false;
+            const timestamp = new Date().toISOString();
+            try {
+                await updateDoc(doc(db, 'employees', employee.id || employee.empNo), {
+                    presenceStatus: isOnline ? 'Online' : 'Offline',
+                    isOnline: !!isOnline,
+                    presenceUid: auth.currentUser.uid,
+                    presenceUpdatedAt: timestamp,
+                    lastSeen: timestamp
+                });
+                return true;
+            } catch (error) {
+                console.error('Unable to update employee presence:', error);
+                return false;
+            }
+        },
+        async startPresenceTracking() {
+            this.stopPresenceTracking();
+            this.presenceNow = Date.now();
+            await this.setCurrentEmployeePresence(true);
+            this.presenceHeartbeatTimer = setInterval(() => {
+                this.presenceNow = Date.now();
+                this.setCurrentEmployeePresence(true);
+            }, 30000);
+            this.presenceClockTimer = setInterval(() => { this.presenceNow = Date.now(); }, 15000);
+            this.presencePageHideHandler = () => { this.setCurrentEmployeePresence(false); };
+            this.presencePageShowHandler = () => { if (this.isLoggedIn) this.setCurrentEmployeePresence(true); };
+            this.presenceVisibilityHandler = () => { if (!document.hidden && this.isLoggedIn) this.setCurrentEmployeePresence(true); };
+            window.addEventListener('pagehide', this.presencePageHideHandler);
+            window.addEventListener('pageshow', this.presencePageShowHandler);
+            document.addEventListener('visibilitychange', this.presenceVisibilityHandler);
+        },
+        stopPresenceTracking() {
+            if (this.presenceHeartbeatTimer) clearInterval(this.presenceHeartbeatTimer);
+            if (this.presenceClockTimer) clearInterval(this.presenceClockTimer);
+            this.presenceHeartbeatTimer = null;
+            this.presenceClockTimer = null;
+            if (this.presencePageHideHandler) window.removeEventListener('pagehide', this.presencePageHideHandler);
+            if (this.presencePageShowHandler) window.removeEventListener('pageshow', this.presencePageShowHandler);
+            if (this.presenceVisibilityHandler) document.removeEventListener('visibilitychange', this.presenceVisibilityHandler);
+            this.presencePageHideHandler = null;
+            this.presencePageShowHandler = null;
+            this.presenceVisibilityHandler = null;
+        },
         showNotify(msg) {
             this.notification = { show: true, message: msg };
             setTimeout(() => { this.notification.show = false; }, 3500);
@@ -648,6 +722,7 @@ createApp({
                 this.currentTab = mustChangePassword ? 'profile' : 'dashboard';
                 if (mustChangePassword) { this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
                 await this.initFirebaseRealtime();
+                await this.startPresenceTracking();
                 this.loginLoading = false;
                 this.refreshDashboardCharts();
             } catch (error) {
@@ -660,6 +735,8 @@ createApp({
             try {
                 this.logoutConfirm = false;
                 this.logAudit('LOGOUT', 'User logged out');
+                await this.setCurrentEmployeePresence(false);
+                this.stopPresenceTracking();
                 await signOut(auth);
                 this.destroyDashboardCharts();
                 this.isLoggedIn = false; this.loginLoading = false; this.portalDataReady = false; this.portalDataReadyPromise = null; this.userProfile = { name: '', email: '', role: '', photo: '' };
@@ -877,6 +954,7 @@ createApp({
             this.employeeView.employee = {
                 empNo: emp.empNo || '-', name: emp.name || '-', email: emp.email || '-', position: emp.position || '-', dept: emp.dept || '-',
                 employmentType: emp.employmentType || '-', status: emp.status || '-', joinDate: emp.joinDate || '-', isSenior: !!emp.isSenior,
+                presenceStatus: this.employeePresenceLabel(emp), presenceDetail: this.employeeLastSeen(emp),
                 ic: this.maskSensitive(emp.ic), bankAcc: this.maskSensitive(emp.bankAcc), epfNo: this.maskSensitive(emp.epfNo),
                 socsoNo: this.maskSensitive(emp.socsoNo), eisNo: this.maskSensitive(emp.eisNo), taxNo: this.maskSensitive(emp.taxNo),
                 basicSalary: this.formatCurrency(emp.basicSalary), allowance: this.formatCurrency(emp.allowance), deduction: this.formatCurrency(emp.deduction)
@@ -1194,6 +1272,7 @@ createApp({
                     this.isLoggedIn = true;
                     if (mustChangePassword) { this.currentTab = 'profile'; this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
                     await this.initFirebaseRealtime();
+                    await this.startPresenceTracking();
                     this.loginLoading = false;
                     this.refreshDashboardCharts();
                 } catch (e) {
@@ -1202,6 +1281,7 @@ createApp({
                     this.loginLoading = false;
                 }
             } else {
+                this.stopPresenceTracking();
                 this.isLoggedIn = false;
                 this.loginLoading = false;
                 this.destroyDashboardCharts();
@@ -1215,6 +1295,8 @@ createApp({
         });
     },
     unmounted() {
+        if (this.isLoggedIn) this.setCurrentEmployeePresence(false);
+        this.stopPresenceTracking();
         this.unsubscribers.forEach(unsub => unsub && unsub());
         if (this.browserBackHandler) window.removeEventListener('popstate', this.browserBackHandler);
     }

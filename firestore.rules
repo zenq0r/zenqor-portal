@@ -1,10 +1,10 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v2.3)
+// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v2.4)
 // ============================================================
-// PERUBAHAN v2.3:
+// PERUBAHAN v2.4:
 //   - getUserRole() kini baca dokumen guna UID (request.auth.uid)
 //     yang konsisten dengan cara app.js menyimpan data pengguna.
-//   - Tambah sokongan baca/tulis dokumen pending_uid semasa migrasi.
+//   - Pengguna hanya boleh kemas kini status presence rekod pekerja sendiri.
 // ============================================================
 rules_version = '2';
 service cloud.firestore {
@@ -69,7 +69,17 @@ service cloud.firestore {
 
     match /employees/{empId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() || isHR();
+      allow create, delete: if isAdmin() || isHR();
+      allow update: if isAdmin() || isHR() || (
+        isAuthenticated() &&
+        resource.data.email is string &&
+        request.auth.token.email is string &&
+        resource.data.email == request.auth.token.email &&
+        request.resource.data.presenceUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'presenceStatus', 'isOnline', 'presenceUid', 'presenceUpdatedAt', 'lastSeen'
+        ])
+      );
     }
 
     match /customers/{customerId} {
