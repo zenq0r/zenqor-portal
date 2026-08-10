@@ -1518,6 +1518,19 @@
             </div>
         </div>
 
+        <!-- IMAGE ATTACHMENT PREVIEW -->
+        <div v-if="attachmentPreview.show" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 no-print" @click.self="attachmentPreview.show = false">
+            <div class="w-full max-w-5xl overflow-hidden rounded-xl bg-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
+                    <div class="flex items-center gap-2 text-sm font-extrabold text-brand-dark"><i class="fa-solid fa-image text-brand-blue"></i>{{ attachmentPreview.label }}</div>
+                    <button type="button" @click="attachmentPreview.show = false" class="rounded-lg bg-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-300"><i class="fa-solid fa-xmark mr-1"></i>Close</button>
+                </div>
+                <div class="max-h-[78vh] overflow-auto bg-slate-100 p-4 md:p-6">
+                    <img :src="attachmentPreview.url" :alt="attachmentPreview.label" class="mx-auto h-auto max-w-full rounded-lg bg-white shadow-lg">
+                </div>
+            </div>
+        </div>
+
         <!-- READ-ONLY RECORD PREVIEW -->
         <div v-if="recordPreview.show" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] flex flex-col p-3 md:p-6 no-print">
             <div class="flex items-center justify-between bg-slate-800 text-white px-4 py-3 rounded-t-xl max-w-5xl w-full mx-auto">

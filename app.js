@@ -79,6 +79,7 @@ createApp({
             claimPrint: null,
             recordPreview: { show: false, html: '' },
             claimPreview: { show: false, claim: null, directorApprovalAttachment: '', directorApprovalAttachmentName: '' },
+            attachmentPreview: { show: false, url: '', label: '' },
             unsubscribers: [],
             revenueChartInstance: null,
             statusChartInstance: null,
@@ -527,13 +528,7 @@ createApp({
                 return;
             }
 
-            // Open the attachment URL directly so the browser never remains on about:blank.
-            const previewWindow = window.open(attachment, '_blank');
-            if (!previewWindow) {
-                alert('Unable to open the attachment. Please allow pop-ups for this portal and try again.');
-                return;
-            }
-            previewWindow.opener = null;
+            this.attachmentPreview = { show: true, url: attachment, label };
         },
 
         toggleSidebar() {
