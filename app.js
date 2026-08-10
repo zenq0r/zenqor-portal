@@ -139,6 +139,8 @@ createApp({
                     joinDate: '', basicSalary: 0, allowance: 0, deduction: 0
                 }
             },
+            employeeView: { show: false, employee: {} },
+            employeeActionConfirm: { show: false, action: '', employee: null },
 
             officialEmailDomain: 'zenq0r.com',
 
@@ -785,8 +787,33 @@ createApp({
                 this.employeeModal.show = false; this.logAudit(this.employeeModal.isEdit ? 'UPDATE':'CREATE', `Saved employee ${this.employeeModal.form.empNo}`); this.showNotify('Employee data saved!');
             } catch (error) {}
         },
-        async deleteEmployee(empNo) {
-            if (confirm(`Delete employee ID: ${empNo}?`)) { try { await deleteDoc(doc(db, "employees", empNo)); this.showNotify('Employee deleted.'); } catch (error) {} }
+        openEmployeeView(emp) {
+            this.employeeView.employee = {
+                empNo: emp.empNo || '-', name: emp.name || '-', email: emp.email || '-', position: emp.position || '-', dept: emp.dept || '-',
+                employmentType: emp.employmentType || '-', status: emp.status || '-', joinDate: emp.joinDate || '-', isSenior: !!emp.isSenior,
+                ic: this.maskSensitive(emp.ic), bankAcc: this.maskSensitive(emp.bankAcc), epfNo: this.maskSensitive(emp.epfNo),
+                socsoNo: this.maskSensitive(emp.socsoNo), eisNo: this.maskSensitive(emp.eisNo), taxNo: this.maskSensitive(emp.taxNo),
+                basicSalary: this.formatCurrency(emp.basicSalary), allowance: this.formatCurrency(emp.allowance), deduction: this.formatCurrency(emp.deduction)
+            };
+            this.employeeView.show = true;
+        },
+        requestEmployeeAction(action, emp) {
+            this.employeeActionConfirm = { show: true, action, employee: emp };
+        },
+        async confirmEmployeeAction() {
+            const { action, employee } = this.employeeActionConfirm;
+            this.employeeActionConfirm = { show: false, action: '', employee: null };
+            if (!employee) return;
+            if (action === 'edit') this.openEmployeeModal(employee);
+            if (action === 'delete') await this.deleteEmployee(employee.empNo, false);
+        },
+        async deleteEmployee(empNo, requiresConfirmation = true) {
+            if (requiresConfirmation) {
+                const employee = this.employees.find(emp => emp.empNo === empNo);
+                if (employee) this.requestEmployeeAction('delete', employee);
+                return;
+            }
+            try { await deleteDoc(doc(db, "employees", empNo)); this.showNotify('Employee deleted.'); } catch (error) { this.showNotify('Unable to delete employee.'); }
         },
         selectEmployeeFromTable(emp) {
             this.payForm.empNo = emp.empNo || ''; this.payForm.name = emp.name || ''; this.payForm.empEmail = emp.email || ''; this.payForm.ic = emp.ic || ''; this.payForm.dept = emp.dept || ''; this.payForm.position = emp.position || ''; this.payForm.joinDate = emp.joinDate || ''; this.payForm.bankAcc = emp.bankAcc || ''; this.payForm.isSenior = !!emp.isSenior; this.payForm.epfSocso = `KWSP: ${emp.epfNo || '-'} | PERKESO: ${emp.socsoNo || '-'}`; this.payForm.basic = emp.basicSalary || 0;
