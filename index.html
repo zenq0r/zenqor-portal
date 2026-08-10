@@ -1017,7 +1017,7 @@
                         </div>
 
                         <!-- REAL DATA CHARTS -->
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div v-if="portalDataReady && !['Staff', 'Client'].includes(userProfile.role)" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                                     <h3 class="text-sm font-extrabold text-brand-dark dark:text-white">
@@ -1040,6 +1040,10 @@
                                     <canvas id="statusChart"></canvas>
                                 </div>
                             </div>
+                        </div>
+                        <div v-else-if="!portalDataReady" class="grid grid-cols-1 lg:grid-cols-2 gap-6" aria-live="polite">
+                            <div class="h-80 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div class="h-4 w-52 rounded bg-slate-200 animate-pulse"></div><div class="mt-6 h-52 rounded-xl bg-slate-100 animate-pulse"></div></div>
+                            <div class="h-80 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div class="h-4 w-64 rounded bg-slate-200 animate-pulse"></div><div class="mx-auto mt-6 h-48 w-48 rounded-full border-[24px] border-slate-100 animate-pulse"></div></div>
                         </div>
 
                         <!-- RECENT ACTIVITIES TABLE WITH SORT OPTIONS -->

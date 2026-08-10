@@ -572,7 +572,7 @@ createApp({
                     const revenueCanvas = document.getElementById('revenueChart');
                     const statusCanvas = document.getElementById('statusChart');
                     if (typeof Chart === 'undefined' || !revenueCanvas || !statusCanvas) {
-                        if (attempt < 20) this.chartRenderTimer = setTimeout(() => this.refreshDashboardCharts(attempt + 1), 200);
+                        if (attempt < 150) this.chartRenderTimer = setTimeout(() => this.refreshDashboardCharts(attempt + 1), 200);
                         return;
                     }
                     this.chartRenderAttempts = 0;
@@ -1036,33 +1036,41 @@ createApp({
         },
 
         renderCharts() {
-            if (typeof Chart === 'undefined' || this.currentTab !== 'dashboard') return;
-            if (['Staff', 'Client'].includes(this.userProfile.role)) return;
+            if (typeof Chart === 'undefined' || !this.portalDataReady || this.currentTab !== 'dashboard' || ['Staff', 'Client'].includes(this.userProfile.role)) return;
+            const revCanvas = document.getElementById('revenueChart');
+            const statusCanvas = document.getElementById('statusChart');
+            if (!revCanvas || !statusCanvas) { this.refreshDashboardCharts(this.chartRenderAttempts + 1); return; }
+            const ctxRev = revCanvas.getContext('2d');
+            const ctxStatus = statusCanvas.getContext('2d');
+            if (!ctxRev || !ctxStatus) return;
 
-            this.$nextTick(() => {
-                const revCanvas = document.getElementById('revenueChart'); const statusCanvas = document.getElementById('statusChart');
-                if (!revCanvas || !statusCanvas) return;
-                const ctxRev = revCanvas.getContext('2d'); const ctxStatus = statusCanvas.getContext('2d');
-                if (!ctxRev || !ctxStatus) return;
-
-                const revData = this.getFilteredRevenueData();
+            try {
                 const gridColor = 'rgba(0,0,0,0.06)';
                 const textColor = '#475569';
+                const oldRevenueChart = Chart.getChart ? Chart.getChart(revCanvas) : this.revenueChartInstance;
+                const oldStatusChart = Chart.getChart ? Chart.getChart(statusCanvas) : this.statusChartInstance;
+                if (oldRevenueChart) oldRevenueChart.destroy();
+                if (oldStatusChart) oldStatusChart.destroy();
 
-                if (this.revenueChartInstance) this.revenueChartInstance.destroy();
-                this.revenueChartInstance = new Chart(ctxRev, {
-                    type: 'line', data: { labels: revData.labels, datasets: [{ label: 'Revenue Paid (RM)', data: revData.data, borderColor: '#1E3A8A', backgroundColor: 'rgba(30, 58, 138, 0.15)', borderWidth: 3, fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: '#D4AF37' }] },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { beginAtZero: true, min: 0, grid: { color: gridColor }, ticks: { color: textColor, callback: function(value) { return 'RM ' + value.toLocaleString(); } } } }, plugins: { legend: { labels: { color: textColor } } } }
+                const revData = this.getFilteredRevenueData();
+                const revenueChart = new Chart(ctxRev, {
+                    type: 'line', data: { labels: revData.labels, datasets: [{ label: 'Revenue Paid (RM)', data: revData.data, borderColor: '#0F766E', backgroundColor: 'rgba(15, 118, 110, 0.15)', borderWidth: 3, fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: '#E76F51' }] },
+                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 350 }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { beginAtZero: true, min: 0, grid: { color: gridColor }, ticks: { color: textColor, callback: function(value) { return 'RM ' + value.toLocaleString(); } } } }, plugins: { legend: { labels: { color: textColor } } } }
                 });
 
                 const statusValues = [this.paidInvoicesCount, this.unpaidInvoicesCount, this.totalQuotations];
                 const hasStatusData = statusValues.some(value => value > 0);
-                if (this.statusChartInstance) this.statusChartInstance.destroy();
-                this.statusChartInstance = new Chart(ctxStatus, {
-                    type: 'doughnut', data: { labels: hasStatusData ? ['Paid Invoices', 'Unpaid Invoices', 'Quotations'] : ['No document data yet'], datasets: [{ data: hasStatusData ? statusValues : [1], backgroundColor: hasStatusData ? ['#10B981', '#EF4444', '#F59E0B'] : ['#CBD5E1'], borderWidth: 2 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
+                const statusChart = new Chart(ctxStatus, {
+                    type: 'doughnut', data: { labels: hasStatusData ? ['Paid Invoices', 'Unpaid Invoices', 'Quotations'] : ['No document data yet'], datasets: [{ data: hasStatusData ? statusValues : [1], backgroundColor: hasStatusData ? ['#0F766E', '#E76F51', '#F4A261'] : ['#CBD5E1'], borderWidth: 2 }] },
+                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 350 }, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
                 });
-            });
+                this.revenueChartInstance = Vue.markRaw ? Vue.markRaw(revenueChart) : revenueChart;
+                this.statusChartInstance = Vue.markRaw ? Vue.markRaw(statusChart) : statusChart;
+                requestAnimationFrame(() => { revenueChart.resize(); statusChart.resize(); });
+            } catch (error) {
+                console.error('Dashboard chart rendering failed:', error);
+                if (this.chartRenderAttempts < 150) this.chartRenderTimer = setTimeout(() => this.refreshDashboardCharts(this.chartRenderAttempts + 1), 200);
+            }
         },
 
         getFilteredRevenueData() {
