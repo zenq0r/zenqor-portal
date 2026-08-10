@@ -141,6 +141,8 @@ createApp({
             },
             employeeView: { show: false, employee: {} },
             employeeActionConfirm: { show: false, action: '', employee: null },
+            clientView: { show: false, client: {} },
+            clientActionConfirm: { show: false, action: '', client: null },
 
             officialEmailDomain: 'zenq0r.com',
 
@@ -753,9 +755,33 @@ createApp({
             ['clientName','clientPhone','clientSSM','clientAddress','clientCity','clientState','clientPostcode','clientCountry','clientEmail','clientContactPerson','clientPosition'].forEach(k => { this.docForm[k] = cust[k] || (k === 'clientCountry' ? 'Malaysia' : ''); });
             this.showNotify(`Client loaded.`);
         },
+        openClientView(cust) {
+            this.clientView.client = {
+                clientName: cust.clientName || '-', clientSSM: cust.clientSSM || '-', clientContactPerson: cust.clientContactPerson || '-',
+                clientPosition: cust.clientPosition || '-', clientEmail: cust.clientEmail || '-', clientPhone: cust.clientPhone || '-',
+                clientAddress: cust.clientAddress || '-', clientCity: cust.clientCity || '-', clientState: cust.clientState || '-',
+                clientPostcode: cust.clientPostcode || '-', clientCountry: cust.clientCountry || '-'
+            };
+            this.clientView.show = true;
+        },
+        requestClientAction(action, cust) {
+            this.clientActionConfirm = { show: true, action, client: cust };
+        },
+        async confirmClientAction() {
+            const { action, client } = this.clientActionConfirm;
+            this.clientActionConfirm = { show: false, action: '', client: null };
+            if (!client) return;
+            if (action === 'edit') this.editCustomer(client);
+            if (action === 'delete') await this.deleteCustomer(client.clientName, false);
+        },
         editCustomer(cust) { this.selectCustomerFromTable(cust); this.currentTab = 'doc-generator'; window.scrollTo({ top: 0, behavior: 'smooth' }); },
-        async deleteCustomer(clientName) {
-            if (confirm(`Delete client (${clientName})?`)) { try { await deleteDoc(doc(db, "customers", clientName.trim().replace(/\s+/g, '_').toLowerCase())); this.showNotify('Client deleted.'); } catch (error) {} }
+        async deleteCustomer(clientName, requiresConfirmation = true) {
+            if (requiresConfirmation) {
+                const client = this.customers.find(cust => cust.clientName === clientName);
+                if (client) this.requestClientAction('delete', client);
+                return;
+            }
+            try { await deleteDoc(doc(db, "customers", clientName.trim().replace(/\s+/g, '_').toLowerCase())); this.showNotify('Client deleted.'); } catch (error) { this.showNotify('Unable to delete client.'); }
         },
 
         openEmployeeModal(emp = null) {
