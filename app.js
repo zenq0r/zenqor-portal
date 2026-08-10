@@ -41,8 +41,8 @@ const RBAC_ROLES = {
     'Director': ['dashboard', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'Superadmin': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'HR': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
-    'Account': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
-    'IT': ['dashboard', 'hr-employees', 'audit-logs', 'settings'],
+    'Account': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'profile'],
+    'IT': ['dashboard', 'audit-logs', 'settings', 'profile'],
     'Client': ['dashboard', 'client-portal', 'profile'],
     'Staff': ['dashboard', 'claims', 'client-portal', 'profile']
 };
@@ -253,8 +253,12 @@ createApp({
     computed: {
         canCreateEdit() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
         canManageSensitiveData() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
-        canEditDocs() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
-        canDelete() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
+        canManageEmployees() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
+        canManageClients() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
+        canManageDocuments() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
+        canManagePayroll() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
+        canEditDocs() { return this.canManageDocuments; },
+        canDelete() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageRBAC() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageCompanySettings() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
 
@@ -744,6 +748,7 @@ createApp({
             }
         },
         async saveCustomerToDatabase() {
+            if (!this.canManageClients) { this.showNotify('You do not have permission to save client records.'); return false; }
             if (!this.docForm.clientName || !this.docForm.clientPhone || !this.docForm.clientAddress) return alert('Enter Client Name, Phone, and Address.');
             try {
                 const docId = this.docForm.clientName.trim().replace(/\s+/g, '_').toLowerCase();
@@ -774,17 +779,22 @@ createApp({
             if (action === 'edit') this.editCustomer(client);
             if (action === 'delete') await this.deleteCustomer(client.clientName, false);
         },
-        editCustomer(cust) { this.selectCustomerFromTable(cust); this.currentTab = 'doc-generator'; window.scrollTo({ top: 0, behavior: 'smooth' }); },
+        editCustomer(cust) {
+            if (!this.canManageClients) { this.showNotify('You do not have permission to update client records.'); return; }
+            this.selectCustomerFromTable(cust); this.currentTab = 'doc-generator'; window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
         async deleteCustomer(clientName, requiresConfirmation = true) {
             if (requiresConfirmation) {
                 const client = this.customers.find(cust => cust.clientName === clientName);
                 if (client) this.requestClientAction('delete', client);
                 return;
             }
+            if (!this.canDelete) { this.showNotify('Only Superadmin and Director can delete client records.'); return; }
             try { await deleteDoc(doc(db, "customers", clientName.trim().replace(/\s+/g, '_').toLowerCase())); this.showNotify('Client deleted.'); } catch (error) { this.showNotify('Unable to delete client.'); }
         },
 
         openEmployeeModal(emp = null) {
+            if (!this.canManageEmployees) { this.showNotify('You do not have permission to update employee records.'); return; }
             const sensitiveFields = ['ic', 'bankAcc', 'epfNo', 'socsoNo', 'eisNo', 'taxNo'];
             if (emp) {
                 this.employeeModal.isEdit = true;
@@ -839,6 +849,7 @@ createApp({
                 if (employee) this.requestEmployeeAction('delete', employee);
                 return;
             }
+            if (!this.canDelete) { this.showNotify('Only Superadmin and Director can delete employee records.'); return; }
             try { await deleteDoc(doc(db, "employees", empNo)); this.showNotify('Employee deleted.'); } catch (error) { this.showNotify('Unable to delete employee.'); }
         },
         selectEmployeeFromTable(emp) {
@@ -914,6 +925,7 @@ createApp({
         
         async saveDocRecord() {
             try {
+                if (!this.canManageDocuments) { this.showNotify('You do not have permission to save documents.'); return false; }
                 if (['Paid', 'Partial'].includes(this.docForm.status) && (!this.docForm.paymentRefNo || this.docForm.paymentRefNo.trim() === '')) { alert("Payment Reference No. is REQUIRED."); return false; }
                 const docId = String(this.editingDocId || Date.now());
                 const payload = { id: docId, type: this.docForm.type, docNo: this.docForm.docNo, status: this.docForm.status || (this.docForm.type === 'Invoice' ? 'Unpaid' : 'Open'), paymentMethod: this.docForm.paymentMethod || 'Bank Transfer', paymentBank: this.docForm.paymentBank || '', paymentReceiver: this.docForm.paymentReceiver || '', paymentRefNo: this.docForm.paymentRefNo || '', paymentAttachment: this.docForm.paymentAttachment || '', date: this.docForm.date, name: this.docForm.clientName, amount: this.docGrandTotal, raw: JSON.parse(JSON.stringify(this.docForm)) };
@@ -923,6 +935,7 @@ createApp({
         },
         async savePayslipRecord() {
             try {
+                if (!this.canManagePayroll) { this.showNotify('You do not have permission to save payslips.'); return; }
                 const docId = String(this.editingPayId || Date.now());
                 const payload = { id: docId, type: 'Payslip', docNo: `PS-2026-${this.payForm.empNo}`, date: this.payForm.payDate, name: this.payForm.name, amount: this.payCalc.net, raw: JSON.parse(JSON.stringify(this.payForm)) };
                 await setDoc(doc(db, "payslips", docId), payload); this.editingPayId = null; this.showNotify(`Payslip saved.`);
