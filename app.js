@@ -52,6 +52,7 @@ createApp({
         return {
             isLoggedIn: false,
             authLoading: true,
+            loginLoading: false,
             showPassword: false,
             loginForm: { 
                 email: '', 
@@ -81,6 +82,8 @@ createApp({
             claimPreview: { show: false, claim: null, directorApprovalAttachment: '', directorApprovalAttachmentName: '' },
             attachmentPreview: { show: false, url: '', label: '' },
             unsubscribers: [],
+            portalDataReady: false,
+            portalDataReadyPromise: null,
             revenueChartInstance: null,
             statusChartInstance: null,
 
@@ -570,6 +573,7 @@ createApp({
         async handleLogin() {
             this.loginError = '';
             if (!this.isOfficialEmail(this.loginForm.email)) { this.loginError = `Email must use the official domain (@${this.officialEmailDomain}).`; return; }
+            this.loginLoading = true;
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, this.loginForm.email, this.loginForm.password);
                 const firebaseUser = userCredential.user;
@@ -593,9 +597,13 @@ createApp({
                 this.showNotify(`Welcome back (${this.getRoleDisplayName(role)}): ${name}`);
                 this.currentTab = mustChangePassword ? 'profile' : 'dashboard';
                 if (mustChangePassword) { this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
-                this.$nextTick(() => { this.renderCharts(); });
+                await this.initFirebaseRealtime();
+                await this.$nextTick();
+                this.renderCharts();
+                this.loginLoading = false;
             } catch (error) {
                 this.loginError = 'Invalid email or password credentials / System Error.';
+                this.loginLoading = false;
             }
         },
 
@@ -603,7 +611,7 @@ createApp({
             try {
                 this.logAudit('LOGOUT', 'User logged out');
                 await signOut(auth);
-                this.isLoggedIn = false; this.userProfile = { name: '', email: '', role: '', photo: '' };
+                this.isLoggedIn = false; this.loginLoading = false; this.portalDataReady = false; this.portalDataReadyPromise = null; this.userProfile = { name: '', email: '', role: '', photo: '' };
                 this.resetAllForms(); this.currentTab = 'dashboard'; this.loginForm = { email: '', password: '', rememberMe: false }; this.searchQuery = '';
             } catch (error) { console.error("Logout error:", error); }
         },
@@ -947,26 +955,47 @@ createApp({
         },
 
         initFirebaseRealtime() {
-            const unsubSettings = this.canManageCompanySettings
-                ? onSnapshot(doc(db, "settings", "company_profile"), (snapshot) => { if (snapshot.exists()) this.company = snapshot.data(); })
-                : () => {};
-            const unsubEmployees = onSnapshot(collection(db, "employees"), (snapshot) => { this.employees = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); });
-            const unsubCustomers = onSnapshot(collection(db, "customers"), (snapshot) => { this.customers = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); });
-            const unsubDocs = onSnapshot(collection(db, "docs"), (snapshot) => { this.docHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); this.generateDocNo(); this.$nextTick(() => { this.renderCharts(); }); });
-            const unsubPayslips = onSnapshot(collection(db, "payslips"), (snapshot) => { this.payslipHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); });
-            const unsubClaims = onSnapshot(collection(db, "claims"), (snapshot) => { this.claimsHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); });
-            const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
-                // Keep Firestore document ID authoritative; legacy data may also contain an empty `id` field.
-                this.users = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
-                const currentUser = this.users.find(user => user.id === this.userProfile.uid);
-                if (currentUser) {
-                    this.userProfile.role = currentUser.role || this.userProfile.role;
-                    this.userProfile.name = currentUser.name || this.userProfile.name;
-                    this.userProfile.photo = currentUser.photo || this.userProfile.photo;
-                }
+            if (this.portalDataReadyPromise) return this.portalDataReadyPromise;
+
+            const subscribeWithReadySignal = (source, onData, label) => new Promise((resolve) => {
+                let hasInitialData = false;
+                const unsubscribe = onSnapshot(source, (snapshot) => {
+                    onData(snapshot);
+                    if (!hasInitialData) { hasInitialData = true; resolve(); }
+                }, (error) => {
+                    console.error(`Unable to load ${label}:`, error);
+                    if (!hasInitialData) { hasInitialData = true; resolve(); }
+                });
+                this.unsubscribers.push(unsubscribe);
             });
-            const unsubAudit = onSnapshot(collection(db, "audit_logs"), (snapshot) => { this.auditLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.id - a.id); });
-            this.unsubscribers.push(unsubSettings, unsubEmployees, unsubCustomers, unsubDocs, unsubPayslips, unsubClaims, unsubUsers, unsubAudit);
+
+            const initialLoads = [
+                this.canManageCompanySettings
+                    ? subscribeWithReadySignal(doc(db, "settings", "company_profile"), (snapshot) => { if (snapshot.exists()) this.company = snapshot.data(); }, 'company settings')
+                    : Promise.resolve(),
+                subscribeWithReadySignal(collection(db, "employees"), (snapshot) => { this.employees = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'employees'),
+                subscribeWithReadySignal(collection(db, "customers"), (snapshot) => { this.customers = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'clients'),
+                subscribeWithReadySignal(collection(db, "docs"), (snapshot) => { this.docHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); this.generateDocNo(); }, 'documents'),
+                subscribeWithReadySignal(collection(db, "payslips"), (snapshot) => { this.payslipHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'payslips'),
+                subscribeWithReadySignal(collection(db, "claims"), (snapshot) => { this.claimsHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'claims'),
+                subscribeWithReadySignal(collection(db, "users"), (snapshot) => {
+                    // Keep Firestore document ID authoritative; legacy data may also contain an empty `id` field.
+                    this.users = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+                    const currentUser = this.users.find(user => user.id === this.userProfile.uid);
+                    if (currentUser) {
+                        this.userProfile.role = currentUser.role || this.userProfile.role;
+                        this.userProfile.name = currentUser.name || this.userProfile.name;
+                        this.userProfile.photo = currentUser.photo || this.userProfile.photo;
+                    }
+                }, 'portal users'),
+                subscribeWithReadySignal(collection(db, "audit_logs"), (snapshot) => { this.auditLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.id - a.id); }, 'audit logs')
+            ];
+
+            this.portalDataReadyPromise = Promise.all(initialLoads).then(() => {
+                this.portalDataReady = true;
+                return true;
+            });
+            return this.portalDataReadyPromise;
         }
     },
     mounted() {
@@ -981,6 +1010,7 @@ createApp({
         onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 try {
+                    this.loginLoading = true;
                     const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
                     const userSnap = await getDoc(doc(db, "users", firebaseUser.uid));
                     let role = 'Staff';
@@ -1000,14 +1030,20 @@ createApp({
                     this.resetAllForms();
                     this.isLoggedIn = true;
                     if (mustChangePassword) { this.currentTab = 'profile'; this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
-                    this.initFirebaseRealtime();
-                    this.$nextTick(() => { this.renderCharts(); });
+                    await this.initFirebaseRealtime();
+                    await this.$nextTick();
+                    this.renderCharts();
+                    this.loginLoading = false;
                 } catch (e) {
                     console.error("Error fetching user metadata:", e);
                     this.isLoggedIn = false;
+                    this.loginLoading = false;
                 }
             } else {
                 this.isLoggedIn = false;
+                this.loginLoading = false;
+                this.portalDataReady = false;
+                this.portalDataReadyPromise = null;
                 this.userProfile = { name: '', email: '', role: '', photo: '' };
                 this.unsubscribers.forEach(unsub => unsub && unsub());
                 this.unsubscribers = [];

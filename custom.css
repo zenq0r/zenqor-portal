@@ -12,6 +12,109 @@ body {
     display: none !important; 
 }
 
+/* Login splash: logo-led 3D welcome effect */
+.login-splash {
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 38%, rgba(45, 212, 191, 0.24), transparent 22rem),
+        radial-gradient(circle at 12% 88%, rgba(231, 111, 81, 0.17), transparent 24rem),
+        linear-gradient(135deg, #111827, #18212f 58%, #0f3f3a);
+}
+
+.splash-logo-stage {
+    position: relative;
+    z-index: 2;
+    perspective: 1000px;
+}
+
+.splash-logo-card {
+    display: flex;
+    width: min(19rem, 74vw);
+    aspect-ratio: 16 / 9;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 1.1rem;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 28px 54px rgba(0, 0, 0, 0.36), 0 0 46px rgba(45, 212, 191, 0.22);
+    transform-style: preserve-3d;
+    animation: splash-logo-float 3.8s ease-in-out infinite;
+}
+
+.splash-logo-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(118deg, rgba(255, 255, 255, 0.54), transparent 35%, transparent 68%, rgba(15, 118, 110, 0.16));
+}
+
+.splash-logo-image {
+    width: 82%;
+    height: 82%;
+    object-fit: contain;
+    transform: translateZ(28px);
+}
+
+.splash-orbit {
+    position: absolute;
+    left: 50%;
+    top: 7.5rem;
+    z-index: 1;
+    width: 23rem;
+    height: 23rem;
+    border: 1px solid rgba(94, 234, 212, 0.26);
+    border-radius: 50%;
+    transform: translateX(-50%) rotateX(68deg);
+    animation: splash-orbit-spin 8s linear infinite;
+}
+
+.splash-orbit-two {
+    width: 17rem;
+    height: 17rem;
+    border-color: rgba(251, 191, 36, 0.2);
+    animation-direction: reverse;
+    animation-duration: 6s;
+}
+
+.splash-progress {
+    width: 11rem;
+    height: 0.22rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.splash-progress span {
+    display: block;
+    width: 46%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #14b8a6, #5eead4, #fbbf24);
+    animation: splash-progress 1.2s ease-in-out infinite;
+}
+
+@keyframes splash-logo-float {
+    0%, 100% { transform: rotateX(5deg) rotateY(-7deg) translateY(0); }
+    50% { transform: rotateX(-4deg) rotateY(8deg) translateY(-12px); }
+}
+
+@keyframes splash-orbit-spin {
+    to { transform: translateX(-50%) rotateX(68deg) rotateZ(360deg); }
+}
+
+@keyframes splash-progress {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(290%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .splash-logo-card,
+    .splash-orbit,
+    .splash-progress span { animation: none; }
+}
+
 /* Lencana Tab & Menu Aktif Sidebar */
 .sidebar-item-active {
     background-color: #0F766E;

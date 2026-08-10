@@ -54,6 +54,24 @@
             </div>
         </transition>
 
+        <!-- LOGIN WELCOME / LOADING SCREEN -->
+        <transition name="fade">
+            <div v-if="loginLoading" class="login-splash fixed inset-0 z-[100] flex items-center justify-center p-6" role="status" aria-live="polite">
+                <div class="relative flex max-w-md flex-col items-center text-center text-white">
+                    <div class="splash-orbit splash-orbit-one"></div>
+                    <div class="splash-orbit splash-orbit-two"></div>
+                    <div class="splash-logo-stage">
+                        <div class="splash-logo-card">
+                            <img src="./logo.png" alt="ZENQOR Technologies" class="splash-logo-image">
+                        </div>
+                    </div>
+                    <p class="mt-9 text-sm font-extrabold uppercase tracking-[0.28em]">ZENQOR Technologies</p>
+                    <p class="mt-2 text-xs font-medium text-slate-300">Preparing your secure workspace</p>
+                    <div class="splash-progress mt-6"><span></span></div>
+                </div>
+            </div>
+        </transition>
+
         <!-- LOGIN SYSTEM & RBAC GUARD -->
         <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center bg-brand-dark px-4 py-8">
             <div class="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-100 dark:border-slate-700">
