@@ -702,15 +702,14 @@ createApp({
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, this.loginForm.email, this.loginForm.password);
                 const firebaseUser = userCredential.user;
-                const userDocRef = doc(db, "users", firebaseUser.uid);
-                const userSnap = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js").then(m => m.getDoc(userDocRef));
+                const userData = await this.loadOrMigrateUserMetadata(firebaseUser);
 
                 let role = 'Staff';
                 let name = firebaseUser.displayName || firebaseUser.email;
                 let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
 
-                const mustChangePassword = userSnap.exists() && userSnap.data().mustChangePassword === true;
-                if (userSnap.exists()) { role = userSnap.data().role || 'Staff'; name = userSnap.data().name || name; photo = userSnap.data().photo || photo; }
+                const mustChangePassword = userData?.mustChangePassword === true;
+                if (userData) { role = userData.role || 'Staff'; name = userData.name || name; photo = userData.photo || photo; }
                 if (firebaseUser.email === 'admin@zenq0r.com') role = 'Superadmin';
                 if (role !== 'Client' && !this.isOfficialEmail(firebaseUser.email)) {
                     await signOut(auth);
@@ -807,6 +806,35 @@ createApp({
             this.userModal.show = true;
         },
 
+        isLikelyFirebaseUid(value) {
+            return typeof value === 'string' && /^[A-Za-z0-9_-]{20,128}$/.test(value);
+        },
+        async loadOrMigrateUserMetadata(firebaseUser) {
+            if (!firebaseUser?.uid || !firebaseUser?.email) return null;
+            const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+            const userRef = doc(db, 'users', firebaseUser.uid);
+            const userSnapshot = await getDoc(userRef);
+            if (userSnapshot.exists()) return userSnapshot.data();
+
+            const normalizedEmail = firebaseUser.email.trim().toLowerCase();
+            const pendingRef = doc(db, 'pending_access', normalizedEmail);
+            const pendingSnapshot = await getDoc(pendingRef);
+            if (!pendingSnapshot.exists()) return null;
+
+            const pendingData = pendingSnapshot.data();
+            const migratedData = {
+                email: normalizedEmail,
+                name: pendingData.name || firebaseUser.displayName || normalizedEmail,
+                photo: pendingData.photo || '',
+                role: pendingData.role || 'Client',
+                mustChangePassword: pendingData.mustChangePassword === true,
+                migratedAt: new Date().toISOString()
+            };
+            await setDoc(userRef, migratedData);
+            await deleteDoc(pendingRef);
+            return migratedData;
+        },
+
         sendWelcomeEmail(userForm) {
             const originEmail = "admin@zenq0r.com";
             const subject = encodeURIComponent(`[ZENQOR ENTERPRISE] Official Account & Portal Access Information (${this.getRoleDisplayName(userForm.role)})`);
@@ -827,21 +855,43 @@ createApp({
                 const email = this.userModal.form.email.trim().toLowerCase(); const password = this.userModal.form.password.trim();
                 this.userModal.form.email = email;
                 const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.userModal.form.name)}&background=0B1E36&color=D4AF37`;
-                let userId = this.userModal.form.uid || this.users.find(user => (user.email || '').toLowerCase() === email.toLowerCase())?.uid || this.users.find(user => (user.email || '').toLowerCase() === email.toLowerCase())?.id;
+                const existingRecord = this.users.find(user => (user.email || '').toLowerCase() === email);
+                const possibleUid = this.userModal.form.uid || existingRecord?.uid || existingRecord?.id || '';
+                let userId = this.isLikelyFirebaseUid(possibleUid) ? possibleUid : '';
+                let existingAuthenticationAccount = false;
 
                 if (isNewUser) {
+                    const { initializeApp, deleteApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+                    const { getAuth, createUserWithEmailAndPassword, signOut: signOutSecondary } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+                    const secondaryApp = initializeApp(auth.app.options, "SecondaryAuthApp-" + Date.now());
+                    const secondaryAuth = getAuth(secondaryApp);
                     try {
-                        const { initializeApp, deleteApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-                        const { getAuth, createUserWithEmailAndPassword, signOut: signOutSecondary } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-                        const secondaryApp = initializeApp(auth.app.options, "SecondaryAuthApp-" + Date.now());
-                        const secondaryAuth = getAuth(secondaryApp);
                         const createdUser = await createUserWithEmailAndPassword(secondaryAuth, email, password);
                         userId = createdUser.user.uid;
-                        await signOutSecondary(secondaryAuth); await deleteApp(secondaryApp);
-                    } catch (authErr) { if (authErr.code !== 'auth/email-already-in-use') { alert("Gagal mendaftar ke Firebase: " + authErr.message); return; } }
+                    } catch (authErr) {
+                        if (authErr.code === 'auth/email-already-in-use') existingAuthenticationAccount = true;
+                        else { alert("Gagal mendaftar ke Firebase: " + authErr.message); return; }
+                    } finally {
+                        await signOutSecondary(secondaryAuth).catch(() => {});
+                        await deleteApp(secondaryApp).catch(() => {});
+                    }
                 }
 
-                if (!userId) { alert("This user record has no Firebase UID. Please create the portal access again or migrate the legacy user record using its Firebase Authentication UID."); return; }
+                if (!userId) {
+                    await setDoc(doc(db, 'pending_access', email), {
+                        email,
+                        name: this.userModal.form.name,
+                        photo: photoUrl,
+                        role: this.userModal.form.role,
+                        mustChangePassword: false,
+                        createdByUid: this.userProfile.uid,
+                        createdAt: new Date().toISOString()
+                    }, { merge: true });
+                    this.userModal.show = false;
+                    this.logAudit('CREATE', `Pending UID migration created for ${email}`);
+                    this.showNotify(existingAuthenticationAccount ? 'Existing Firebase account found. Access will activate automatically at the next login.' : 'Portal access is pending UID activation.');
+                    return;
+                }
                 await setDoc(doc(db, "users", userId), { email: email, name: this.userModal.form.name, photo: photoUrl, role: this.userModal.form.role, ...(isNewUser ? { mustChangePassword: true } : {}) }, { merge: true });
                 if (userId === this.userProfile.uid) {
                     this.userProfile.role = this.userModal.form.role;
@@ -852,7 +902,10 @@ createApp({
                 this.logAudit(isNewUser ? 'CREATE' : 'UPDATE', `User role/metadata for ${email}`);
                 if (isNewUser) { this.sendWelcomeEmail(this.userModal.form); this.showNotify('Akaun berjaya dicipta!'); }
                 else this.showNotify('User updated successfully!');
-            } catch (error) { alert("An error occurred while saving user information."); }
+            } catch (error) {
+                console.error('Portal access save failed:', error);
+                alert("Unable to save portal access. Please ensure the latest Firestore Rules have been published.");
+            }
         },
 
         async deletePortalUser(uid, email) {
@@ -1261,17 +1314,16 @@ createApp({
             if (firebaseUser) {
                 try {
                     this.loginLoading = true;
-                    const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-                    const userSnap = await getDoc(doc(db, "users", firebaseUser.uid));
+                    const userData = await this.loadOrMigrateUserMetadata(firebaseUser);
                     let role = 'Staff';
                     let name = firebaseUser.displayName || firebaseUser.email;
                     let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
 
-                    const mustChangePassword = userSnap.exists() && userSnap.data().mustChangePassword === true;
-                    if (userSnap.exists()) {
-                        role = userSnap.data().role || 'Staff';
-                        name = userSnap.data().name || name;
-                        photo = userSnap.data().photo || photo;
+                    const mustChangePassword = userData?.mustChangePassword === true;
+                    if (userData) {
+                        role = userData.role || 'Staff';
+                        name = userData.name || name;
+                        photo = userData.photo || photo;
                     }
                     if (firebaseUser.email === 'admin@zenq0r.com') {
                         role = 'Superadmin';
