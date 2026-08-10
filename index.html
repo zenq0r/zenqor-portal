@@ -428,17 +428,8 @@
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <button v-if="editingPayId" type="button" @click="cancelEditPay" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
-                                Cancel Edit
-                            </button>
                             <button type="button" @click="printPayslipModule" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
-                                <i class="fa-solid fa-file-pdf"></i><span>Preview / Print Payslip (A4 Landscape)</span>
-                            </button>
-                            <button type="button" @click="downloadPDFDirect('print-template-payslip', `Payslip_${payForm.empNo}_${payForm.month}`)" class="bg-blue-800 hover:bg-blue-900 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
-                                <i class="fa-solid fa-file-arrow-down"></i><span>Muat Turun Payslip PDF</span>
-                            </button>
-                            <button type="button" @click="savePayslipRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
-                                <i class="fa-solid fa-floppy-disk"></i><span>Save Payslip</span>
+                                <i class="fa-solid fa-file-pdf"></i><span>Preview / Print PDF</span>
                             </button>
                             <button type="button" @click="resetPayForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Clear Form">
                                 <i class="fa-solid fa-rotate-left"></i>
