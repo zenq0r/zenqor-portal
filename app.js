@@ -88,6 +88,8 @@ createApp({
             portalDataReadyPromise: null,
             revenueChartInstance: null,
             statusChartInstance: null,
+            chartRenderTimer: null,
+            chartRenderAttempts: 0,
 
             changePasswordModal: {
                 show: false,
@@ -561,11 +563,31 @@ createApp({
             window.scrollTo({ top: 0, behavior: 'smooth' });
             this.refreshDashboardCharts();
         },
-        refreshDashboardCharts() {
-            if (!this.portalDataReady || this.currentTab !== 'dashboard') return;
+        refreshDashboardCharts(attempt = 0) {
+            if (!this.isLoggedIn || !this.portalDataReady || this.currentTab !== 'dashboard' || ['Staff', 'Client'].includes(this.userProfile.role)) return;
+            if (this.chartRenderTimer) { clearTimeout(this.chartRenderTimer); this.chartRenderTimer = null; }
+            this.chartRenderAttempts = attempt;
             this.$nextTick(() => {
-                requestAnimationFrame(() => requestAnimationFrame(() => this.renderCharts()));
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    const revenueCanvas = document.getElementById('revenueChart');
+                    const statusCanvas = document.getElementById('statusChart');
+                    if (typeof Chart === 'undefined' || !revenueCanvas || !statusCanvas) {
+                        if (attempt < 20) this.chartRenderTimer = setTimeout(() => this.refreshDashboardCharts(attempt + 1), 200);
+                        return;
+                    }
+                    this.chartRenderAttempts = 0;
+                    this.renderCharts();
+                }));
             });
+        },
+        destroyDashboardCharts() {
+            if (this.chartRenderTimer) clearTimeout(this.chartRenderTimer);
+            this.chartRenderTimer = null;
+            this.chartRenderAttempts = 0;
+            if (this.revenueChartInstance) this.revenueChartInstance.destroy();
+            if (this.statusChartInstance) this.statusChartInstance.destroy();
+            this.revenueChartInstance = null;
+            this.statusChartInstance = null;
         },
         requestLogout() {
             this.logoutConfirm = true;
@@ -637,6 +659,7 @@ createApp({
                 this.logoutConfirm = false;
                 this.logAudit('LOGOUT', 'User logged out');
                 await signOut(auth);
+                this.destroyDashboardCharts();
                 this.isLoggedIn = false; this.loginLoading = false; this.portalDataReady = false; this.portalDataReadyPromise = null; this.userProfile = { name: '', email: '', role: '', photo: '' };
                 this.resetAllForms(); this.currentTab = 'dashboard'; this.loginForm = { email: '', password: '', rememberMe: false }; this.searchQuery = '';
             } catch (error) { console.error("Logout error:", error); }
@@ -1096,6 +1119,7 @@ createApp({
 
             this.portalDataReadyPromise = Promise.all(initialLoads).then(() => {
                 this.portalDataReady = true;
+                this.refreshDashboardCharts();
                 return true;
             });
             return this.portalDataReadyPromise;
@@ -1149,6 +1173,7 @@ createApp({
             } else {
                 this.isLoggedIn = false;
                 this.loginLoading = false;
+                this.destroyDashboardCharts();
                 this.portalDataReady = false;
                 this.portalDataReadyPromise = null;
                 this.userProfile = { name: '', email: '', role: '', photo: '' };
