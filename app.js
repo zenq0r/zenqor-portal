@@ -132,6 +132,7 @@ createApp({
             employeeModal: {
                 show: false,
                 isEdit: false,
+                originalSensitive: {},
                 form: {
                     empNo: 'ZEN-', name: '', email: '', ic: '', dept: '', position: '', status: 'Aktif',
                     epfNo: '', socsoNo: '', eisNo: '', taxNo: '', bankAcc: '', isSenior: false,
@@ -247,6 +248,7 @@ createApp({
     },
     computed: {
         canCreateEdit() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
+        canManageSensitiveData() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
         canEditDocs() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
         canDelete() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
         canManageRBAC() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
@@ -496,19 +498,17 @@ createApp({
             this.editingClaimId = null; this.resetAllForms();
         },
 
-        maskIC(val) {
+        maskSensitive(val) {
             if (!val) return '-';
-            if (['Superadmin', 'Director', 'HR'].includes(this.userProfile.role)) return val;
-            const str = String(val).trim();
-            if (str.length >= 8) return '******-**-' + str.slice(-4);
-            return '********';
+            const digits = String(val).replace(/\D/g, '');
+            const lastFour = (digits || String(val).trim()).slice(-4);
+            return `XXXXX${lastFour}`;
         },
-        maskBank(val) {
+        maskIC(val) { return this.maskSensitive(val); },
+        maskBank(val) { return this.maskSensitive(val); },
+        maskEpfSocso(val) {
             if (!val) return '-';
-            if (['Superadmin', 'Director', 'HR'].includes(this.userProfile.role)) return val;
-            const parts = String(val).split('/');
-            if (parts.length > 1) return `${parts[0].trim()} / *******${parts[1].trim().slice(-4)}`;
-            return '*******' + String(val).slice(-4);
+            return String(val).replace(/(KWSP|EPF|PERKESO|SOCSO)\s*:\s*([^|]+)/gi, (match, label, number) => `${label}: ${this.maskSensitive(number)}`);
         },
 
         hasAccess(moduleName) {
@@ -757,13 +757,30 @@ createApp({
         },
 
         openEmployeeModal(emp = null) {
-            if (emp) { this.employeeModal.isEdit = true; this.employeeModal.form = JSON.parse(JSON.stringify(emp)); }
-            else { this.employeeModal.isEdit = false; this.employeeModal.form = { empNo: 'ZEN-HR' + String(Math.floor(1000+Math.random()*9000)), name: '', email: '', ic: '', dept: '', position: '', employmentType: 'Probation', status: 'Aktif', epfNo: '', socsoNo: '', eisNo: '', taxNo: '', bankAcc: '', isSenior: false, joinDate: new Date().toISOString().substr(0,10), basicSalary: 0, allowance: 0, deduction: 0 }; }
+            const sensitiveFields = ['ic', 'bankAcc', 'epfNo', 'socsoNo', 'eisNo', 'taxNo'];
+            if (emp) {
+                this.employeeModal.isEdit = true;
+                this.employeeModal.form = JSON.parse(JSON.stringify(emp));
+                this.employeeModal.originalSensitive = Object.fromEntries(sensitiveFields.map(field => [field, emp[field] || '']));
+                sensitiveFields.forEach(field => { this.employeeModal.form[field] = ''; });
+            } else {
+                this.employeeModal.isEdit = false;
+                this.employeeModal.originalSensitive = {};
+                this.employeeModal.form = { empNo: 'ZEN-HR' + String(Math.floor(1000+Math.random()*9000)), name: '', email: '', ic: '', dept: '', position: '', employmentType: 'Probation', status: 'Aktif', epfNo: '', socsoNo: '', eisNo: '', taxNo: '', bankAcc: '', isSenior: false, joinDate: new Date().toISOString().substr(0,10), basicSalary: 0, allowance: 0, deduction: 0 };
+            }
             this.employeeModal.show = true;
         },
         async saveEmployee() {
             try {
-                if (!this.employeeModal.form.empNo || !this.employeeModal.form.name || !this.employeeModal.form.ic || !this.employeeModal.form.dept || !this.employeeModal.form.joinDate || !this.employeeModal.form.employmentType) return alert("Complete the required Basic Information fields.");
+                if (!this.canManageSensitiveData) { this.showNotify('Only HR, Superadmin and Director can update sensitive employee information.'); return; }
+                const form = this.employeeModal.form;
+                const sensitiveFields = ['ic', 'bankAcc', 'epfNo', 'socsoNo', 'eisNo', 'taxNo'];
+                if (!form.empNo || !form.name || !form.dept || !form.joinDate || !form.employmentType) return alert("Complete the required Basic Information fields.");
+                if (!this.employeeModal.isEdit && !form.ic) return alert("National ID / Passport is required for a new employee.");
+                if (sensitiveFields.some(field => /^X{5}/i.test(String(form[field] || '').trim()))) return alert("Enter the complete sensitive number, not a masked value.");
+                sensitiveFields.forEach(field => {
+                    if (this.employeeModal.isEdit && !String(form[field] || '').trim()) form[field] = this.employeeModal.originalSensitive[field] || '';
+                });
                 await setDoc(doc(db, "employees", this.employeeModal.form.empNo.trim()), { ...this.employeeModal.form });
                 this.employeeModal.show = false; this.logAudit(this.employeeModal.isEdit ? 'UPDATE':'CREATE', `Saved employee ${this.employeeModal.form.empNo}`); this.showNotify('Employee data saved!');
             } catch (error) {}
