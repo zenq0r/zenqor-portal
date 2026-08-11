@@ -1,4 +1,5 @@
 rules_version = '2';
+// PNG/JPG/JPEG uploads are normalized by the portal to image/png or image/jpeg.
 service firebase.storage {
   match /b/{bucket}/o {
     match /profile_photos/{userId}/{fileName} {

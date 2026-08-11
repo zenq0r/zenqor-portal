@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.3)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.4)
 // ============================================================
 
 import {
@@ -498,19 +498,43 @@ createApp({
             if (!email) return false;
             return email.toLowerCase().trim().endsWith('@' + this.officialEmailDomain.toLowerCase());
         },
+        async validateImageFile(file) {
+            if (!file) throw new Error('No image file was selected.');
+            if (file.size <= 0) throw new Error('The selected image file is empty.');
+            if (file.size > 2 * 1024 * 1024) throw new Error('Image size must not exceed 2 MB.');
+
+            const extension = String(file.name || '').split('.').pop().toLowerCase();
+            const contentType = extension === 'png' ? 'image/png' : ['jpg', 'jpeg'].includes(extension) ? 'image/jpeg' : '';
+            if (!contentType) throw new Error('Only PNG, JPG and JPEG files are allowed.');
+
+            const declaredType = String(file.type || '').toLowerCase();
+            const compatibleTypes = contentType === 'image/png' ? ['image/png', 'image/x-png'] : ['image/jpeg', 'image/jpg', 'image/pjpeg'];
+            if (declaredType && !compatibleTypes.includes(declaredType)) throw new Error('The file extension does not match its image type.');
+
+            const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+            const isPng = signature.length >= 8 && signature[0] === 0x89 && signature[1] === 0x50 && signature[2] === 0x4E && signature[3] === 0x47 && signature[4] === 0x0D && signature[5] === 0x0A && signature[6] === 0x1A && signature[7] === 0x0A;
+            const isJpeg = signature.length >= 3 && signature[0] === 0xFF && signature[1] === 0xD8 && signature[2] === 0xFF;
+            if ((contentType === 'image/png' && !isPng) || (contentType === 'image/jpeg' && !isJpeg)) throw new Error('The selected file is not a valid PNG, JPG or JPEG image.');
+            return contentType;
+        },
+        getUploadErrorMessage(error) {
+            const code = String(error?.code || '');
+            if (code.includes('unauthorized')) return 'Upload permission was denied. Sign in again and ensure the latest Firebase Storage Rules are deployed.';
+            if (code.includes('retry-limit-exceeded')) return 'Upload timed out. Check the network connection and try again.';
+            if (code.includes('canceled')) return 'The upload was cancelled.';
+            return error?.message || 'Unable to upload the image. Please try again.';
+        },
         async uploadImageAttachment(file, category) {
             if (!auth.currentUser) throw new Error('Authentication is required before uploading an attachment.');
+            const contentType = await this.validateImageFile(file);
             const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
             const attachmentRef = ref(storage, `portal_attachments/${category}/${auth.currentUser.uid}/${Date.now()}_${cleanName}`);
-            await uploadBytes(attachmentRef, file, { contentType: file.type });
+            await uploadBytes(attachmentRef, file, { contentType, customMetadata: { originalName: file.name } });
             return getDownloadURL(attachmentRef);
         },
         async handleAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-            const allowedTypes = ['image/png', 'image/jpeg'];
-            if (!allowedTypes.includes(file.type)) { alert('Only PNG, JPEG/JPG files are allowed.'); e.target.value = ''; return; }
-            if (file.size > 2 * 1024 * 1024) { alert("Attachment size exceeds 2MB limit."); e.target.value = ''; return; }
             this.attachmentUploadState.payment = true;
             try {
                 this.docForm.paymentAttachment = await this.uploadImageAttachment(file, 'payments');
@@ -518,16 +542,13 @@ createApp({
             } catch (error) {
                 console.error('Payment attachment upload failed:', error);
                 this.docForm.paymentAttachment = '';
-                this.showNotify('Unable to upload payment attachment.');
+                this.showNotify(this.getUploadErrorMessage(error));
                 e.target.value = '';
-            } finally { this.attachmentUploadState.payment = false; }
+            } finally { this.attachmentUploadState.payment = false; e.target.value = ''; }
         },
         async handleClaimAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-            const allowedTypes = ['image/png', 'image/jpeg'];
-            if (!allowedTypes.includes(file.type)) { alert("Only PNG, JPEG/JPG files are allowed."); e.target.value = ''; return; }
-            if (file.size > 2 * 1024 * 1024) { alert("Attachment size exceeds 2MB limit."); e.target.value = ''; return; }
             this.attachmentUploadState.receipt = true;
             try {
                 this.claimForm.receiptAttachment = await this.uploadImageAttachment(file, 'claim_receipts');
@@ -537,16 +558,13 @@ createApp({
                 console.error('Receipt attachment upload failed:', error);
                 this.claimForm.receiptAttachment = '';
                 this.claimForm.receiptAttachmentName = '';
-                this.showNotify('Unable to upload receipt attachment.');
+                this.showNotify(this.getUploadErrorMessage(error));
                 e.target.value = '';
-            } finally { this.attachmentUploadState.receipt = false; }
+            } finally { this.attachmentUploadState.receipt = false; e.target.value = ''; }
         },
         async handleDirectorApprovalAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-            const allowedTypes = ['image/png', 'image/jpeg'];
-            if (!allowedTypes.includes(file.type)) { alert('Only PNG, JPEG/JPG files are allowed.'); e.target.value = ''; return; }
-            if (file.size > 2 * 1024 * 1024) { alert('Attachment size exceeds 2MB limit.'); e.target.value = ''; return; }
             this.attachmentUploadState.director = true;
             try {
                 this.claimPreview.directorApprovalAttachment = await this.uploadImageAttachment(file, 'director_approvals');
@@ -556,9 +574,9 @@ createApp({
                 console.error('Director attachment upload failed:', error);
                 this.claimPreview.directorApprovalAttachment = '';
                 this.claimPreview.directorApprovalAttachmentName = '';
-                this.showNotify('Unable to upload Director approval document.');
+                this.showNotify(this.getUploadErrorMessage(error));
                 e.target.value = '';
-            } finally { this.attachmentUploadState.director = false; }
+            } finally { this.attachmentUploadState.director = false; e.target.value = ''; }
         },
         clearAllDocItems() {
             if (confirm("Are you sure you want to clear all product/service items?")) { this.docForm.items = [{ desc: '', qty: 1, price: 0 }]; this.showNotify("All items cleared."); }
@@ -837,14 +855,13 @@ createApp({
             const file = event.target.files && event.target.files[0];
             this.profilePhotoUpload.error = '';
             if (!file) return;
-            if (!['image/png', 'image/jpeg'].includes(file.type)) { this.profilePhotoUpload.error = 'Only PNG, JPEG or JPG files are allowed.'; event.target.value = ''; return; }
-            if (file.size > 2 * 1024 * 1024) { this.profilePhotoUpload.error = 'Image size must not exceed 2 MB.'; event.target.value = ''; return; }
             if (!this.userProfile.uid) { this.profilePhotoUpload.error = 'Please sign in again before uploading a photo.'; return; }
             this.profilePhotoUpload.loading = true;
             try {
+                const contentType = await this.validateImageFile(file);
                 const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-                const photoRef = ref(storage, `profile_photos/${this.userProfile.uid}/${Date.now()}_${cleanName}`);
-                await uploadBytes(photoRef, file, { contentType: file.type });
+                const photoRef = ref(storage, `profile_photos/${auth.currentUser.uid}/${Date.now()}_${cleanName}`);
+                await uploadBytes(photoRef, file, { contentType, customMetadata: { originalName: file.name } });
                 const photoUrl = await getDownloadURL(photoRef);
                 await setDoc(doc(db, 'users', this.userProfile.uid), { photo: photoUrl }, { merge: true });
                 this.userProfile.photo = photoUrl;
@@ -852,7 +869,7 @@ createApp({
                 this.showNotify('Profile photo uploaded and saved successfully.');
             } catch (error) {
                 console.error('Profile photo upload failed:', error);
-                this.profilePhotoUpload.error = 'Unable to upload image. Please try again.';
+                this.profilePhotoUpload.error = this.getUploadErrorMessage(error);
             } finally {
                 this.profilePhotoUpload.loading = false;
                 event.target.value = '';
