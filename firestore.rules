@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.3)
+// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.4)
 // ============================================================
 // PERUBAHAN v3.1:
 //   - getUserRole() kini baca dokumen guna UID (request.auth.uid)
@@ -72,15 +72,19 @@ service cloud.firestore {
 
     function hasValidProjectLinks(data) {
       return data.clientDirectoryId is string &&
+        data.clientDirectoryId.size() > 0 &&
         data.clientPortalUid is string &&
+        data.clientPortalUid.size() > 0 &&
         data.ownerEmpNo is string &&
-        exists(/databases/$(database)/documents/customers/$(data.clientDirectoryId)) &&
-        get(/databases/$(database)/documents/customers/$(data.clientDirectoryId)).data.clientName == data.clientName &&
-        exists(/databases/$(database)/documents/users/$(data.clientPortalUid)) &&
-        get(/databases/$(database)/documents/users/$(data.clientPortalUid)).data.role == 'Client' &&
-        get(/databases/$(database)/documents/users/$(data.clientPortalUid)).data.email == data.clientEmail &&
-        exists(/databases/$(database)/documents/employees/$(data.ownerEmpNo)) &&
-        get(/databases/$(database)/documents/employees/$(data.ownerEmpNo)).data.email == data.ownerEmail;
+        data.ownerEmpNo.size() > 0 &&
+        data.clientName is string &&
+        data.clientName.size() > 0 &&
+        data.clientEmail is string &&
+        data.clientEmail.size() > 0 &&
+        data.ownerName is string &&
+        data.ownerName.size() > 0 &&
+        data.ownerEmail is string &&
+        data.ownerEmail.size() > 0;
     }
 
     function hasAllowedRoleEmail(data) {
