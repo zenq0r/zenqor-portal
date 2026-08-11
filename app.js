@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.1)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.1.1)
 // ============================================================
 
 import {
@@ -90,6 +90,8 @@ createApp({
             revenueChartInstance: null,
             statusChartInstance: null,
             chartRenderTimer: null,
+            chartRenderFrameOne: null,
+            chartRenderFrameTwo: null,
             chartRenderAttempts: 0,
             presenceHeartbeatTimer: null,
             presenceClockTimer: null,
@@ -397,6 +399,12 @@ createApp({
         paginatedActivities() {
             const start = (this.currentPage - 1) * this.itemsPerPage;
             return this.filteredRecentActivities.slice(start, start + this.itemsPerPage);
+        }
+    },
+    watch: {
+        currentTab(nextTab, previousTab) {
+            if (previousTab === 'dashboard' && nextTab !== 'dashboard') this.destroyDashboardCharts();
+            if (nextTab === 'dashboard' && previousTab !== 'dashboard') this.refreshDashboardCharts();
         }
     },
     methods: {
@@ -843,26 +851,40 @@ createApp({
         refreshDashboardCharts(attempt = 0) {
             if (!this.isLoggedIn || !this.portalDataReady || this.currentTab !== 'dashboard' || ['Staff', 'Client'].includes(this.userProfile.role)) return;
             if (this.chartRenderTimer) { clearTimeout(this.chartRenderTimer); this.chartRenderTimer = null; }
+            if (this.chartRenderFrameOne) cancelAnimationFrame(this.chartRenderFrameOne);
+            if (this.chartRenderFrameTwo) cancelAnimationFrame(this.chartRenderFrameTwo);
+            this.chartRenderFrameOne = null;
+            this.chartRenderFrameTwo = null;
             this.chartRenderAttempts = attempt;
             this.$nextTick(() => {
-                requestAnimationFrame(() => requestAnimationFrame(() => {
-                    const revenueCanvas = document.getElementById('revenueChart');
-                    const statusCanvas = document.getElementById('statusChart');
-                    if (typeof Chart === 'undefined' || !revenueCanvas || !statusCanvas) {
-                        if (attempt < 150) this.chartRenderTimer = setTimeout(() => this.refreshDashboardCharts(attempt + 1), 200);
-                        return;
-                    }
-                    this.chartRenderAttempts = 0;
-                    this.renderCharts();
-                }));
+                if (!this.isLoggedIn || this.currentTab !== 'dashboard') return;
+                this.chartRenderFrameOne = requestAnimationFrame(() => {
+                    this.chartRenderFrameOne = null;
+                    this.chartRenderFrameTwo = requestAnimationFrame(() => {
+                        this.chartRenderFrameTwo = null;
+                        if (!this.isLoggedIn || !this.portalDataReady || this.currentTab !== 'dashboard') return;
+                        const revenueCanvas = document.getElementById('revenueChart');
+                        const statusCanvas = document.getElementById('statusChart');
+                        if (typeof Chart === 'undefined' || !revenueCanvas?.isConnected || !statusCanvas?.isConnected) {
+                            if (attempt < 150) this.chartRenderTimer = setTimeout(() => this.refreshDashboardCharts(attempt + 1), 200);
+                            return;
+                        }
+                        this.chartRenderAttempts = 0;
+                        this.renderCharts();
+                    });
+                });
             });
         },
         destroyDashboardCharts() {
             if (this.chartRenderTimer) clearTimeout(this.chartRenderTimer);
+            if (this.chartRenderFrameOne) cancelAnimationFrame(this.chartRenderFrameOne);
+            if (this.chartRenderFrameTwo) cancelAnimationFrame(this.chartRenderFrameTwo);
             this.chartRenderTimer = null;
+            this.chartRenderFrameOne = null;
+            this.chartRenderFrameTwo = null;
             this.chartRenderAttempts = 0;
-            if (this.revenueChartInstance) this.revenueChartInstance.destroy();
-            if (this.statusChartInstance) this.statusChartInstance.destroy();
+            if (this.revenueChartInstance) { try { this.revenueChartInstance.destroy(); } catch (error) { console.warn('Revenue chart cleanup skipped:', error); } }
+            if (this.statusChartInstance) { try { this.statusChartInstance.destroy(); } catch (error) { console.warn('Status chart cleanup skipped:', error); } }
             this.revenueChartInstance = null;
             this.statusChartInstance = null;
         },
@@ -870,7 +892,7 @@ createApp({
             this.logoutConfirm = true;
         },
         setChartFilter(timeframe) {
-            this.chartTimeFilter = timeframe; this.renderCharts();
+            this.chartTimeFilter = timeframe; this.refreshDashboardCharts();
             this.showNotify(`Chart view changed to: ${timeframe.toUpperCase()}`);
         },
         logAudit(action, details) {
@@ -1477,7 +1499,7 @@ createApp({
             if (typeof Chart === 'undefined' || !this.portalDataReady || this.currentTab !== 'dashboard' || ['Staff', 'Client'].includes(this.userProfile.role)) return;
             const revCanvas = document.getElementById('revenueChart');
             const statusCanvas = document.getElementById('statusChart');
-            if (!revCanvas || !statusCanvas) { this.refreshDashboardCharts(this.chartRenderAttempts + 1); return; }
+            if (!revCanvas?.isConnected || !statusCanvas?.isConnected) { this.refreshDashboardCharts(this.chartRenderAttempts + 1); return; }
             const ctxRev = revCanvas.getContext('2d');
             const ctxStatus = statusCanvas.getContext('2d');
             if (!ctxRev || !ctxStatus) return;
@@ -1504,7 +1526,6 @@ createApp({
                 });
                 this.revenueChartInstance = Vue.markRaw ? Vue.markRaw(revenueChart) : revenueChart;
                 this.statusChartInstance = Vue.markRaw ? Vue.markRaw(statusChart) : statusChart;
-                requestAnimationFrame(() => { revenueChart.resize(); statusChart.resize(); });
             } catch (error) {
                 console.error('Dashboard chart rendering failed:', error);
                 if (this.chartRenderAttempts < 150) this.chartRenderTimer = setTimeout(() => this.refreshDashboardCharts(this.chartRenderAttempts + 1), 200);
