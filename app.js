@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.5.1)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.6)
 // ============================================================
 
 import {
@@ -136,8 +136,12 @@ createApp({
             projects: [],
             projectActivities: [],
             projectActivitiesLoaded: false,
+            projectClientUpdates: [],
+            projectClientUpdatesLoaded: false,
             activityTypes: ['To-Do', 'Document Request', 'Client Follow-Up', 'Government Submission', 'Review', 'Meeting', 'Payment Follow-Up', 'Other'],
             activityModal: { show: false, project: null, form: { activityType: 'To-Do', summary: '', dueDate: '', assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } },
+            clientUpdateTypes: ['Progress Update', 'Document Update', 'Government Update', 'Client Action Required', 'Milestone Completed', 'General Notice'],
+            clientUpdateModal: { show: false, project: null, form: { updateType: 'Progress Update', updateDate: '', message: '' } },
             projectViewMode: 'board',
             projectPreview: { show: false, project: null },
             projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
@@ -430,9 +434,6 @@ createApp({
         myPendingProjectActivities() {
             const email = String(this.userProfile.email || '').trim().toLowerCase();
             return this.projectActivities.filter(activity => activity.status !== 'Done' && String(activity.assignedEmail || '').trim().toLowerCase() === email).sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
-        },
-        clientOpenProjectActivities() {
-            return this.projectActivities.filter(activity => activity.status !== 'Done').sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
         }
     },
     watch: {
@@ -483,6 +484,52 @@ createApp({
         },
         projectActivitiesFor(projectId) {
             return this.projectActivities.filter(activity => activity.projectId === projectId).sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+        },
+        clientUpdatesFor(projectId) {
+            return this.projectClientUpdates.filter(update => update.projectId === projectId).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+        },
+        canSendClientUpdate(project) {
+            const email = String(this.userProfile.email || '').trim().toLowerCase();
+            return this.canManageProjects || (this.userProfile.role !== 'Client' && String(project?.ownerEmail || '').trim().toLowerCase() === email);
+        },
+        openClientUpdateModal(project) {
+            if (!this.canSendClientUpdate(project)) { this.showNotify('Only the assigned PIC, Director or Superadmin may send a Client update.'); return; }
+            this.clientUpdateModal = { show: true, project: JSON.parse(JSON.stringify(project)), form: { updateType: 'Progress Update', updateDate: this.getLocalDateKey(), message: '' } };
+        },
+        closeClientUpdateModal() {
+            this.clientUpdateModal = { show: false, project: null, form: { updateType: 'Progress Update', updateDate: '', message: '' } };
+        },
+        async saveClientUpdate() {
+            const project = this.clientUpdateModal.project;
+            const form = this.clientUpdateModal.form;
+            if (!project || !this.canSendClientUpdate(project)) { this.showNotify('You do not have permission to send this Client update.'); return; }
+            if (!form.updateType || !form.updateDate || !form.message?.trim()) { this.showNotify('Complete Update Type, Update Date and Client Message.'); return; }
+            const currentEmployee = this.employees.find(employee => String(employee.email || '').trim().toLowerCase() === String(this.userProfile.email || '').trim().toLowerCase());
+            const updateId = `UPD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+            const payload = this.normalizeOfficialRecord({
+                projectId: project.id,
+                projectRef: project.projectRef,
+                projectTitle: project.title,
+                clientPortalUid: project.clientPortalUid,
+                clientEmail: project.clientEmail,
+                updateType: form.updateType,
+                updateDate: form.updateDate,
+                message: form.message,
+                senderUid: this.userProfile.uid,
+                senderName: this.userProfile.name,
+                senderEmail: this.userProfile.email,
+                senderPosition: currentEmployee?.position || this.getRoleDisplayName(this.userProfile.role),
+                createdAt: new Date().toISOString()
+            });
+            try {
+                await setDoc(doc(db, 'project_client_updates', updateId), payload);
+                this.logAudit('CREATE', `Client update sent for ${payload.projectRef}`);
+                this.closeClientUpdateModal();
+                this.showNotify('Client update sent and added to Client Activity History.');
+            } catch (error) {
+                console.error('Client project update failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'send the Client project update'));
+            }
         },
         projectActivityDueState(activity) {
             if (activity.status === 'Done') return { label: 'Done', className: 'bg-slate-200 text-slate-700', borderClass: 'border-l-slate-400', dotClass: 'bg-slate-400', daysRemaining: null };
@@ -1405,7 +1452,7 @@ createApp({
 
         backupDatabase() {
             if (!this.canBackupDatabase) { this.showNotify('Only Superadmin and Director can export a database backup.'); return; }
-            const data = { company: this.company, employees: this.employees, customers: this.customers, docHistory: this.docHistory, payslipHistory: this.payslipHistory, claimsHistory: this.claimsHistory, projects: this.projects, projectActivities: this.projectActivities, users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })), exportDate: new Date().toISOString() };
+            const data = { company: this.company, employees: this.employees, customers: this.customers, docHistory: this.docHistory, payslipHistory: this.payslipHistory, claimsHistory: this.claimsHistory, projects: this.projects, projectActivities: this.projectActivities, projectClientUpdates: this.projectClientUpdates, users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })), exportDate: new Date().toISOString() };
             const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", jsonStr); dlAnchorElem.setAttribute("download", `zenqor_backup_${new Date().toISOString().substr(0,10)}.json`); dlAnchorElem.click();
             this.logAudit('BACKUP', 'Exported JSON backup'); this.showNotify("Database JSON backup downloaded!");
@@ -1600,6 +1647,7 @@ createApp({
         // WORKFLOW: Staff/Client -> HR -> Account -> Director (final approval)
         canApproveClaim(clm) {
             const role = this.userProfile.role;
+            if (role === 'Client') this.projectActivities = [];
             if (role === 'Director') return typeof clm.status === 'string' && clm.status.startsWith('Pending');
             const expectedStatus = { HR: 'Pending HR', Account: 'Pending Account', Director: 'Pending Director' }[role];
             return !!expectedStatus && clm.status === expectedStatus && (!clm.assignedToEmail || clm.assignedToEmail === this.userProfile.email);
@@ -1830,6 +1878,7 @@ createApp({
         initFirebaseRealtime() {
             if (this.portalDataReadyPromise) return this.portalDataReadyPromise;
             this.projectActivitiesLoaded = false;
+            this.projectClientUpdatesLoaded = false;
 
             const subscribeWithReadySignal = (source, onData, label) => new Promise((resolve) => {
                 let hasInitialData = false;
@@ -1873,9 +1922,10 @@ createApp({
             const projectsSource = role === 'Client'
                 ? query(collection(db, 'projects'), where('clientEmail', '==', this.userProfile.email), where('clientPortalUid', '==', this.userProfile.uid))
                 : collection(db, 'projects');
-            const projectActivitiesSource = role === 'Client'
-                ? query(collection(db, 'project_activities'), where('clientPortalUid', '==', this.userProfile.uid))
-                : collection(db, 'project_activities');
+            const projectActivitiesSource = role === 'Client' ? null : collection(db, 'project_activities');
+            const projectClientUpdatesSource = role === 'Client'
+                ? query(collection(db, 'project_client_updates'), where('clientPortalUid', '==', this.userProfile.uid))
+                : collection(db, 'project_client_updates');
 
             const userSubscription = canReadAllUsers
                 ? subscribeWithReadySignal(collection(db, 'users'), (snapshot) => {
@@ -1919,7 +1969,7 @@ createApp({
                     }, 'claims')
                     : Promise.resolve(),
                 subscribeWithReadySignal(projectsSource, (snapshot) => { this.projects = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'project activities'),
-                subscribeWithReadySignal(projectActivitiesSource, (snapshot) => {
+                projectActivitiesSource ? subscribeWithReadySignal(projectActivitiesSource, (snapshot) => {
                     const previousIds = new Set(this.projectActivities.map(activity => activity.id));
                     this.projectActivities = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     const assignedOpen = this.projectActivities.filter(activity => activity.status !== 'Done' && String(activity.assignedEmail || '').trim().toLowerCase() === String(this.userProfile.email || '').trim().toLowerCase());
@@ -1932,7 +1982,16 @@ createApp({
                         if (newAssigned) this.showNotify(`New project activity assigned: ${newAssigned.summary}`);
                     }
                     this.projectActivitiesLoaded = true;
-                }, 'project activity issues'),
+                }, 'project activity issues') : Promise.resolve(),
+                subscribeWithReadySignal(projectClientUpdatesSource, (snapshot) => {
+                    const previousIds = new Set(this.projectClientUpdates.map(update => update.id));
+                    this.projectClientUpdates = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    if (this.projectClientUpdatesLoaded && role === 'Client') {
+                        const newUpdate = this.projectClientUpdates.find(update => !previousIds.has(update.id));
+                        if (newUpdate) this.showNotify(`New project update received: ${newUpdate.projectRef}`);
+                    }
+                    this.projectClientUpdatesLoaded = true;
+                }, 'Client activity history'),
                 userSubscription,
                 canReadAuditLogs
                     ? subscribeWithReadySignal(collection(db, "audit_logs"), (snapshot) => { this.auditLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.id - a.id); }, 'audit logs')

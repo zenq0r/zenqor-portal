@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.5)
+// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.6)
 // ============================================================
 // PERUBAHAN v3.1:
 //   - getUserRole() kini baca dokumen guna UID (request.auth.uid)
@@ -274,9 +274,7 @@ service cloud.firestore {
     }
 
     match /project_activities/{activityId} {
-      allow read: if isAuthenticated() && (
-        !isClient() || resource.data.clientPortalUid == request.auth.uid
-      );
+      allow read: if isAuthenticated() && !isClient();
       allow create: if isProjectManager() &&
         request.resource.data.createdByUid == request.auth.uid &&
         request.resource.data.projectId is string &&
@@ -301,6 +299,24 @@ service cloud.firestore {
         ])
       );
       allow delete: if isProjectManager();
+    }
+
+    match /project_client_updates/{updateId} {
+      allow read: if isAuthenticated() && (
+        !isClient() || resource.data.clientPortalUid == request.auth.uid
+      );
+      allow create: if isAuthenticated() && !isClient() &&
+        request.resource.data.senderUid == request.auth.uid &&
+        request.resource.data.projectId is string &&
+        request.resource.data.projectId.size() > 0 &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() > 0 &&
+        exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId)) && (
+          isProjectManager() ||
+          get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.ownerEmail == request.auth.token.email
+        ) &&
+        get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.clientPortalUid == request.resource.data.clientPortalUid;
+      allow update, delete: if isProjectManager();
     }
 
     match /audit_logs/{logId} {
