@@ -166,6 +166,9 @@
                         <p class="px-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Operation Center</p>
                     </div>
 
+                    <button v-if="hasAccess('project-activities')" type="button" @click="switchTab('project-activities')" :class="{'sidebar-item-active': currentTab === 'project-activities', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'project-activities'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                        <i class="fa-solid fa-diagram-project w-5 text-center"></i><span>Project Activities</span>
+                    </button>
                     <button v-if="hasAccess('doc-generator')" type="button" @click="switchTab('doc-generator')" :class="{'sidebar-item-active': currentTab === 'doc-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'doc-generator'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i><span>Document Generator</span>
                     </button>
@@ -1325,6 +1328,95 @@
                                 <i class="fa-solid fa-download"></i><span>Export CSV / Excel</span>
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- PROJECT ACTIVITIES MODULE -->
+                <div v-show="currentTab === 'project-activities'" class="p-4 md:p-8 max-w-[1800px] mx-auto w-full space-y-6">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex items-center space-x-3">
+                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
+                                <i class="fa-solid fa-arrow-left"></i><span class="hidden sm:inline">Dashboard</span>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-dark tracking-tight">Project Activities</h2>
+                                <p class="text-slate-500 text-xs mt-0.5">Real-time project progress across five controlled workflow stages.</p>
+                            </div>
+                        </div>
+                        <button v-if="canManageProjects" type="button" @click="openProjectModal()" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i><span>Add Project</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <div v-for="stage in projectStages" :key="`summary-${stage}`" class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                            <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">{{ stage }}</p>
+                            <p class="mt-1 text-2xl font-black text-brand-dark">{{ getProjectsByStage(stage).length }}</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto pb-3">
+                        <div class="grid min-w-[1450px] grid-cols-5 gap-4">
+                            <section v-for="(stage, stageIndex) in projectStages" :key="stage" class="rounded-2xl border border-slate-200 bg-slate-100/70 p-3 shadow-sm">
+                                <header class="mb-3 flex items-center justify-between rounded-xl bg-white px-3 py-3 border border-slate-200">
+                                    <div class="flex items-center gap-2">
+                                        <span :class="['bg-blue-500','bg-amber-500','bg-orange-500','bg-violet-500','bg-emerald-500'][stageIndex]" class="h-2.5 w-2.5 rounded-full"></span>
+                                        <h3 class="text-xs font-extrabold uppercase tracking-wide text-brand-dark">{{ stage }}</h3>
+                                    </div>
+                                    <span class="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-600">{{ getProjectsByStage(stage).length }}</span>
+                                </header>
+
+                                <div class="space-y-3 min-h-[180px]">
+                                    <article v-for="project in getProjectsByStage(stage)" :key="project.id" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <span class="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-extrabold text-slate-600">{{ project.projectRef }}</span>
+                                            <button v-if="canManageProjects" type="button" @click="openProjectModal(project)" class="h-7 w-7 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100" title="Edit project"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                        </div>
+                                        <h4 class="mt-3 text-sm font-extrabold leading-snug text-brand-dark">{{ project.title }}</h4>
+                                        <p v-if="project.description" class="mt-2 line-clamp-3 text-[11px] leading-relaxed text-slate-500">{{ project.description }}</p>
+                                        <div class="mt-3 space-y-1.5 border-t border-slate-100 pt-3 text-[10px] text-slate-600">
+                                            <p v-if="project.clientName"><i class="fa-solid fa-building mr-1.5 w-3 text-slate-400"></i>{{ project.clientName }}</p>
+                                            <p v-if="project.ownerName"><i class="fa-solid fa-user-gear mr-1.5 w-3 text-slate-400"></i>{{ project.ownerName }}</p>
+                                            <p v-if="project.targetDate"><i class="fa-solid fa-calendar-check mr-1.5 w-3 text-slate-400"></i>Target: {{ project.targetDate }}</p>
+                                        </div>
+                                        <div v-if="canManageProjects" class="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                                            <button type="button" @click="moveProject(project, -1)" :disabled="stageIndex === 0" class="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-30" title="Move to previous stage"><i class="fa-solid fa-arrow-left"></i></button>
+                                            <button type="button" @click="deleteProject(project)" class="rounded-lg bg-red-50 px-2.5 py-1.5 text-[10px] font-bold text-red-600 hover:bg-red-100" title="Delete project"><i class="fa-solid fa-trash"></i></button>
+                                            <button type="button" @click="moveProject(project, 1)" :disabled="stageIndex === projectStages.length - 1" class="rounded-lg bg-brand-dark px-2.5 py-1.5 text-[10px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-30" title="Move to next stage"><i class="fa-solid fa-arrow-right"></i></button>
+                                        </div>
+                                    </article>
+                                    <div v-if="!getProjectsByStage(stage).length" class="flex min-h-[150px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/60 p-5 text-center">
+                                        <i class="fa-regular fa-folder-open text-xl text-slate-300"></i>
+                                        <p class="mt-2 text-[10px] font-bold text-slate-400">No project in this stage</p>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <div v-if="projectModal.show" class="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" @click.self="closeProjectModal">
+                        <form @submit.prevent="saveProject" class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+                            <div class="flex items-start justify-between border-b border-slate-200 pb-4">
+                                <div><p class="text-[10px] font-extrabold uppercase tracking-widest text-brand-blue">Project Activities</p><h3 class="mt-1 text-lg font-extrabold text-brand-dark">{{ projectModal.isEdit ? 'Update Project' : 'Add New Project' }}</h3></div>
+                                <button type="button" @click="closeProjectModal" class="h-9 w-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <label class="text-xs font-bold text-slate-700">Project Reference *<input v-model="projectModal.form.projectRef" required class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs uppercase outline-none focus:border-brand-blue"></label>
+                                <label class="text-xs font-bold text-slate-700">Workflow Stage *<select v-model="projectModal.form.status" required class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none focus:border-brand-blue"><option v-for="stage in projectStages" :key="stage" :value="stage">{{ stage }}</option></select></label>
+                                <label class="text-xs font-bold text-slate-700 md:col-span-2">Project Title *<input v-model="projectModal.form.title" required class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs uppercase outline-none focus:border-brand-blue"></label>
+                                <label class="text-xs font-bold text-slate-700">Client Name<input v-model="projectModal.form.clientName" class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs uppercase outline-none focus:border-brand-blue"></label>
+                                <label class="text-xs font-bold text-slate-700">Client Email <span class="text-slate-400">(controls client access)</span><input v-model.trim="projectModal.form.clientEmail" type="email" class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs lowercase outline-none focus:border-brand-blue"></label>
+                                <label class="text-xs font-bold text-slate-700">Person In Charge<input v-model="projectModal.form.ownerName" class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs uppercase outline-none focus:border-brand-blue"></label>
+                                <label class="text-xs font-bold text-slate-700">PIC Email<input v-model.trim="projectModal.form.ownerEmail" type="email" class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs lowercase outline-none focus:border-brand-blue"></label>
+                                <label class="text-xs font-bold text-slate-700">Start Date<input v-model="projectModal.form.startDate" type="date" class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></label>
+                                <label class="text-xs font-bold text-slate-700">Target Date<input v-model="projectModal.form.targetDate" type="date" class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></label>
+                                <label class="text-xs font-bold text-slate-700 md:col-span-2">Project Description<textarea v-model="projectModal.form.description" rows="4" class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs uppercase outline-none focus:border-brand-blue"></textarea></label>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-2 border-t border-slate-200 pt-4">
+                                <button type="button" @click="closeProjectModal" class="rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200">Cancel</button>
+                                <button type="submit" class="rounded-xl bg-brand-dark px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-blue"><i class="fa-solid fa-floppy-disk mr-2"></i>Save Project</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 

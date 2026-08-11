@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.1)
+// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.2)
 // ============================================================
 // PERUBAHAN v3.1:
 //   - getUserRole() kini baca dokumen guna UID (request.auth.uid)
@@ -54,6 +54,20 @@ service cloud.firestore {
 
     function isClient() {
       return isAuthenticated() && getUserRole() == 'Client';
+    }
+
+    function isProjectManager() {
+      return isAdmin() || isIT();
+    }
+
+    function hasValidProjectStage(data) {
+      return data.status in [
+        'Project Planning',
+        'Pending Documentation',
+        'In Progress',
+        'Pending By Government',
+        'Completed & Done'
+      ];
     }
 
     function hasAllowedRoleEmail(data) {
@@ -194,6 +208,34 @@ service cloud.firestore {
         request.resource.data.status in ['Approved', 'Rejected']
       );
       allow delete: if isAdmin();
+    }
+
+    match /projects/{projectId} {
+      allow read: if isAuthenticated() && (
+        !isClient() || (
+          resource.data.clientEmail is string &&
+          resource.data.clientEmail == request.auth.token.email
+        )
+      );
+      allow create: if isProjectManager() &&
+        request.resource.data.createdByUid == request.auth.uid &&
+        request.resource.data.createdByEmail == request.auth.token.email &&
+        request.resource.data.updatedByUid == request.auth.uid &&
+        request.resource.data.updatedByEmail == request.auth.token.email &&
+        request.resource.data.projectRef is string &&
+        request.resource.data.title is string &&
+        request.resource.data.clientEmail is string &&
+        hasValidProjectStage(request.resource.data);
+      allow update: if isProjectManager() &&
+        request.resource.data.createdByUid == resource.data.createdByUid &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.updatedByUid == request.auth.uid &&
+        request.resource.data.updatedByEmail == request.auth.token.email &&
+        request.resource.data.projectRef is string &&
+        request.resource.data.title is string &&
+        request.resource.data.clientEmail is string &&
+        hasValidProjectStage(request.resource.data);
+      allow delete: if isProjectManager();
     }
 
     match /audit_logs/{logId} {

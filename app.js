@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.1.1)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.2)
 // ============================================================
 
 import {
@@ -39,13 +39,13 @@ const STATUTORY_RATES = {
 };
 
 const RBAC_ROLES = {
-    'Director': ['dashboard', 'doc-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
-    'Superadmin': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
-    'HR': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
-    'Account': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'profile'],
-    'IT': ['dashboard', 'audit-logs', 'settings', 'profile'],
-    'Client': ['dashboard', 'client-portal', 'profile'],
-    'Staff': ['dashboard', 'claims', 'client-portal', 'profile']
+    'Director': ['dashboard', 'project-activities', 'doc-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
+    'Superadmin': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
+    'HR': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
+    'Account': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'profile'],
+    'IT': ['dashboard', 'project-activities', 'audit-logs', 'settings', 'profile'],
+    'Client': ['dashboard', 'project-activities', 'client-portal', 'profile'],
+    'Staff': ['dashboard', 'project-activities', 'claims', 'client-portal', 'profile']
 };
 
 createApp({
@@ -132,6 +132,13 @@ createApp({
             docHistory: [],
             payslipHistory: [],
             claimsHistory: [],
+            projects: [],
+            projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
+            projectModal: {
+                show: false,
+                isEdit: false,
+                form: { id: '', projectRef: '', title: '', clientName: '', clientEmail: '', ownerName: '', ownerEmail: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' }
+            },
             employees: [],
             customers: [],
             users: [],
@@ -285,6 +292,7 @@ createApp({
         canDelete() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageRBAC() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageCompanySettings() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
+        canManageProjects() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
         canBackupDatabase() { return ['Director', 'Superadmin'].includes(this.userProfile.role); },
         currentYear() { return new Date().getFullYear(); },
         payslipYtdMultiplier() {
@@ -399,6 +407,12 @@ createApp({
         paginatedActivities() {
             const start = (this.currentPage - 1) * this.itemsPerPage;
             return this.filteredRecentActivities.slice(start, start + this.itemsPerPage);
+        },
+        filteredProjects() {
+            const queryText = this.searchQuery.trim().toLowerCase();
+            const records = [...this.projects].sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+            if (!queryText) return records;
+            return records.filter(project => [project.projectRef, project.title, project.clientName, project.ownerName, project.status, project.description].some(value => String(value || '').toLowerCase().includes(queryText)));
         }
     },
     watch: {
@@ -432,6 +446,76 @@ createApp({
                 'Client': 'Client Users System Terminal'
             };
             return roles[code] || code;
+        },
+        getProjectsByStage(stage) {
+            return this.filteredProjects.filter(project => project.status === stage);
+        },
+        openProjectModal(project = null) {
+            if (!this.canManageProjects) { this.showNotify('Only Director, Superadmin and IT may manage project activities.'); return; }
+            const emptyForm = { id: '', projectRef: `PRJ-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`, title: '', clientName: '', clientEmail: '', ownerName: '', ownerEmail: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' };
+            this.projectModal = { show: true, isEdit: Boolean(project), form: project ? JSON.parse(JSON.stringify(project)) : emptyForm };
+        },
+        closeProjectModal() {
+            this.projectModal.show = false;
+        },
+        async saveProject() {
+            if (!this.canManageProjects) { this.showNotify('You do not have permission to save project activities.'); return; }
+            const source = this.projectModal.form;
+            if (!source.projectRef?.trim() || !source.title?.trim() || !source.status) { this.showNotify('Project reference, title and status are required.'); return; }
+            if (!this.projectStages.includes(source.status)) { this.showNotify('Invalid project stage.'); return; }
+            const projectId = source.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            const now = new Date().toISOString();
+            const payload = this.normalizeOfficialRecord({
+                projectRef: source.projectRef,
+                title: source.title,
+                clientName: source.clientName,
+                clientEmail: String(source.clientEmail || '').trim().toLowerCase(),
+                ownerName: source.ownerName,
+                ownerEmail: String(source.ownerEmail || '').trim().toLowerCase(),
+                status: source.status,
+                startDate: source.startDate,
+                targetDate: source.targetDate,
+                description: source.description,
+                updatedAt: now,
+                updatedByUid: this.userProfile.uid,
+                updatedByEmail: this.userProfile.email,
+                ...(this.projectModal.isEdit ? {} : { createdAt: now, createdByUid: this.userProfile.uid, createdByEmail: this.userProfile.email })
+            });
+            try {
+                await setDoc(doc(db, 'projects', projectId), payload, { merge: this.projectModal.isEdit });
+                this.logAudit(this.projectModal.isEdit ? 'UPDATE' : 'CREATE', `Project activity ${payload.projectRef}`);
+                this.closeProjectModal();
+                this.showNotify('Project activity saved successfully.');
+            } catch (error) {
+                console.error('Project save failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'save the project activity'));
+            }
+        },
+        async moveProject(project, direction) {
+            if (!this.canManageProjects) { this.showNotify('You do not have permission to update project stages.'); return; }
+            const currentIndex = this.projectStages.indexOf(project.status);
+            const nextIndex = currentIndex + direction;
+            if (currentIndex < 0 || nextIndex < 0 || nextIndex >= this.projectStages.length) return;
+            try {
+                await updateDoc(doc(db, 'projects', project.id), { status: this.projectStages[nextIndex], updatedAt: new Date().toISOString(), updatedByUid: this.userProfile.uid, updatedByEmail: this.userProfile.email });
+                this.logAudit('UPDATE', `Project ${project.projectRef} moved to ${this.projectStages[nextIndex]}`);
+                this.showNotify(`Project moved to ${this.projectStages[nextIndex]}.`);
+            } catch (error) {
+                console.error('Project stage update failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'update the project stage'));
+            }
+        },
+        async deleteProject(project) {
+            if (!this.canManageProjects) { this.showNotify('You do not have permission to delete project activities.'); return; }
+            if (!confirm(`Delete project ${project.projectRef}? This action cannot be undone.`)) return;
+            try {
+                await deleteDoc(doc(db, 'projects', project.id));
+                this.logAudit('DELETE', `Project activity ${project.projectRef}`);
+                this.showNotify('Project activity deleted.');
+            } catch (error) {
+                console.error('Project deletion failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'delete the project activity'));
+            }
         },
         getActivityStatus(item) {
             if (item.type === 'Invoice') {
@@ -1136,7 +1220,7 @@ createApp({
 
         backupDatabase() {
             if (!this.canBackupDatabase) { this.showNotify('Only Superadmin and Director can export a database backup.'); return; }
-            const data = { company: this.company, employees: this.employees, customers: this.customers, docHistory: this.docHistory, payslipHistory: this.payslipHistory, claimsHistory: this.claimsHistory, users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })), exportDate: new Date().toISOString() };
+            const data = { company: this.company, employees: this.employees, customers: this.customers, docHistory: this.docHistory, payslipHistory: this.payslipHistory, claimsHistory: this.claimsHistory, projects: this.projects, users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })), exportDate: new Date().toISOString() };
             const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", jsonStr); dlAnchorElem.setAttribute("download", `zenqor_backup_${new Date().toISOString().substr(0,10)}.json`); dlAnchorElem.click();
             this.logAudit('BACKUP', 'Exported JSON backup'); this.showNotify("Database JSON backup downloaded!");
@@ -1589,6 +1673,9 @@ createApp({
                 : ['Staff', 'IT'].includes(role)
                     ? query(collection(db, 'employees'), where('email', '==', this.userProfile.email))
                     : null;
+            const projectsSource = role === 'Client'
+                ? query(collection(db, 'projects'), where('clientEmail', '==', this.userProfile.email))
+                : collection(db, 'projects');
 
             const userSubscription = canReadAllUsers
                 ? subscribeWithReadySignal(collection(db, 'users'), (snapshot) => {
@@ -1631,6 +1718,7 @@ createApp({
                         this.synchronizeLegacyApprovedClaims(snapshot.docs);
                     }, 'claims')
                     : Promise.resolve(),
+                subscribeWithReadySignal(projectsSource, (snapshot) => { this.projects = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'project activities'),
                 userSubscription,
                 canReadAuditLogs
                     ? subscribeWithReadySignal(collection(db, "audit_logs"), (snapshot) => { this.auditLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.id - a.id); }, 'audit logs')
