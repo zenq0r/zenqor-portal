@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.6)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.7)
 // ============================================================
 
 import {
@@ -1236,17 +1236,19 @@ createApp({
         },
         async approveClaim(clm) {
             if (this.attachmentUploadState.director) { this.showNotify('Wait for the Director approval document upload to finish.'); return false; }
-            const nextRole = this.userProfile.role === 'Director' ? null : { 'Pending HR': 'Account', 'Pending Account': 'Director' }[clm.status];
+            const isDirectorDecision = this.userProfile.role === 'Director';
+            const nextRole = isDirectorDecision ? null : { 'Pending HR': 'Account', 'Pending Account': 'Director' }[clm.status];
             const roleNames = { HR: 'Human Resource Management', Account: 'Finance Account Management', Director: 'Director' };
-            if (this.userProfile.role === 'Director' && !this.claimPreview.directorApprovalAttachment) { alert('Director approval requires a supporting document attachment.'); return; }
+            if (isDirectorDecision && !this.claimPreview.directorApprovalAttachment) { alert('Director approval requires a supporting document attachment.'); return; }
+            const bypassedReviews = clm.status === 'Pending HR' ? ['HR', 'Account'] : clm.status === 'Pending Account' ? ['Account'] : [];
             const update = nextRole
                 ? { status: `Pending ${nextRole}`, assignedToUid: '', assignedToName: roleNames[nextRole], assignedToEmail: '', assignedToRole: nextRole }
-                : { status: 'Approved', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByRole: this.userProfile.role, approvedAt: new Date().toISOString(), directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName, directorApprovalOriginalBytes: Number(this.claimPreview.directorApprovalOriginalBytes || 0) };
+                : { status: 'Approved', finalDecision: true, approvalPath: 'Director Direct Approval', approvalPreviousStatus: clm.status, bypassedReviews, assignedToUid: this.userProfile.uid, assignedToName: this.userProfile.name, assignedToEmail: this.userProfile.email, assignedToRole: 'Director', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByRole: 'Director', approvedAt: new Date().toISOString(), directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName, directorApprovalOriginalBytes: Number(this.claimPreview.directorApprovalOriginalBytes || 0) };
             try {
                 if (!nextRole && this.getSerializedSize({ ...clm, ...update }) > 800 * 1024) throw Object.assign(new Error('The combined claim record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
                 await updateDoc(doc(db, "claims", clm.id), update);
-                this.logAudit('UPDATE', `Claim ${clm.receiptNo} approved by ${this.userProfile.role}`);
-                this.showNotify(nextRole ? `Claim assigned to ${roleNames[nextRole]}.` : 'Claim finally approved by Director.');
+                this.logAudit('UPDATE', `${clm.documentType || 'Claim'} ${clm.receiptNo} ${nextRole ? `forwarded to ${roleNames[nextRole]}` : `directly and finally approved by Director${bypassedReviews.length ? ` (bypassed ${bypassedReviews.join(' and ')})` : ''}`}`);
+                this.showNotify(nextRole ? `Claim assigned to ${roleNames[nextRole]}.` : 'Director approval completed immediately. No further HR or Finance review is required.');
                 return true;
             } catch (error) {
                 console.error('Claim approval failed:', error);
