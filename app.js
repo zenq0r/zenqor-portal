@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.5)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.5.1)
 // ============================================================
 
 import {
@@ -430,6 +430,9 @@ createApp({
         myPendingProjectActivities() {
             const email = String(this.userProfile.email || '').trim().toLowerCase();
             return this.projectActivities.filter(activity => activity.status !== 'Done' && String(activity.assignedEmail || '').trim().toLowerCase() === email).sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+        },
+        clientOpenProjectActivities() {
+            return this.projectActivities.filter(activity => activity.status !== 'Done').sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
         }
     },
     watch: {
@@ -482,15 +485,19 @@ createApp({
             return this.projectActivities.filter(activity => activity.projectId === projectId).sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
         },
         projectActivityDueState(activity) {
-            if (activity.status === 'Done') return { label: 'Done', className: 'bg-emerald-100 text-emerald-800' };
-            const today = new Date().toISOString().slice(0, 10);
-            if (activity.dueDate < today) return { label: 'Overdue', className: 'bg-red-100 text-red-800' };
-            if (activity.dueDate === today) return { label: 'Due Today', className: 'bg-amber-100 text-amber-800' };
-            return { label: 'Scheduled', className: 'bg-blue-100 text-blue-800' };
+            if (activity.status === 'Done') return { label: 'Done', className: 'bg-slate-200 text-slate-700', borderClass: 'border-l-slate-400', dotClass: 'bg-slate-400', daysRemaining: null };
+            const today = this.getLocalDateKey();
+            const dueDate = String(activity.dueDate || '');
+            const daysRemaining = Math.round((Date.parse(`${dueDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
+            if (!Number.isFinite(daysRemaining)) return { label: 'No Due Date', className: 'bg-slate-200 text-slate-700', borderClass: 'border-l-slate-400', dotClass: 'bg-slate-400', daysRemaining: null };
+            if (daysRemaining < 0) return { label: `${Math.abs(daysRemaining)} Day${Math.abs(daysRemaining) === 1 ? '' : 's'} Overdue`, className: 'bg-red-100 text-red-800', borderClass: 'border-l-red-500', dotClass: 'bg-red-500', daysRemaining };
+            if (daysRemaining === 0) return { label: 'Due Today', className: 'bg-amber-100 text-amber-800', borderClass: 'border-l-amber-400', dotClass: 'bg-amber-400', daysRemaining };
+            if (daysRemaining <= 3) return { label: `Due In ${daysRemaining} Day${daysRemaining === 1 ? '' : 's'}`, className: 'bg-emerald-100 text-emerald-800', borderClass: 'border-l-emerald-500', dotClass: 'bg-emerald-500', daysRemaining };
+            return { label: `Scheduled · ${daysRemaining} Days`, className: 'bg-blue-100 text-blue-800', borderClass: 'border-l-blue-500', dotClass: 'bg-blue-500', daysRemaining };
         },
         openActivityModal(project) {
             if (!this.canManageProjects) { this.showNotify('Only Director and Superadmin may schedule project activities.'); return; }
-            this.activityModal = { show: true, project: JSON.parse(JSON.stringify(project)), form: { activityType: 'To-Do', summary: '', dueDate: new Date().toISOString().slice(0, 10), assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } };
+            this.activityModal = { show: true, project: JSON.parse(JSON.stringify(project)), form: { activityType: 'To-Do', summary: '', dueDate: this.getLocalDateKey(), assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } };
         },
         closeActivityModal() {
             this.activityModal = { show: false, project: null, form: { activityType: 'To-Do', summary: '', dueDate: '', assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } };
@@ -991,6 +998,13 @@ createApp({
         },
         formatDateTime(val) {
             return val ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(val)) : '-';
+        },
+        getLocalDateKey(value = new Date()) {
+            const date = value instanceof Date ? value : new Date(value);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         },
         getPresenceTime(value) {
             if (!value) return 0;
@@ -1909,7 +1923,7 @@ createApp({
                     const previousIds = new Set(this.projectActivities.map(activity => activity.id));
                     this.projectActivities = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                     const assignedOpen = this.projectActivities.filter(activity => activity.status !== 'Done' && String(activity.assignedEmail || '').trim().toLowerCase() === String(this.userProfile.email || '').trim().toLowerCase());
-                    const today = new Date().toISOString().slice(0, 10);
+                    const today = this.getLocalDateKey();
                     if (!this.projectActivitiesLoaded) {
                         const dueCount = assignedOpen.filter(activity => activity.dueDate <= today).length;
                         if (dueCount) setTimeout(() => this.showNotify(`${dueCount} assigned project activity${dueCount > 1 ? 'ies are' : ' is'} due or overdue.`), 350);
