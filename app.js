@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.5)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.6)
 // ============================================================
 
 import {
@@ -83,7 +83,7 @@ createApp({
             activePrintModule: null,
             claimPrint: null,
             recordPreview: { show: false, html: '' },
-            claimPreview: { show: false, claim: null, directorApprovalAttachment: '', directorApprovalAttachmentName: '' },
+            claimPreview: { show: false, claim: null, directorApprovalAttachment: '', directorApprovalAttachmentName: '', directorApprovalOriginalBytes: 0 },
             attachmentPreview: { show: false, url: '', label: '' },
             attachmentUploadState: { payment: false, receipt: false, director: false },
             unsubscribers: [],
@@ -264,7 +264,7 @@ createApp({
                 expenseDate: new Date().toISOString().substr(0, 10),
                 category: 'Medical', subCategory: 'Clinic / Hospital Treatment',
                 payeeName: '', payeeType: 'Individual', payeeReference: '', paymentPurpose: '',
-                amount: 0, receiptNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', status: 'Pending HR',
+                amount: 0, receiptNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', receiptAttachmentOriginalBytes: 0, status: 'Pending HR',
                 assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
             },
 
@@ -481,7 +481,7 @@ createApp({
             this.claimForm = {
                 documentType: 'Claim', name: '', empNo: '', empEmail: '', position: '', dept: '', expenseDate: new Date().toISOString().substr(0, 10), category: 'Medical', subCategory: 'Clinic / Hospital Treatment',
                 payeeName: '', payeeType: 'Individual', payeeReference: '', paymentPurpose: '',
-                amount: 0, receiptNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', status: 'Pending HR',
+                amount: 0, receiptNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', receiptAttachmentOriginalBytes: 0, status: 'Pending HR',
                 assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
             };
             this.clientSavedForDocument = false;
@@ -516,7 +516,26 @@ createApp({
         getUploadErrorMessage(error) {
             return error?.message || 'Unable to process the image. Please select another PNG, JPG or JPEG file.';
         },
-        async prepareImageAttachment(file, maxDataUrlBytes = 280 * 1024, maxDimension = 1600) {
+        formatFileSize(bytes) {
+            const value = Number(bytes) || 0;
+            return value < 1024 * 1024 ? `${(value / 1024).toFixed(0)} KB` : `${(value / (1024 * 1024)).toFixed(2)} MB`;
+        },
+        getFirestoreWriteError(error, action = 'save this record') {
+            const code = String(error?.code || '').toLowerCase();
+            if (code.includes('permission-denied')) return `Permission denied while trying to ${action}. Deploy the latest firestore.rules and sign in again.`;
+            if (code.includes('resource-exhausted') || code.includes('invalid-argument')) return `The record is too large to ${action}. Select smaller images.`;
+            if (code.includes('unavailable') || code.includes('deadline-exceeded')) return `Firestore is temporarily unavailable. Check the network and try again.`;
+            return `Unable to ${action}. ${error?.message || 'Please try again.'}`;
+        },
+        getSerializedSize(value) {
+            return new Blob([JSON.stringify(value)]).size;
+        },
+        getDataUrlSize(dataUrl) {
+            if (!dataUrl || !String(dataUrl).startsWith('data:')) return 0;
+            const value = String(dataUrl);
+            return Math.ceil((value.length - value.indexOf(',') - 1) * 3 / 4);
+        },
+        async prepareImageAttachment(file, maxDataUrlBytes = 220 * 1024, maxDimension = 1600) {
             await this.validateImageFile(file);
             const imageUrl = URL.createObjectURL(file);
             try {
@@ -583,11 +602,13 @@ createApp({
             try {
                 this.claimForm.receiptAttachment = await this.prepareImageAttachment(file);
                 this.claimForm.receiptAttachmentName = file.name;
+                this.claimForm.receiptAttachmentOriginalBytes = file.size;
                 this.showNotify('Receipt attachment is ready to be saved.');
             } catch (error) {
                 console.error('Receipt attachment upload failed:', error);
                 this.claimForm.receiptAttachment = '';
                 this.claimForm.receiptAttachmentName = '';
+                this.claimForm.receiptAttachmentOriginalBytes = 0;
                 this.showNotify(this.getUploadErrorMessage(error));
                 e.target.value = '';
             } finally { this.attachmentUploadState.receipt = false; e.target.value = ''; }
@@ -595,15 +616,23 @@ createApp({
         async handleDirectorApprovalAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
+            const receiptOriginalBytes = Number(this.claimPreview.claim?.receiptAttachmentOriginalBytes || 0);
+            if (receiptOriginalBytes + file.size > 2 * 1024 * 1024) {
+                this.showNotify('The total original attachments for one claim must not exceed 2 MB. Select a smaller Director document.');
+                e.target.value = '';
+                return;
+            }
             this.attachmentUploadState.director = true;
             try {
                 this.claimPreview.directorApprovalAttachment = await this.prepareImageAttachment(file);
                 this.claimPreview.directorApprovalAttachmentName = file.name;
+                this.claimPreview.directorApprovalOriginalBytes = file.size;
                 this.showNotify('Director approval document is ready to be saved.');
             } catch (error) {
                 console.error('Director attachment upload failed:', error);
                 this.claimPreview.directorApprovalAttachment = '';
                 this.claimPreview.directorApprovalAttachmentName = '';
+                this.claimPreview.directorApprovalOriginalBytes = 0;
                 this.showNotify(this.getUploadErrorMessage(error));
                 e.target.value = '';
             } finally { this.attachmentUploadState.director = false; e.target.value = ''; }
@@ -1212,14 +1241,16 @@ createApp({
             if (this.userProfile.role === 'Director' && !this.claimPreview.directorApprovalAttachment) { alert('Director approval requires a supporting document attachment.'); return; }
             const update = nextRole
                 ? { status: `Pending ${nextRole}`, assignedToUid: '', assignedToName: roleNames[nextRole], assignedToEmail: '', assignedToRole: nextRole }
-                : { status: 'Approved', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByRole: this.userProfile.role, approvedAt: new Date().toISOString(), directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName };
+                : { status: 'Approved', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByRole: this.userProfile.role, approvedAt: new Date().toISOString(), directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName, directorApprovalOriginalBytes: Number(this.claimPreview.directorApprovalOriginalBytes || 0) };
             try {
+                if (!nextRole && this.getSerializedSize({ ...clm, ...update }) > 800 * 1024) throw Object.assign(new Error('The combined claim record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
                 await updateDoc(doc(db, "claims", clm.id), update);
                 this.logAudit('UPDATE', `Claim ${clm.receiptNo} approved by ${this.userProfile.role}`);
                 this.showNotify(nextRole ? `Claim assigned to ${roleNames[nextRole]}.` : 'Claim finally approved by Director.');
                 return true;
             } catch (error) {
-                this.showNotify('Unable to update claim status.');
+                console.error('Claim approval failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'update the claim status'));
                 return false;
             }
         },
@@ -1235,17 +1266,20 @@ createApp({
                 if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo || !this.claimForm.description.trim() || !this.claimForm.receiptAttachment) return alert("Complete all required claim fields, including Expense Description and Receipt Attachment.");
                 if (this.claimForm.documentType === 'Payment Voucher' && (!this.claimForm.payeeName.trim() || !this.claimForm.paymentPurpose.trim())) return alert('Complete the Payee Name and Payment Purpose for this Payment Voucher.');
             try {
-                const applicantUser = this.users.find(u => u.email === (this.claimForm.empEmail || this.userProfile.email));
-                const applicantRole = applicantUser ? applicantUser.role : 'Staff';
                 const initialStatus = 'Pending HR';
                 const assignee = { id: '', name: 'Human Resource Management', email: '', role: 'HR' };
+                const signedInEmail = String(auth.currentUser?.email || this.userProfile.email || '').trim().toLowerCase();
+                const canSubmitForOthers = ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role);
+                const claimOwnerEmail = canSubmitForOthers ? String(this.claimForm.empEmail || signedInEmail).trim().toLowerCase() : signedInEmail;
+                if (!auth.currentUser?.uid || !claimOwnerEmail) throw Object.assign(new Error('Your login identity is incomplete. Sign out and sign in again.'), { code: 'permission-denied' });
 
                 const claimId = String(this.editingClaimId || Date.now());
                 const documentType = this.claimForm.documentType === 'Payment Voucher' ? 'Payment Voucher' : 'Claim';
-                const payload = { id: claimId, type: documentType, documentType, date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: this.claimForm.empEmail || this.userProfile.email, position: this.claimForm.position || '', dept: this.claimForm.dept, payeeName: this.claimForm.payeeName || '', payeeType: this.claimForm.payeeType || '', payeeReference: this.claimForm.payeeReference || '', paymentPurpose: this.claimForm.paymentPurpose || '', category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', createdByUid: this.editingClaimId ? (this.claimForm.createdByUid || this.userProfile.uid) : this.userProfile.uid, createdByEmail: this.editingClaimId ? (this.claimForm.createdByEmail || this.userProfile.email) : this.userProfile.email, createdAt: this.editingClaimId ? (this.claimForm.createdAt || new Date().toISOString()) : new Date().toISOString(), status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
+                const payload = { id: claimId, type: documentType, documentType, date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: claimOwnerEmail, position: this.claimForm.position || '', dept: this.claimForm.dept, payeeName: this.claimForm.payeeName || '', payeeType: this.claimForm.payeeType || '', payeeReference: this.claimForm.payeeReference || '', paymentPurpose: this.claimForm.paymentPurpose || '', category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', receiptAttachmentOriginalBytes: Number(this.claimForm.receiptAttachmentOriginalBytes || 0), createdByUid: this.editingClaimId ? (this.claimForm.createdByUid || auth.currentUser.uid) : auth.currentUser.uid, createdByEmail: this.editingClaimId ? (this.claimForm.createdByEmail || signedInEmail) : signedInEmail, createdAt: this.editingClaimId ? (this.claimForm.createdAt || new Date().toISOString()) : new Date().toISOString(), status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
+                if (this.getSerializedSize(payload) > 800 * 1024) throw Object.assign(new Error('The claim record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
                 await setDoc(doc(db, "claims", claimId), payload);
                 this.editingClaimId = null; this.showNotify(`${documentType} submitted.`); this.resetClaimForm();
-            } catch (error) { console.error('Claim save failed:', error); this.showNotify('Unable to submit claim. Check the attachment size and try again.'); }
+            } catch (error) { console.error('Claim save failed:', error); this.showNotify(this.getFirestoreWriteError(error, 'submit the claim')); }
         },
         editClaimRecord(clm) { this.editingClaimId = clm.id; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; window.scrollTo({ top:0, behavior:'smooth' }); },
         cancelEditClaim() { this.editingClaimId = null; this.resetClaimForm(); },
@@ -1340,7 +1374,7 @@ createApp({
             this.recordPreview = { show: true, html };
         },
         viewClaimRecord(claim) {
-            this.claimPreview = { show: true, claim: JSON.parse(JSON.stringify(claim)), directorApprovalAttachment: '', directorApprovalAttachmentName: '' };
+            this.claimPreview = { show: true, claim: JSON.parse(JSON.stringify(claim)), directorApprovalAttachment: '', directorApprovalAttachmentName: '', directorApprovalOriginalBytes: 0 };
         },
         editRecord(item) {
             if (item.isDoc) { this.editingDocId = item.id; if (item.raw) { this.docForm = JSON.parse(JSON.stringify(item.raw)); this.docForm.status = item.raw.status || item.status || (item.type === 'Invoice' ? 'Unpaid' : 'Open'); } this.currentTab = 'doc-generator'; }

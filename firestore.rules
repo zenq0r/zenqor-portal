@@ -168,7 +168,8 @@ service cloud.firestore {
           'type', 'documentType', 'date', 'expenseDate', 'name', 'position', 'dept',
           'payeeName', 'payeeType', 'payeeReference', 'paymentPurpose', 'category',
           'subCategory', 'amount', 'receiptNo', 'description', 'receiptAttachment',
-          'receiptAttachmentName', 'createdByUid', 'createdByEmail', 'createdAt'
+          'receiptAttachmentName', 'receiptAttachmentOriginalBytes', 'createdByUid',
+          'createdByEmail', 'createdAt'
         ])
       ) || (
         isHR() && resource.data.status == 'Pending HR' &&
