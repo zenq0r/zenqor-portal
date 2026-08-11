@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.4)
+// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.5)
 // ============================================================
 // PERUBAHAN v3.1:
 //   - getUserRole() kini baca dokumen guna UID (request.auth.uid)
@@ -269,6 +269,36 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'ownerPresenceStatus', 'ownerPresenceUpdatedAt', 'ownerLastSeen'
           ])
+      );
+      allow delete: if isProjectManager();
+    }
+
+    match /project_activities/{activityId} {
+      allow read: if isAuthenticated() && (
+        !isClient() || resource.data.clientPortalUid == request.auth.uid
+      );
+      allow create: if isProjectManager() &&
+        request.resource.data.createdByUid == request.auth.uid &&
+        request.resource.data.projectId is string &&
+        request.resource.data.projectId.size() > 0 &&
+        request.resource.data.assignedEmpNo is string &&
+        request.resource.data.assignedEmpNo.size() > 0 &&
+        request.resource.data.assignedEmail is string &&
+        request.resource.data.assignedEmail.size() > 0 &&
+        request.resource.data.summary is string &&
+        request.resource.data.summary.size() > 0 &&
+        request.resource.data.dueDate is string &&
+        request.resource.data.status == 'Scheduled';
+      allow update: if (
+        isProjectManager()
+      ) || (
+        isAuthenticated() &&
+        resource.data.assignedEmail == request.auth.token.email &&
+        request.resource.data.status == 'Done' &&
+        request.resource.data.completedByUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'completedAt', 'completedByUid', 'completedByEmail'
+        ])
       );
       allow delete: if isProjectManager();
     }

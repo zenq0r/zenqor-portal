@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.4)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.5)
 // ============================================================
 
 import {
@@ -134,6 +134,10 @@ createApp({
             payslipHistory: [],
             claimsHistory: [],
             projects: [],
+            projectActivities: [],
+            projectActivitiesLoaded: false,
+            activityTypes: ['To-Do', 'Document Request', 'Client Follow-Up', 'Government Submission', 'Review', 'Meeting', 'Payment Follow-Up', 'Other'],
+            activityModal: { show: false, project: null, form: { activityType: 'To-Do', summary: '', dueDate: '', assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } },
             projectViewMode: 'board',
             projectPreview: { show: false, project: null },
             projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
@@ -422,6 +426,10 @@ createApp({
         },
         projectStaffOptions() {
             return this.employees.filter(employee => employee.email && employee.empNo).sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        },
+        myPendingProjectActivities() {
+            const email = String(this.userProfile.email || '').trim().toLowerCase();
+            return this.projectActivities.filter(activity => activity.status !== 'Done' && String(activity.assignedEmail || '').trim().toLowerCase() === email).sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
         }
     },
     watch: {
@@ -469,6 +477,77 @@ createApp({
             const project = this.projectPreview.project ? JSON.parse(JSON.stringify(this.projectPreview.project)) : null;
             this.closeProjectDetails();
             if (project) this.openProjectModal(project);
+        },
+        projectActivitiesFor(projectId) {
+            return this.projectActivities.filter(activity => activity.projectId === projectId).sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+        },
+        projectActivityDueState(activity) {
+            if (activity.status === 'Done') return { label: 'Done', className: 'bg-emerald-100 text-emerald-800' };
+            const today = new Date().toISOString().slice(0, 10);
+            if (activity.dueDate < today) return { label: 'Overdue', className: 'bg-red-100 text-red-800' };
+            if (activity.dueDate === today) return { label: 'Due Today', className: 'bg-amber-100 text-amber-800' };
+            return { label: 'Scheduled', className: 'bg-blue-100 text-blue-800' };
+        },
+        openActivityModal(project) {
+            if (!this.canManageProjects) { this.showNotify('Only Director and Superadmin may schedule project activities.'); return; }
+            this.activityModal = { show: true, project: JSON.parse(JSON.stringify(project)), form: { activityType: 'To-Do', summary: '', dueDate: new Date().toISOString().slice(0, 10), assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } };
+        },
+        closeActivityModal() {
+            this.activityModal = { show: false, project: null, form: { activityType: 'To-Do', summary: '', dueDate: '', assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } };
+        },
+        selectActivityAssignee(event) {
+            const employee = this.projectStaffOptions.find(item => item.empNo === event.target.value);
+            this.activityModal.form.assignedEmpNo = employee?.empNo || '';
+            this.activityModal.form.assignedName = employee?.name || '';
+            this.activityModal.form.assignedEmail = String(employee?.email || '').trim().toLowerCase();
+            this.activityModal.form.assignedPosition = employee?.position || '';
+        },
+        async saveProjectActivity() {
+            if (!this.canManageProjects || !this.activityModal.project) { this.showNotify('You do not have permission to schedule this activity.'); return; }
+            const form = this.activityModal.form;
+            if (!form.activityType || !form.summary?.trim() || !form.dueDate || !form.assignedEmpNo || !form.assignedEmail) { this.showNotify('Complete Activity Type, Summary, Due Date and Assigned To.'); return; }
+            const activityId = `ACT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+            const project = this.activityModal.project;
+            const payload = this.normalizeOfficialRecord({
+                projectId: project.id,
+                projectRef: project.projectRef,
+                projectTitle: project.title,
+                clientPortalUid: project.clientPortalUid,
+                clientEmail: project.clientEmail,
+                activityType: form.activityType,
+                summary: form.summary,
+                dueDate: form.dueDate,
+                assignedEmpNo: form.assignedEmpNo,
+                assignedName: form.assignedName,
+                assignedEmail: form.assignedEmail,
+                assignedPosition: form.assignedPosition,
+                details: form.details,
+                status: 'Scheduled',
+                createdAt: new Date().toISOString(),
+                createdByUid: this.userProfile.uid,
+                createdByEmail: this.userProfile.email
+            });
+            try {
+                await setDoc(doc(db, 'project_activities', activityId), payload);
+                this.logAudit('CREATE', `Scheduled ${payload.activityType} for ${payload.projectRef} and assigned to ${payload.assignedName}`);
+                this.closeActivityModal();
+                this.showNotify('Project activity scheduled. The assigned employee will receive an in-portal alert.');
+            } catch (error) {
+                console.error('Project activity scheduling failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'schedule the project activity'));
+            }
+        },
+        async markProjectActivityDone(activity) {
+            const assignedToMe = String(activity.assignedEmail || '').trim().toLowerCase() === String(this.userProfile.email || '').trim().toLowerCase();
+            if (!this.canManageProjects && !assignedToMe) { this.showNotify('Only the assigned employee, Director or Superadmin may complete this activity.'); return; }
+            try {
+                await updateDoc(doc(db, 'project_activities', activity.id), { status: 'Done', completedAt: new Date().toISOString(), completedByUid: this.userProfile.uid, completedByEmail: this.userProfile.email });
+                this.logAudit('UPDATE', `Completed project activity ${activity.summary}`);
+                this.showNotify('Project activity marked as done.');
+            } catch (error) {
+                console.error('Project activity completion failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'complete the project activity'));
+            }
         },
         selectProjectClientDirectory(event) {
             const customer = this.customers.find(item => item.id === event.target.value);
@@ -1312,7 +1391,7 @@ createApp({
 
         backupDatabase() {
             if (!this.canBackupDatabase) { this.showNotify('Only Superadmin and Director can export a database backup.'); return; }
-            const data = { company: this.company, employees: this.employees, customers: this.customers, docHistory: this.docHistory, payslipHistory: this.payslipHistory, claimsHistory: this.claimsHistory, projects: this.projects, users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })), exportDate: new Date().toISOString() };
+            const data = { company: this.company, employees: this.employees, customers: this.customers, docHistory: this.docHistory, payslipHistory: this.payslipHistory, claimsHistory: this.claimsHistory, projects: this.projects, projectActivities: this.projectActivities, users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })), exportDate: new Date().toISOString() };
             const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", jsonStr); dlAnchorElem.setAttribute("download", `zenqor_backup_${new Date().toISOString().substr(0,10)}.json`); dlAnchorElem.click();
             this.logAudit('BACKUP', 'Exported JSON backup'); this.showNotify("Database JSON backup downloaded!");
@@ -1736,6 +1815,7 @@ createApp({
 
         initFirebaseRealtime() {
             if (this.portalDataReadyPromise) return this.portalDataReadyPromise;
+            this.projectActivitiesLoaded = false;
 
             const subscribeWithReadySignal = (source, onData, label) => new Promise((resolve) => {
                 let hasInitialData = false;
@@ -1779,6 +1859,9 @@ createApp({
             const projectsSource = role === 'Client'
                 ? query(collection(db, 'projects'), where('clientEmail', '==', this.userProfile.email), where('clientPortalUid', '==', this.userProfile.uid))
                 : collection(db, 'projects');
+            const projectActivitiesSource = role === 'Client'
+                ? query(collection(db, 'project_activities'), where('clientPortalUid', '==', this.userProfile.uid))
+                : collection(db, 'project_activities');
 
             const userSubscription = canReadAllUsers
                 ? subscribeWithReadySignal(collection(db, 'users'), (snapshot) => {
@@ -1822,6 +1905,20 @@ createApp({
                     }, 'claims')
                     : Promise.resolve(),
                 subscribeWithReadySignal(projectsSource, (snapshot) => { this.projects = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'project activities'),
+                subscribeWithReadySignal(projectActivitiesSource, (snapshot) => {
+                    const previousIds = new Set(this.projectActivities.map(activity => activity.id));
+                    this.projectActivities = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    const assignedOpen = this.projectActivities.filter(activity => activity.status !== 'Done' && String(activity.assignedEmail || '').trim().toLowerCase() === String(this.userProfile.email || '').trim().toLowerCase());
+                    const today = new Date().toISOString().slice(0, 10);
+                    if (!this.projectActivitiesLoaded) {
+                        const dueCount = assignedOpen.filter(activity => activity.dueDate <= today).length;
+                        if (dueCount) setTimeout(() => this.showNotify(`${dueCount} assigned project activity${dueCount > 1 ? 'ies are' : ' is'} due or overdue.`), 350);
+                    } else {
+                        const newAssigned = assignedOpen.find(activity => !previousIds.has(activity.id));
+                        if (newAssigned) this.showNotify(`New project activity assigned: ${newAssigned.summary}`);
+                    }
+                    this.projectActivitiesLoaded = true;
+                }, 'project activity issues'),
                 userSubscription,
                 canReadAuditLogs
                     ? subscribeWithReadySignal(collection(db, "audit_logs"), (snapshot) => { this.auditLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.id - a.id); }, 'audit logs')
