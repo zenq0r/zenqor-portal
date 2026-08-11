@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.2.1)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.3)
 // ============================================================
 
 import {
@@ -95,6 +95,7 @@ createApp({
             chartRenderAttempts: 0,
             presenceHeartbeatTimer: null,
             presenceClockTimer: null,
+            lastProjectPresenceSyncAt: 0,
             presenceNow: Date.now(),
             presencePageHideHandler: null,
             presencePageShowHandler: null,
@@ -138,7 +139,7 @@ createApp({
             projectModal: {
                 show: false,
                 isEdit: false,
-                form: { id: '', projectRef: '', title: '', clientName: '', clientEmail: '', ownerName: '', ownerEmail: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' }
+                form: { id: '', projectRef: '', title: '', clientDirectoryId: '', clientPortalUid: '', clientName: '', clientEmail: '', ownerEmpNo: '', ownerName: '', ownerEmail: '', ownerPosition: '', ownerDepartment: '', ownerAssignedAt: '', ownerPresenceStatus: 'Offline', ownerPresenceUpdatedAt: '', ownerLastSeen: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' }
             },
             employees: [],
             customers: [],
@@ -293,7 +294,7 @@ createApp({
         canDelete() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageRBAC() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageCompanySettings() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
-        canManageProjects() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
+        canManageProjects() { return ['Director', 'Superadmin'].includes(this.userProfile.role); },
         canBackupDatabase() { return ['Director', 'Superadmin'].includes(this.userProfile.role); },
         currentYear() { return new Date().getFullYear(); },
         payslipYtdMultiplier() {
@@ -414,6 +415,12 @@ createApp({
             const records = [...this.projects].sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
             if (!queryText) return records;
             return records.filter(project => [project.projectRef, project.title, project.clientName, project.ownerName, project.status, project.description].some(value => String(value || '').toLowerCase().includes(queryText)));
+        },
+        projectClientAccessUsers() {
+            return this.users.filter(user => user.role === 'Client').sort((a, b) => String(a.name || a.email).localeCompare(String(b.name || b.email)));
+        },
+        projectStaffOptions() {
+            return this.employees.filter(employee => employee.email && employee.empNo).sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
         }
     },
     watch: {
@@ -451,9 +458,47 @@ createApp({
         getProjectsByStage(stage) {
             return this.filteredProjects.filter(project => project.status === stage);
         },
+        selectProjectClientDirectory(event) {
+            const customer = this.customers.find(item => item.id === event.target.value);
+            if (!customer) return;
+            this.projectModal.form.clientDirectoryId = customer.id;
+            this.projectModal.form.clientName = customer.clientName || '';
+            const directoryEmail = String(customer.clientEmail || '').trim().toLowerCase();
+            const matchingAccess = this.projectClientAccessUsers.find(user => String(user.email || '').trim().toLowerCase() === directoryEmail)
+                || this.projectClientAccessUsers.find(user => String(user.name || '').trim().toLowerCase() === String(customer.clientName || '').trim().toLowerCase());
+            this.projectModal.form.clientPortalUid = matchingAccess?.id || '';
+            this.projectModal.form.clientEmail = matchingAccess?.email || '';
+        },
+        selectProjectClientAccess(event) {
+            const user = this.projectClientAccessUsers.find(item => item.id === event.target.value);
+            this.projectModal.form.clientPortalUid = user?.id || '';
+            this.projectModal.form.clientEmail = user?.email || '';
+        },
+        selectProjectOwner(event) {
+            const employee = this.projectStaffOptions.find(item => item.empNo === event.target.value);
+            if (!employee) return;
+            const previousOwner = this.projectModal.form.ownerEmpNo;
+            this.projectModal.form.ownerEmpNo = employee.empNo;
+            this.projectModal.form.ownerName = employee.name || '';
+            this.projectModal.form.ownerEmail = String(employee.email || '').trim().toLowerCase();
+            this.projectModal.form.ownerPosition = employee.position || '';
+            this.projectModal.form.ownerDepartment = employee.dept || '';
+            this.projectModal.form.ownerPresenceStatus = this.employeePresenceLabel(employee);
+            this.projectModal.form.ownerPresenceUpdatedAt = employee.presenceUpdatedAt || '';
+            this.projectModal.form.ownerLastSeen = employee.lastSeen || '';
+            if (previousOwner !== employee.empNo || !this.projectModal.form.ownerAssignedAt) this.projectModal.form.ownerAssignedAt = new Date().toISOString();
+        },
+        isProjectPicOnline(project) {
+            const lastUpdate = this.getPresenceTime(project.ownerPresenceUpdatedAt || project.ownerLastSeen);
+            return project.ownerPresenceStatus === 'Online' && lastUpdate > 0 && (this.presenceNow - lastUpdate) < 90000;
+        },
+        projectPicPresenceDetail(project) {
+            if (this.isProjectPicOnline(project)) return 'Online now';
+            return project.ownerLastSeen ? `Last seen ${this.formatDateTime(project.ownerLastSeen)}` : 'Offline — no recent activity';
+        },
         openProjectModal(project = null) {
-            if (!this.canManageProjects) { this.showNotify('Only Director, Superadmin and IT may manage project activities.'); return; }
-            const emptyForm = { id: '', projectRef: `PRJ-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`, title: '', clientName: '', clientEmail: '', ownerName: '', ownerEmail: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' };
+            if (!this.canManageProjects) { this.showNotify('Only Director and Superadmin may manage project activities.'); return; }
+            const emptyForm = { id: '', projectRef: `PRJ-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`, title: '', clientDirectoryId: '', clientPortalUid: '', clientName: '', clientEmail: '', ownerEmpNo: '', ownerName: '', ownerEmail: '', ownerPosition: '', ownerDepartment: '', ownerAssignedAt: '', ownerPresenceStatus: 'Offline', ownerPresenceUpdatedAt: '', ownerLastSeen: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' };
             this.projectModal = { show: true, isEdit: Boolean(project), form: project ? JSON.parse(JSON.stringify(project)) : emptyForm };
         },
         closeProjectModal() {
@@ -463,16 +508,27 @@ createApp({
             if (!this.canManageProjects) { this.showNotify('You do not have permission to save project activities.'); return; }
             const source = this.projectModal.form;
             if (!source.projectRef?.trim() || !source.title?.trim() || !source.status) { this.showNotify('Project reference, title and status are required.'); return; }
+            if (!source.clientDirectoryId || !source.clientPortalUid || !source.clientEmail) { this.showNotify('Select a Client Directory record and its matching Client Portal Access account.'); return; }
+            if (!source.ownerEmpNo || !source.ownerEmail) { this.showNotify('Select a Person In Charge from HR Employee Management.'); return; }
             if (!this.projectStages.includes(source.status)) { this.showNotify('Invalid project stage.'); return; }
             const projectId = source.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
             const now = new Date().toISOString();
             const payload = this.normalizeOfficialRecord({
                 projectRef: source.projectRef,
                 title: source.title,
+                clientDirectoryId: source.clientDirectoryId,
+                clientPortalUid: source.clientPortalUid,
                 clientName: source.clientName,
                 clientEmail: String(source.clientEmail || '').trim().toLowerCase(),
+                ownerEmpNo: source.ownerEmpNo,
                 ownerName: source.ownerName,
                 ownerEmail: String(source.ownerEmail || '').trim().toLowerCase(),
+                ownerPosition: source.ownerPosition,
+                ownerDepartment: source.ownerDepartment,
+                ownerAssignedAt: source.ownerAssignedAt || now,
+                ownerPresenceStatus: source.ownerPresenceStatus || 'Offline',
+                ownerPresenceUpdatedAt: source.ownerPresenceUpdatedAt || '',
+                ownerLastSeen: source.ownerLastSeen || '',
                 status: source.status,
                 startDate: source.startDate,
                 targetDate: source.targetDate,
@@ -516,6 +572,22 @@ createApp({
             } catch (error) {
                 console.error('Project deletion failed:', error);
                 this.showNotify(this.getFirestoreWriteError(error, 'delete the project activity'));
+            }
+        },
+        async syncAssignedProjectPresence(employee, isOnline, timestamp) {
+            if (!auth.currentUser || !employee?.empNo || !employee?.email) return;
+            try {
+                const snapshot = await getDocs(query(collection(db, 'projects'), where('ownerEmpNo', '==', employee.empNo), where('ownerEmail', '==', String(employee.email).trim().toLowerCase())));
+                if (snapshot.empty) return;
+                const batch = writeBatch(db);
+                snapshot.docs.forEach(projectDoc => batch.update(projectDoc.ref, {
+                    ownerPresenceStatus: isOnline ? 'Online' : 'Offline',
+                    ownerPresenceUpdatedAt: timestamp,
+                    ownerLastSeen: timestamp
+                }));
+                await batch.commit();
+            } catch (error) {
+                console.error('Unable to synchronize assigned project presence:', error);
             }
         },
         getActivityStatus(item) {
@@ -853,6 +925,8 @@ createApp({
                 || this.employees.find(emp => String(emp.email || '').trim().toLowerCase() === email);
             if (!employee) return false;
             const timestamp = new Date().toISOString();
+            const presenceChanged = this.isEmployeeOnline(employee) !== Boolean(isOnline);
+            const shouldSyncProjectPresence = presenceChanged || (isOnline && Date.now() - this.lastProjectPresenceSyncAt >= 60000);
             try {
                 await updateDoc(doc(db, 'employees', employee.id || employee.empNo), {
                     presenceStatus: isOnline ? 'Online' : 'Offline',
@@ -861,6 +935,10 @@ createApp({
                     presenceUpdatedAt: timestamp,
                     lastSeen: timestamp
                 });
+                if (shouldSyncProjectPresence) {
+                    await this.syncAssignedProjectPresence(employee, isOnline, timestamp);
+                    this.lastProjectPresenceSyncAt = Date.now();
+                }
                 return true;
             } catch (error) {
                 console.error('Unable to update employee presence:', error);
@@ -888,6 +966,7 @@ createApp({
             if (this.presenceClockTimer) clearInterval(this.presenceClockTimer);
             this.presenceHeartbeatTimer = null;
             this.presenceClockTimer = null;
+            this.lastProjectPresenceSyncAt = 0;
             if (this.presencePageHideHandler) window.removeEventListener('pagehide', this.presencePageHideHandler);
             if (this.presencePageShowHandler) window.removeEventListener('pageshow', this.presencePageShowHandler);
             if (this.presenceVisibilityHandler) document.removeEventListener('visibilitychange', this.presenceVisibilityHandler);
@@ -1313,6 +1392,7 @@ createApp({
                 const sensitiveFields = ['ic', 'bankAcc', 'epfNo', 'socsoNo', 'eisNo', 'taxNo'];
                 if (!form.empNo || !form.name || !form.dept || !form.joinDate || !form.employmentType) return alert("Complete the required Basic Information fields.");
                 if (!this.employeeModal.isEdit && !form.ic) return alert("National ID / Passport is required for a new employee.");
+                form.email = String(form.email || '').trim().toLowerCase();
                 if (sensitiveFields.some(field => /^X{5}/i.test(String(form[field] || '').trim()))) return alert("Enter the complete sensitive number, not a masked value.");
                 sensitiveFields.forEach(field => {
                     if (this.employeeModal.isEdit && !String(form[field] || '').trim()) form[field] = this.employeeModal.originalSensitive[field] || '';
@@ -1328,9 +1408,10 @@ createApp({
             const employeeId = String(employee.empNo || '').trim();
             if (!employeeId) throw new Error('Employee ID is required to synchronize linked records.');
 
-            const [claimsSnapshot, payslipsSnapshot] = await Promise.all([
+            const [claimsSnapshot, payslipsSnapshot, projectsSnapshot] = await Promise.all([
                 getDocs(query(collection(db, 'claims'), where('empNo', '==', employeeId))),
-                getDocs(query(collection(db, 'payslips'), where('raw.empNo', '==', employeeId)))
+                getDocs(query(collection(db, 'payslips'), where('raw.empNo', '==', employeeId))),
+                getDocs(query(collection(db, 'projects'), where('ownerEmpNo', '==', employeeId)))
             ]);
             const writes = [];
             claimsSnapshot.forEach(record => writes.push({
@@ -1350,6 +1431,15 @@ createApp({
                     'raw.position': employee.position || '',
                     'raw.dept': employee.dept || '',
                     'raw.empEmail': employee.email || ''
+                }
+            }));
+            projectsSnapshot.forEach(record => writes.push({
+                ref: record.ref,
+                data: {
+                    ownerName: employee.name || '',
+                    ownerEmail: String(employee.email || '').trim().toLowerCase(),
+                    ownerPosition: employee.position || '',
+                    ownerDepartment: employee.dept || ''
                 }
             }));
 
@@ -1675,7 +1765,7 @@ createApp({
                     ? query(collection(db, 'employees'), where('email', '==', this.userProfile.email))
                     : null;
             const projectsSource = role === 'Client'
-                ? query(collection(db, 'projects'), where('clientEmail', '==', this.userProfile.email))
+                ? query(collection(db, 'projects'), where('clientEmail', '==', this.userProfile.email), where('clientPortalUid', '==', this.userProfile.uid))
                 : collection(db, 'projects');
 
             const userSubscription = canReadAllUsers

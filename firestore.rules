@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.2)
+// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.3)
 // ============================================================
 // PERUBAHAN v3.1:
 //   - getUserRole() kini baca dokumen guna UID (request.auth.uid)
@@ -57,7 +57,7 @@ service cloud.firestore {
     }
 
     function isProjectManager() {
-      return isAdmin() || isIT();
+      return isAdmin();
     }
 
     function hasValidProjectStage(data) {
@@ -68,6 +68,19 @@ service cloud.firestore {
         'Pending By Government',
         'Completed & Done'
       ];
+    }
+
+    function hasValidProjectLinks(data) {
+      return data.clientDirectoryId is string &&
+        data.clientPortalUid is string &&
+        data.ownerEmpNo is string &&
+        exists(/databases/$(database)/documents/customers/$(data.clientDirectoryId)) &&
+        get(/databases/$(database)/documents/customers/$(data.clientDirectoryId)).data.clientName == data.clientName &&
+        exists(/databases/$(database)/documents/users/$(data.clientPortalUid)) &&
+        get(/databases/$(database)/documents/users/$(data.clientPortalUid)).data.role == 'Client' &&
+        get(/databases/$(database)/documents/users/$(data.clientPortalUid)).data.email == data.clientEmail &&
+        exists(/databases/$(database)/documents/employees/$(data.ownerEmpNo)) &&
+        get(/databases/$(database)/documents/employees/$(data.ownerEmpNo)).data.email == data.ownerEmail;
     }
 
     function hasAllowedRoleEmail(data) {
@@ -214,7 +227,8 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (
         !isClient() || (
           resource.data.clientEmail is string &&
-          resource.data.clientEmail == request.auth.token.email
+          resource.data.clientEmail == request.auth.token.email &&
+          resource.data.clientPortalUid == request.auth.uid
         )
       );
       allow create: if isProjectManager() &&
@@ -222,19 +236,36 @@ service cloud.firestore {
         request.resource.data.createdByEmail == request.auth.token.email &&
         request.resource.data.updatedByUid == request.auth.uid &&
         request.resource.data.updatedByEmail == request.auth.token.email &&
+        hasValidProjectLinks(request.resource.data) &&
         request.resource.data.projectRef is string &&
         request.resource.data.title is string &&
         request.resource.data.clientEmail is string &&
         hasValidProjectStage(request.resource.data);
-      allow update: if isProjectManager() &&
-        request.resource.data.createdByUid == resource.data.createdByUid &&
-        request.resource.data.createdAt == resource.data.createdAt &&
-        request.resource.data.updatedByUid == request.auth.uid &&
-        request.resource.data.updatedByEmail == request.auth.token.email &&
-        request.resource.data.projectRef is string &&
-        request.resource.data.title is string &&
-        request.resource.data.clientEmail is string &&
-        hasValidProjectStage(request.resource.data);
+      allow update: if (
+        isProjectManager() &&
+          request.resource.data.createdByUid == resource.data.createdByUid &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.updatedByUid == request.auth.uid &&
+          request.resource.data.updatedByEmail == request.auth.token.email &&
+          request.resource.data.projectRef is string &&
+          request.resource.data.title is string &&
+          request.resource.data.clientEmail is string &&
+          hasValidProjectLinks(request.resource.data) &&
+          hasValidProjectStage(request.resource.data)
+      ) || (
+        (isAdmin() || isHR()) &&
+          request.resource.data.ownerEmpNo == resource.data.ownerEmpNo &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'ownerName', 'ownerEmail', 'ownerPosition', 'ownerDepartment'
+          ])
+      ) || (
+        isAuthenticated() &&
+          resource.data.ownerEmail == request.auth.token.email &&
+          request.resource.data.ownerEmpNo == resource.data.ownerEmpNo &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'ownerPresenceStatus', 'ownerPresenceUpdatedAt', 'ownerLastSeen'
+          ])
+      );
       allow delete: if isProjectManager();
     }
 
