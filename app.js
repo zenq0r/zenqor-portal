@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.0)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.1)
 // ============================================================
 
 import {
@@ -8,7 +8,6 @@ import {
     collection,
     doc,
     setDoc,
-    addDoc,
     updateDoc,
     deleteDoc,
     onSnapshot,
@@ -16,7 +15,6 @@ import {
     writeBatch,
     query,
     where,
-    orderBy,
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
@@ -41,7 +39,7 @@ const STATUTORY_RATES = {
 };
 
 const RBAC_ROLES = {
-    'Director': ['dashboard', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
+    'Director': ['dashboard', 'doc-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'Superadmin': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'HR': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
     'Account': ['dashboard', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'profile'],
@@ -998,6 +996,7 @@ createApp({
         },
 
         openUserAccessModal(usr = null) {
+            if (!this.canManageRBAC) { this.showNotify('Only Superadmin and Director can manage portal access.'); return; }
             if (usr) { this.userModal.isEdit = true; this.userModal.form = { uid: usr.uid || usr.id || '', name: usr.name || '', email: usr.email || '', password: '', role: usr.role || 'Staff' }; }
             else { this.userModal.isEdit = false; this.userModal.form = { uid: '', name: '', email: '', password: this.generateRandomPassword(8), role: 'Staff' }; }
             this.userModal.show = true;
@@ -1042,6 +1041,7 @@ createApp({
 
         async savePortalUser() {
             try {
+                if (!this.canManageRBAC) { this.showNotify('Only Superadmin and Director can manage portal access.'); return; }
                 if (!this.userModal.form.name || !this.userModal.form.email || (this.userModal.isEdit === false && !this.userModal.form.password)) { alert("Please fill out all required fields."); return; }
                 if (this.userModal.form.role !== 'Client' && !this.isOfficialEmail(this.userModal.form.email)) {
                     alert(`Only Client Users System Terminal may use Gmail or another external domain. This role must use @${this.officialEmailDomain}.`);
@@ -1306,6 +1306,7 @@ createApp({
             return (clm.createdByUid === this.userProfile.uid || clm.empEmail === this.userProfile.email) && clm.status === 'Pending HR';
         },
         async approveClaim(clm) {
+            if (!this.canApproveClaim(clm)) { this.showNotify('You do not have permission to approve this record at its current workflow stage.'); return false; }
             if (this.attachmentUploadState.director) { this.showNotify('Wait for the Director approval document upload to finish.'); return false; }
             const isDirectorDecision = this.userProfile.role === 'Director';
             const nextRole = isDirectorDecision ? null : { 'Pending HR': 'Account', 'Pending Account': 'Director' }[clm.status];
@@ -1333,9 +1334,11 @@ createApp({
             if (approved) this.claimPreview.show = false;
         },
         async rejectClaim(clm) {
+            if (!this.canApproveClaim(clm)) { this.showNotify('You do not have permission to reject this record at its current workflow stage.'); return; }
             if (confirm("REJECT this claim application?")) { try { await updateDoc(doc(db, "claims", clm.id), { status: 'Rejected', rejectedByUid: this.userProfile.uid, rejectedByName: this.userProfile.name, rejectedByRole: this.userProfile.role, rejectedAt: new Date().toISOString() }); this.showNotify("Claim rejected."); } catch (error) { this.showNotify('Unable to reject claim.'); } }
         },
         async saveClaimRecord() {
+                if (!['Superadmin', 'Director', 'HR', 'Account', 'Staff'].includes(this.userProfile.role)) { this.showNotify('Your role cannot submit claims or payment vouchers.'); return; }
                 if (this.attachmentUploadState.receipt) return alert('Wait for the receipt upload to finish.');
                 Object.assign(this.claimForm, this.normalizeOfficialRecord(this.claimForm));
                 this.claimForm.empEmail = String(this.claimForm.empEmail || '').trim().toLowerCase();
@@ -1359,7 +1362,7 @@ createApp({
         },
         editClaimRecord(clm) { this.editingClaimId = clm.id; this.selectedClaimEmployeeId = clm.empNo || ''; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; window.scrollTo({ top:0, behavior:'smooth' }); },
         cancelEditClaim() { this.editingClaimId = null; this.resetClaimForm(); },
-        async deleteClaimRecord(claimId) { if (confirm("Delete this claim record?")) { try { await deleteDoc(doc(db, "claims", claimId)); this.showNotify("Claim deleted."); } catch (error) { console.error('Claim deletion failed:', error); this.showNotify('Unable to delete claim.'); } } },
+        async deleteClaimRecord(claimId) { if (!this.canDelete) { this.showNotify('Only Superadmin and Director can delete claim records.'); return; } if (confirm("Delete this claim record?")) { try { await deleteDoc(doc(db, "claims", claimId)); this.showNotify("Claim deleted."); } catch (error) { console.error('Claim deletion failed:', error); this.showNotify('Unable to delete claim.'); } } },
 
         setPrintOrientation(orientation, margin) { const styleEl = document.getElementById('dynamic-print-orientation'); if (styleEl) styleEl.innerHTML = `@media print { @page { size: A4 ${orientation}; margin: ${margin} !important; } }`; },
         async printDocumentModule() { if (!this.clientSavedForDocument) return alert('Save Client information before previewing or printing this document.'); this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE'; this.setPrintOrientation('portrait', '15mm'); setTimeout(() => { window.print(); }, 250); },
@@ -1464,6 +1467,7 @@ createApp({
             else if (item.isClaim) this.editClaimRecord(item);
         },
         async confirmDeleteRecord(item) {
+            if (!this.canDelete) { this.showNotify('Only Superadmin and Director can delete records.'); return; }
             if (confirm(`WARNING: Delete record?`)) {
                 try { if (item.isDoc) await deleteDoc(doc(db, "docs", item.id)); else if (item.isPay) await deleteDoc(doc(db, "payslips", item.id)); else if (item.isClaim) await deleteDoc(doc(db, "claims", item.id)); this.showNotify('Record deleted.'); } catch (error) { console.error('Record deletion failed:', error); this.showNotify('Unable to delete record.'); }
             }
@@ -1542,7 +1546,7 @@ createApp({
             const canReadAllPayslips = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
             const canReadAllClaims = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
             const canReadAllEmployees = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
-            const canReadAllUsers = ['Superadmin', 'Director', 'HR'].includes(role);
+            const canReadAllUsers = ['Superadmin', 'Director'].includes(role);
             const canReadAuditLogs = ['Superadmin', 'Director', 'IT'].includes(role);
             const documentsSource = canReadAllDocuments
                 ? collection(db, 'docs')

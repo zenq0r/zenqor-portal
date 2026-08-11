@@ -1,7 +1,7 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v2.7)
+// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.1)
 // ============================================================
-// PERUBAHAN v2.7:
+// PERUBAHAN v3.1:
 //   - getUserRole() kini baca dokumen guna UID (request.auth.uid)
 //     yang konsisten dengan cara app.js menyimpan data pengguna.
 //   - Pengguna hanya boleh kemas kini status presence rekod pekerja sendiri.
@@ -74,9 +74,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Pengguna boleh baca dokumen sendiri (guna UID), Superadmin & HR boleh baca semua
+      // Pengguna baca dokumen sendiri; hanya Superadmin & Director baca semua pengguna.
       allow read: if isAuthenticated() && (
-        request.auth.uid == userId || isAdmin() || isHR()
+        request.auth.uid == userId || isAdmin()
       );
       allow create: if (
         request.auth.uid == userId &&
@@ -132,7 +132,8 @@ service cloud.firestore {
         isAdmin() || isHR() || isAccount() || isIT() ||
         (isClient() && resource.data.raw.clientEmail == request.auth.token.email)
       );
-      allow write: if isAdmin() || isHR() || isAccount();
+      allow create, update: if isSuperadmin() || isHR() || isAccount();
+      allow delete: if isAdmin();
     }
 
     match /payslips/{payslipId} {
@@ -140,7 +141,8 @@ service cloud.firestore {
         isAdmin() || isHR() || isAccount() ||
         (isStaff() && resource.data.raw.empEmail == request.auth.token.email)
       );
-      allow write: if isAdmin() || isHR() || isAccount();
+      allow create, update: if isSuperadmin() || isHR() || isAccount();
+      allow delete: if isAdmin();
     }
 
     match /claims/{claimId} {
@@ -150,7 +152,7 @@ service cloud.firestore {
       );
       allow create: if isAuthenticated() &&
         request.resource.data.createdByUid == request.auth.uid && (
-          request.resource.data.empEmail == request.auth.token.email ||
+          (isStaff() && request.resource.data.empEmail == request.auth.token.email) ||
           isAdmin() || isHR() || isAccount()
         );
       allow update: if (
@@ -172,7 +174,8 @@ service cloud.firestore {
         resource.data.status == 'Pending HR' &&
         request.resource.data.status == 'Pending HR' &&
         request.resource.data.empNo == resource.data.empNo &&
-        (('createdByUid' in resource.data && resource.data.createdByUid == request.auth.uid) || resource.data.empEmail == request.auth.token.email) &&
+        ((isStaff() && resource.data.empEmail == request.auth.token.email) ||
+          ((isAdmin() || isHR() || isAccount()) && 'createdByUid' in resource.data && resource.data.createdByUid == request.auth.uid)) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'type', 'documentType', 'date', 'expenseDate', 'name', 'position', 'dept',
           'payeeName', 'payeeType', 'payeeReference', 'paymentPurpose', 'category',

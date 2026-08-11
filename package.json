@@ -1,7 +1,7 @@
 {
   "name": "zenqor-operation-enterprise",
-  "version": "2.0.0",
-  "description": "ZENQOR Technologies Enterprise Operation Unified System v2.0",
+  "version": "8.1.0",
+  "description": "ZENQOR Technologies Enterprise HRMS and Client Document Tracking Portal",
   "main": "index.html",
   "scripts": {
     "start": "npx serve ."

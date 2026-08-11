@@ -9,15 +9,13 @@ import {
     collection,
     doc,
     setDoc,
-    addDoc,
     updateDoc,
     deleteDoc,
     onSnapshot,
     getDocs,
     writeBatch,
     query,
-    where,
-    orderBy
+    where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
     getAuth,
@@ -59,7 +57,6 @@ export {
     collection,
     doc,
     setDoc,
-    addDoc,
     updateDoc,
     deleteDoc,
     onSnapshot,
@@ -67,7 +64,6 @@ export {
     writeBatch,
     query,
     where,
-    orderBy,
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,

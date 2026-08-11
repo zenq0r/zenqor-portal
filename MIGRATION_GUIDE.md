@@ -1,4 +1,4 @@
-# ZENQOR Enterprise v2.1 — Panduan Migrasi Keselamatan
+# ZENQOR Enterprise v3.0 — Panduan Deployment Keselamatan
 
 ## Perubahan Kritikal Yang Dilakukan
 
@@ -17,8 +17,8 @@
 - Feature tukar kata laluan dengan `reauthenticateWithCredential` + `updatePassword`
 
 ### [ISU #4] API Key Protection
-- Firebase App Check (ReCaptcha v3) disediakan (perlu aktifkan — lihat bawah)
-- Domain restriction perlu diset di Google Cloud Console
+- Firebase App Check belum diaktifkan dalam runtime dan perlu dilaksanakan sebelum enforcement.
+- Domain restriction perlu diset di Google Cloud Console.
 
 ---
 
@@ -26,8 +26,8 @@
 
 ### Langkah 1: Migrate Pengguna ke Firebase Authentication
 
-Buka Firebase Console → Authentication → Users → Add User
-Cipta akaun untuk setiap pengguna dengan emel dan kata laluan baru.
+Gunakan `Add Access` dalam Portal Access Management sebagai Superadmin atau Director.
+Portal mencipta akaun Firebase Authentication melalui secondary auth instance supaya sesi admin tidak terganggu.
 
 Kemudian, untuk setiap pengguna, simpan metadata di Firestore
 di bawah path `users/{uid}` (bukan email lagi, tapi UID Firebase):
@@ -48,9 +48,8 @@ di bawah path `users/{uid}` (bukan email lagi, tapi UID Firebase):
 1. Pergi ke https://www.google.com/recaptcha/admin/create
 2. Pilih reCAPTCHA v3, masukkan domain anda
 3. Salin Site Key
-4. Dalam `firebase-config.js`, uncomment bahagian `initializeAppCheck` dan
-   gantikan `RECAPTCHA_SITE_KEY_ANDA` dengan key sebenar
-5. Aktifkan App Check di Firebase Console → App Check → Register App
+4. Tambah integrasi `initializeAppCheck` dalam `firebase-config.js` menggunakan site key production.
+5. Uji dahulu tanpa enforcement, kemudian aktifkan enforcement di Firebase Console → App Check.
 
 ### Langkah 3: Restrict API Key di Google Cloud
 
@@ -58,7 +57,7 @@ di bawah path `users/{uid}` (bukan email lagi, tapi UID Firebase):
 2. Klik pada "Browser key (auto created by Firebase)"
 3. Dalam "Application restrictions" → pilih "HTTP referrers"
 4. Tambah domain:
-   - `https://zenqor-operation.vercel.app/*`
+   - `https://hrms-portal.zenq0r.com/*`
    - `http://localhost/*` (development sahaja)
 5. Simpan
 
@@ -78,6 +77,7 @@ Di Firebase Console → Firestore → `users` collection:
 
 ## NOTA TAMBAHAN
 
-- Modal "Tambah Pengguna" dalam UI kini hanya mengemas kini metadata (name, role)
-- Untuk cipta akaun baharu, gunakan Firebase Console atau Firebase Admin SDK
+- Portal Access Management mencipta akaun baharu dan metadata role; kemas kini akses tidak mengubah password.
+- Rekod Authentication lama tanpa UID metadata menggunakan `pending_access` dan dimigrasi ketika login.
+- Lampiran PNG/JPG/JPEG dipampatkan dalam browser dan disimpan dalam Firestore; Firebase Storage tidak digunakan.
 - Fungsi "Tukar Kata Laluan" tersedia dalam Profile tab

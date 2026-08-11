@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
     
     <!-- VUE 3, TAILWIND CSS & LIBRARIES -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -1147,7 +1147,7 @@
                                 <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage client directory, auto-fill into Quotation/Invoice forms, update or delete records.</p>
                             </div>
                         </div>
-                        <button v-if="canManageDocuments" type="button" @click="switchTab('doc-generator')" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
+                        <button v-if="canManageClients" type="button" @click="switchTab('doc-generator')" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
                             <i class="fa-solid fa-plus"></i><span>Create New Document</span>
                         </button>
                     </div>
