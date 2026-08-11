@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.8)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.9)
 // ============================================================
 
 import {
@@ -400,6 +400,19 @@ createApp({
         }
     },
     methods: {
+        toOfficialUppercase(value) {
+            return typeof value === 'string' ? value.trim().toLocaleUpperCase('en-MY') : value;
+        },
+        normalizeOfficialRecord(value, key = '') {
+            if (Array.isArray(value)) return value.map(item => this.normalizeOfficialRecord(item, key));
+            if (value && typeof value === 'object') {
+                return Object.fromEntries(Object.entries(value).map(([childKey, childValue]) => [childKey, this.normalizeOfficialRecord(childValue, childKey)]));
+            }
+            if (typeof value !== 'string') return value;
+            const protectedKey = /(^id$|uid$|email|password|photo|attachment|status|role|type|category|date|method|url|website)/i.test(key);
+            const protectedValue = /^(data:|https?:\/\/)/i.test(value.trim());
+            return protectedKey || protectedValue ? value.trim() : this.toOfficialUppercase(value);
+        },
         getRoleDisplayName(code) {
             const roles = {
                 'Director': 'Director',
@@ -953,6 +966,7 @@ createApp({
         async saveMyProfile() {
             try {
                 if (!this.userProfile.email) return;
+                this.userProfile.name = this.toOfficialUppercase(this.userProfile.name);
                 const userRef = doc(db, "users", this.userProfile.uid);
                 await setDoc(userRef, { name: this.userProfile.name, email: this.userProfile.email, role: this.userProfile.role, photo: this.userProfile.photo }, { merge: true });
                 this.logAudit('UPDATE', `User updated own profile: ${this.userProfile.email}`); this.showNotify('Your profile has been updated successfully!');
@@ -1030,6 +1044,7 @@ createApp({
                     return;
                 }
 
+                this.userModal.form.name = this.toOfficialUppercase(this.userModal.form.name);
                 const isNewUser = !this.userModal.isEdit;
                 const email = this.userModal.form.email.trim().toLowerCase(); const password = this.userModal.form.password.trim();
                 this.userModal.form.email = email;
@@ -1103,7 +1118,7 @@ createApp({
 
         async saveSettings() {
             if (!this.canManageCompanySettings) { this.showNotify('You do not have permission to update company settings.'); return; }
-            try { await setDoc(doc(db, "settings", "company_profile"), { ...this.company }); this.logAudit('UPDATE', 'Updated settings'); this.showNotify('Settings updated!'); } catch (error) { this.showNotify('Unable to save company settings.'); }
+            try { this.company = this.normalizeOfficialRecord(this.company); this.company.email = String(this.company.email || '').trim().toLowerCase(); await setDoc(doc(db, "settings", "company_profile"), { ...this.company }); this.logAudit('UPDATE', 'Updated settings'); this.showNotify('Settings updated!'); } catch (error) { this.showNotify('Unable to save company settings.'); }
         },
 
         selectCustomerForDoc(e) {
@@ -1121,7 +1136,8 @@ createApp({
             if (!this.docForm.clientName || !this.docForm.clientPhone || !this.docForm.clientAddress) return alert('Enter Client Name, Phone, and Address.');
             try {
                 const docId = this.docForm.clientName.trim().replace(/\s+/g, '_').toLowerCase();
-                const newCust = { clientName: this.docForm.clientName, clientPhone: this.docForm.clientPhone, clientSSM: this.docForm.clientSSM, clientAddress: this.docForm.clientAddress, clientCity: this.docForm.clientCity, clientState: this.docForm.clientState, clientPostcode: this.docForm.clientPostcode, clientCountry: this.docForm.clientCountry, clientEmail: this.docForm.clientEmail, clientContactPerson: this.docForm.clientContactPerson, clientPosition: this.docForm.clientPosition };
+                const newCust = this.normalizeOfficialRecord({ clientName: this.docForm.clientName, clientPhone: this.docForm.clientPhone, clientSSM: this.docForm.clientSSM, clientAddress: this.docForm.clientAddress, clientCity: this.docForm.clientCity, clientState: this.docForm.clientState, clientPostcode: this.docForm.clientPostcode, clientCountry: this.docForm.clientCountry, clientEmail: String(this.docForm.clientEmail || '').trim().toLowerCase(), clientContactPerson: this.docForm.clientContactPerson, clientPosition: this.docForm.clientPosition });
+                Object.assign(this.docForm, newCust);
             await setDoc(doc(db, "customers", docId), newCust); this.clientSavedForDocument = true; this.logAudit('CREATE', `Saved customer ${this.docForm.clientName}`); this.showNotify('Client saved. You can now add document items.'); return true;
             } catch (error) { console.error('Client save failed:', error); this.showNotify('Unable to save client information.'); return false; }
         },
@@ -1181,6 +1197,8 @@ createApp({
             try {
                 if (!this.canManageSensitiveData) { this.showNotify('Only HR, Superadmin and Director can update sensitive employee information.'); return; }
                 const form = this.employeeModal.form;
+                Object.assign(form, this.normalizeOfficialRecord(form));
+                form.email = String(form.email || '').trim().toLowerCase();
                 const sensitiveFields = ['ic', 'bankAcc', 'epfNo', 'socsoNo', 'eisNo', 'taxNo'];
                 if (!form.empNo || !form.name || !form.dept || !form.joinDate || !form.employmentType) return alert("Complete the required Basic Information fields.");
                 if (!this.employeeModal.isEdit && !form.ic) return alert("National ID / Passport is required for a new employee.");
@@ -1314,6 +1332,8 @@ createApp({
         },
         async saveClaimRecord() {
                 if (this.attachmentUploadState.receipt) return alert('Wait for the receipt upload to finish.');
+                Object.assign(this.claimForm, this.normalizeOfficialRecord(this.claimForm));
+                this.claimForm.empEmail = String(this.claimForm.empEmail || '').trim().toLowerCase();
                 if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo || !this.claimForm.description.trim() || !this.claimForm.receiptAttachment) return alert("Complete all required claim fields, including Expense Description and Receipt Attachment.");
                 if (this.claimForm.documentType === 'Payment Voucher' && (!this.claimForm.payeeName.trim() || !this.claimForm.paymentPurpose.trim())) return alert('Complete the Payee Name and Payment Purpose for this Payment Voucher.');
             try {
@@ -1353,6 +1373,9 @@ createApp({
                 if (this.attachmentUploadState.payment) { this.showNotify('Wait for the payment attachment upload to finish.'); return false; }
                 if (!this.canManageDocuments) { this.showNotify('You do not have permission to save documents.'); return false; }
                 if (['Paid', 'Partial'].includes(this.docForm.status) && (!this.docForm.paymentRefNo || this.docForm.paymentRefNo.trim() === '')) { alert("Payment Reference No. is REQUIRED."); return false; }
+                const normalizedDocForm = this.normalizeOfficialRecord(this.docForm);
+                normalizedDocForm.clientEmail = String(this.docForm.clientEmail || '').trim().toLowerCase();
+                Object.assign(this.docForm, normalizedDocForm);
                 const docId = String(this.editingDocId || Date.now());
                 const payload = { id: docId, type: this.docForm.type, docNo: this.docForm.docNo, status: this.docForm.status || (this.docForm.type === 'Invoice' ? 'Unpaid' : 'Open'), paymentMethod: this.docForm.paymentMethod || 'Bank Transfer', paymentBank: this.docForm.paymentBank || '', paymentReceiver: this.docForm.paymentReceiver || '', paymentRefNo: this.docForm.paymentRefNo || '', paymentAttachment: this.docForm.paymentAttachment || '', date: this.docForm.date, name: this.docForm.clientName, amount: this.docGrandTotal, raw: JSON.parse(JSON.stringify(this.docForm)) };
                 if (!this.clientSavedForDocument) { alert('Save Client information before saving this document.'); return false; }
@@ -1362,6 +1385,9 @@ createApp({
         async savePayslipRecord() {
             try {
                 if (!this.canManagePayroll) { this.showNotify('You do not have permission to save payslips.'); return; }
+                const normalizedPayForm = this.normalizeOfficialRecord(this.payForm);
+                normalizedPayForm.empEmail = String(this.payForm.empEmail || '').trim().toLowerCase();
+                Object.assign(this.payForm, normalizedPayForm);
                 const docId = String(this.editingPayId || Date.now());
                 const payload = { id: docId, type: 'Payslip', docNo: `PS-${this.currentYear}-${this.payForm.empNo}`, date: this.payForm.payDate, name: this.payForm.name, amount: this.payCalc.net, raw: JSON.parse(JSON.stringify(this.payForm)) };
                 await setDoc(doc(db, "payslips", docId), payload); this.editingPayId = null; this.showNotify(`Payslip saved.`);

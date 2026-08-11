@@ -683,3 +683,17 @@ body {
     padding-top: 6px; 
     width: 100%; 
 }
+
+/* Format rasmi borang: input maklumat dipaparkan dalam huruf besar. */
+input[type="text"],
+input[type="search"],
+textarea,
+select {
+    text-transform: uppercase;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="url"] {
+    text-transform: none;
+}
