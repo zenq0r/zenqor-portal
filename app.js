@@ -1,14 +1,10 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.4)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.5)
 // ============================================================
 
 import {
     db,
     auth,
-    storage,
-    ref,
-    uploadBytes,
-    getDownloadURL,
     collection,
     doc,
     setDoc,
@@ -518,27 +514,61 @@ createApp({
             return contentType;
         },
         getUploadErrorMessage(error) {
-            const code = String(error?.code || '');
-            if (code.includes('unauthorized')) return 'Upload permission was denied. Sign in again and ensure the latest Firebase Storage Rules are deployed.';
-            if (code.includes('retry-limit-exceeded')) return 'Upload timed out. Check the network connection and try again.';
-            if (code.includes('canceled')) return 'The upload was cancelled.';
-            return error?.message || 'Unable to upload the image. Please try again.';
+            return error?.message || 'Unable to process the image. Please select another PNG, JPG or JPEG file.';
         },
-        async uploadImageAttachment(file, category) {
-            if (!auth.currentUser) throw new Error('Authentication is required before uploading an attachment.');
-            const contentType = await this.validateImageFile(file);
-            const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-            const attachmentRef = ref(storage, `portal_attachments/${category}/${auth.currentUser.uid}/${Date.now()}_${cleanName}`);
-            await uploadBytes(attachmentRef, file, { contentType, customMetadata: { originalName: file.name } });
-            return getDownloadURL(attachmentRef);
+        async prepareImageAttachment(file, maxDataUrlBytes = 280 * 1024, maxDimension = 1600) {
+            await this.validateImageFile(file);
+            const imageUrl = URL.createObjectURL(file);
+            try {
+                const image = await new Promise((resolve, reject) => {
+                    const element = new Image();
+                    element.onload = () => resolve(element);
+                    element.onerror = () => reject(new Error('The selected image cannot be decoded.'));
+                    element.src = imageUrl;
+                });
+                let width = image.naturalWidth;
+                let height = image.naturalHeight;
+                if (!width || !height) throw new Error('The selected image has invalid dimensions.');
+                const initialScale = Math.min(1, maxDimension / Math.max(width, height));
+                width = Math.max(1, Math.round(width * initialScale));
+                height = Math.max(1, Math.round(height * initialScale));
+
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d', { alpha: false });
+                if (!context) throw new Error('This browser cannot process the selected image.');
+                let quality = 0.9;
+                let dataUrl = '';
+                for (let attempt = 0; attempt < 14; attempt++) {
+                    canvas.width = width;
+                    canvas.height = height;
+                    context.fillStyle = '#FFFFFF';
+                    context.fillRect(0, 0, width, height);
+                    context.drawImage(image, 0, 0, width, height);
+                    dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    const encodedBytes = Math.ceil((dataUrl.length - dataUrl.indexOf(',') - 1) * 3 / 4);
+                    if (encodedBytes <= maxDataUrlBytes) return dataUrl;
+                    if (quality > 0.5) quality -= 0.1;
+                    else {
+                        const currentMax = Math.max(width, height);
+                        const nextMax = Math.max(480, Math.round(currentMax * 0.82));
+                        const resizeScale = nextMax / currentMax;
+                        width = Math.max(1, Math.round(width * resizeScale));
+                        height = Math.max(1, Math.round(height * resizeScale));
+                        quality = 0.72;
+                    }
+                }
+                throw new Error('The image could not be reduced to a safe Firestore size. Please use a smaller image.');
+            } finally {
+                URL.revokeObjectURL(imageUrl);
+            }
         },
         async handleAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
             this.attachmentUploadState.payment = true;
             try {
-                this.docForm.paymentAttachment = await this.uploadImageAttachment(file, 'payments');
-                this.showNotify('Payment attachment uploaded securely.');
+                this.docForm.paymentAttachment = await this.prepareImageAttachment(file);
+                this.showNotify('Payment attachment is ready to be saved.');
             } catch (error) {
                 console.error('Payment attachment upload failed:', error);
                 this.docForm.paymentAttachment = '';
@@ -551,9 +581,9 @@ createApp({
             if (!file) return;
             this.attachmentUploadState.receipt = true;
             try {
-                this.claimForm.receiptAttachment = await this.uploadImageAttachment(file, 'claim_receipts');
+                this.claimForm.receiptAttachment = await this.prepareImageAttachment(file);
                 this.claimForm.receiptAttachmentName = file.name;
-                this.showNotify('Receipt attachment uploaded securely.');
+                this.showNotify('Receipt attachment is ready to be saved.');
             } catch (error) {
                 console.error('Receipt attachment upload failed:', error);
                 this.claimForm.receiptAttachment = '';
@@ -567,9 +597,9 @@ createApp({
             if (!file) return;
             this.attachmentUploadState.director = true;
             try {
-                this.claimPreview.directorApprovalAttachment = await this.uploadImageAttachment(file, 'director_approvals');
+                this.claimPreview.directorApprovalAttachment = await this.prepareImageAttachment(file);
                 this.claimPreview.directorApprovalAttachmentName = file.name;
-                this.showNotify('Director approval document uploaded securely.');
+                this.showNotify('Director approval document is ready to be saved.');
             } catch (error) {
                 console.error('Director attachment upload failed:', error);
                 this.claimPreview.directorApprovalAttachment = '';
@@ -858,11 +888,7 @@ createApp({
             if (!this.userProfile.uid) { this.profilePhotoUpload.error = 'Please sign in again before uploading a photo.'; return; }
             this.profilePhotoUpload.loading = true;
             try {
-                const contentType = await this.validateImageFile(file);
-                const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-                const photoRef = ref(storage, `profile_photos/${auth.currentUser.uid}/${Date.now()}_${cleanName}`);
-                await uploadBytes(photoRef, file, { contentType, customMetadata: { originalName: file.name } });
-                const photoUrl = await getDownloadURL(photoRef);
+                const photoUrl = await this.prepareImageAttachment(file, 120 * 1024, 720);
                 await setDoc(doc(db, 'users', this.userProfile.uid), { photo: photoUrl }, { merge: true });
                 this.userProfile.photo = photoUrl;
                 this.logAudit('UPDATE', 'Uploaded profile photo');

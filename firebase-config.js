@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firebase-config.js (SAFE AUTH & DB v2.8)
+// ZENQOR TECHNOLOGIES - firebase-config.js (SAFE AUTH & DB v2.9 - FIRESTORE ATTACHMENTS)
 // ============================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -19,12 +19,6 @@ import {
     where,
     orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-    getStorage,
-    ref,
-    uploadBytes,
-    getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import {
     getAuth,
     signInWithEmailAndPassword,
@@ -57,17 +51,11 @@ isAnalyticsSupported().then((supported) => {
 }).catch(() => {});
 
 const db = getFirestore(app);
-const storage = getStorage(app);
-
 const auth = getAuth(app);
 
 export {
     db,
     auth,
-    storage,
-    ref,
-    uploadBytes,
-    getDownloadURL,
     collection,
     doc,
     setDoc,
