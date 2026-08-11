@@ -159,6 +159,15 @@ service cloud.firestore {
           'name', 'position', 'dept', 'empEmail'
         ])
       ) || (
+        isAdmin() &&
+        resource.data.status == 'Approved' &&
+        request.resource.data.status == 'Approved' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'documentType', 'type', 'finalDecision', 'settlementStatus', 'statusDetail',
+          'assignedToUid', 'assignedToName', 'assignedToEmail', 'assignedToRole',
+          'approvalPath'
+        ])
+      ) || (
         isAuthenticated() &&
         resource.data.status == 'Pending HR' &&
         request.resource.data.status == 'Pending HR' &&

@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.7)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.8)
 // ============================================================
 
 import {
@@ -99,6 +99,7 @@ createApp({
             presencePageHideHandler: null,
             presencePageShowHandler: null,
             presenceVisibilityHandler: null,
+            legacyClaimMigrationRunning: false,
 
             changePasswordModal: {
                 show: false,
@@ -370,9 +371,9 @@ createApp({
             const combined = [
                 ...this.docHistory.map(d => ({ ...d, tagClass: d.type === 'Invoice' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200', isDoc: true })),
                 ...this.payslipHistory.map(p => ({ ...p, tagClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200', isPay: true })),
-                ...this.claimsHistory.map(c => ({ ...c, tagClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200', isClaim: true, docNo: c.receiptNo, amount: c.amount, date: c.expenseDate }))
+                ...this.claimsHistory.map(c => ({ ...c, tagClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200', isClaim: true, docNo: c.receiptNo, amount: c.amount, date: c.expenseDate, name: c.documentType === 'Payment Voucher' ? (c.payeeName || c.name) : c.name }))
             ];
-            const typePriority = { 'Payslip': 1, 'Quotation': 2, 'Invoice': 3, 'Claim': 4 };
+            const typePriority = { 'Payslip': 1, 'Quotation': 2, 'Invoice': 3, 'Claim': 4, 'Payment Voucher': 5 };
             let list = combined.sort((a, b) => {
                 if (this.sortOption === 'latest') return new Date(b.date) - new Date(a.date);
                 if (this.sortOption === 'oldest') return new Date(a.date) - new Date(b.date);
@@ -417,17 +418,64 @@ createApp({
                     ? { label: 'PAID', detail: 'Payment received', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' }
                     : { label: 'UNPAID', detail: 'Payment not received', className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' };
             }
-            if (item.type === 'Claim') {
+            if (item.isClaim || ['Claim', 'Payment Voucher'].includes(item.documentType || item.type)) {
+                const isPaymentVoucher = (item.documentType || item.type) === 'Payment Voucher';
                 const statuses = {
                     'Pending HR': { label: 'PENDING HR', detail: 'Awaiting HR approval', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
                     'Pending Account': { label: 'PENDING FINANCE', detail: 'HR approved — Finance action required', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
                     'Pending Director': { label: 'PENDING DIRECTOR', detail: 'Finance approved — Director action required', className: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300' },
-                    'Approved': { label: 'APPROVED', detail: 'Claim fully approved', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
-                    'Rejected': { label: 'REJECTED', detail: 'Claim rejected', className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' }
+                    'Approved': { label: 'APPROVED', detail: isPaymentVoucher ? 'Payment fully paid' : 'Claim fully approved', className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
+                    'Rejected': { label: 'REJECTED', detail: isPaymentVoucher ? 'Payment voucher rejected' : 'Claim rejected', className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' }
                 };
                 return statuses[item.status] || { label: 'PENDING', detail: 'Awaiting action', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' };
             }
             return { label: 'RECORDED', detail: 'Record created', className: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200' };
+        },
+        normalizeClaimRecord(record) {
+            const documentType = record.documentType || (record.type === 'Payment Voucher' || /^PV-/i.test(record.receiptNo || '') ? 'Payment Voucher' : 'Claim');
+            if (record.status !== 'Approved') return { ...record, documentType };
+            const isPaymentVoucher = documentType === 'Payment Voucher';
+            return {
+                ...record,
+                documentType,
+                type: documentType,
+                finalDecision: true,
+                settlementStatus: isPaymentVoucher ? 'Paid' : 'Approved',
+                statusDetail: isPaymentVoucher ? 'Payment fully paid' : 'Claim fully approved',
+                assignedToUid: record.approvedByUid || record.assignedToUid || '',
+                assignedToName: record.approvedByName || record.assignedToName || 'Director',
+                assignedToEmail: record.approvedByEmail || '',
+                assignedToRole: 'Director',
+                approvalPath: record.approvalPath || (record.approvedByRole === 'Director' ? 'Director Direct Approval' : 'Director Final Approval')
+            };
+        },
+        async synchronizeLegacyApprovedClaims(snapshotDocs) {
+            if (this.legacyClaimMigrationRunning || !['Director', 'Superadmin'].includes(this.userProfile.role)) return;
+            const migrations = [];
+            snapshotDocs.forEach(snapshotDoc => {
+                const existing = snapshotDoc.data();
+                if (existing.status !== 'Approved') return;
+                const normalized = this.normalizeClaimRecord(existing);
+                const patch = {};
+                ['documentType', 'type', 'finalDecision', 'settlementStatus', 'statusDetail', 'assignedToUid', 'assignedToName', 'assignedToEmail', 'assignedToRole', 'approvalPath'].forEach(field => {
+                    if (existing[field] !== normalized[field]) patch[field] = normalized[field];
+                });
+                if (Object.keys(patch).length) migrations.push({ ref: snapshotDoc.ref, patch });
+            });
+            if (!migrations.length) return;
+            this.legacyClaimMigrationRunning = true;
+            try {
+                for (let start = 0; start < migrations.length; start += 450) {
+                    const batch = writeBatch(db);
+                    migrations.slice(start, start + 450).forEach(item => batch.update(item.ref, item.patch));
+                    await batch.commit();
+                }
+                this.showNotify(`${migrations.length} approved legacy record(s) synchronized.`);
+            } catch (error) {
+                console.error('Legacy approved record synchronization failed:', error);
+            } finally {
+                this.legacyClaimMigrationRunning = false;
+            }
         },
         exportCSV(type) {
             let filename = '';
@@ -1241,9 +1289,10 @@ createApp({
             const roleNames = { HR: 'Human Resource Management', Account: 'Finance Account Management', Director: 'Director' };
             if (isDirectorDecision && !this.claimPreview.directorApprovalAttachment) { alert('Director approval requires a supporting document attachment.'); return; }
             const bypassedReviews = clm.status === 'Pending HR' ? ['HR', 'Account'] : clm.status === 'Pending Account' ? ['Account'] : [];
+            const isPaymentVoucher = (clm.documentType || clm.type) === 'Payment Voucher';
             const update = nextRole
                 ? { status: `Pending ${nextRole}`, assignedToUid: '', assignedToName: roleNames[nextRole], assignedToEmail: '', assignedToRole: nextRole }
-                : { status: 'Approved', finalDecision: true, approvalPath: 'Director Direct Approval', approvalPreviousStatus: clm.status, bypassedReviews, assignedToUid: this.userProfile.uid, assignedToName: this.userProfile.name, assignedToEmail: this.userProfile.email, assignedToRole: 'Director', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByRole: 'Director', approvedAt: new Date().toISOString(), directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName, directorApprovalOriginalBytes: Number(this.claimPreview.directorApprovalOriginalBytes || 0) };
+                : { status: 'Approved', finalDecision: true, settlementStatus: isPaymentVoucher ? 'Paid' : 'Approved', statusDetail: isPaymentVoucher ? 'Payment fully paid' : 'Claim fully approved', approvalPath: 'Director Direct Approval', approvalPreviousStatus: clm.status, bypassedReviews, assignedToUid: this.userProfile.uid, assignedToName: this.userProfile.name, assignedToEmail: this.userProfile.email, assignedToRole: 'Director', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByEmail: this.userProfile.email, approvedByRole: 'Director', approvedAt: new Date().toISOString(), directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName, directorApprovalOriginalBytes: Number(this.claimPreview.directorApprovalOriginalBytes || 0) };
             try {
                 if (!nextRole && this.getSerializedSize({ ...clm, ...update }) > 800 * 1024) throw Object.assign(new Error('The combined claim record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
                 await updateDoc(doc(db, "claims", clm.id), update);
@@ -1521,7 +1570,10 @@ createApp({
                     ? subscribeWithReadySignal(payslipsSource, (snapshot) => { this.payslipHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'payslips')
                     : Promise.resolve(),
                 claimsSource
-                    ? subscribeWithReadySignal(claimsSource, (snapshot) => { this.claimsHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'claims')
+                    ? subscribeWithReadySignal(claimsSource, (snapshot) => {
+                        this.claimsHistory = snapshot.docs.map(d => this.normalizeClaimRecord({ id: d.id, ...d.data() }));
+                        this.synchronizeLegacyApprovedClaims(snapshot.docs);
+                    }, 'claims')
                     : Promise.resolve(),
                 userSubscription,
                 canReadAuditLogs
