@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.9)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.0)
 // ============================================================
 
 import {
@@ -141,6 +141,8 @@ createApp({
             clientSavedForDocument: false,
             editingPayId: null,
             editingClaimId: null,
+            selectedPayEmployeeId: '',
+            selectedClaimEmployeeId: '',
 
             employeeModal: {
                 show: false,
@@ -528,6 +530,8 @@ createApp({
         },
 
         resetAllForms() {
+            this.selectedPayEmployeeId = '';
+            this.selectedClaimEmployeeId = '';
             this.docForm = {
                 type: 'Invoice', docNo: '', status: 'Unpaid', paymentMethod: 'Bank Transfer (EFT)', paymentBank: '', paymentReceiver: '', paymentRefNo: '', paymentAttachment: '',
                 date: new Date().toISOString().substr(0, 10), dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
@@ -1279,6 +1283,7 @@ createApp({
             try { await deleteDoc(doc(db, "employees", empNo)); this.showNotify('Employee deleted.'); } catch (error) { this.showNotify('Unable to delete employee.'); }
         },
         selectEmployeeFromTable(emp) {
+            this.selectedPayEmployeeId = emp.empNo || '';
             this.payForm.empNo = emp.empNo || ''; this.payForm.name = emp.name || ''; this.payForm.empEmail = emp.email || ''; this.payForm.ic = emp.ic || ''; this.payForm.dept = emp.dept || ''; this.payForm.position = emp.position || ''; this.payForm.joinDate = emp.joinDate || ''; this.payForm.bankAcc = emp.bankAcc || ''; this.payForm.isSenior = !!emp.isSenior; this.payForm.epfSocso = `KWSP: ${emp.epfNo || '-'} | PERKESO: ${emp.socsoNo || '-'}`; this.payForm.basic = emp.basicSalary || 0;
             this.autoCalculatePayroll(); this.showNotify(`Employee loaded.`);
         },
@@ -1352,7 +1357,7 @@ createApp({
                 this.editingClaimId = null; this.showNotify(`${documentType} submitted.`); this.resetClaimForm();
             } catch (error) { console.error('Claim save failed:', error); this.showNotify(this.getFirestoreWriteError(error, 'submit the claim')); }
         },
-        editClaimRecord(clm) { this.editingClaimId = clm.id; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; window.scrollTo({ top:0, behavior:'smooth' }); },
+        editClaimRecord(clm) { this.editingClaimId = clm.id; this.selectedClaimEmployeeId = clm.empNo || ''; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; window.scrollTo({ top:0, behavior:'smooth' }); },
         cancelEditClaim() { this.editingClaimId = null; this.resetClaimForm(); },
         async deleteClaimRecord(claimId) { if (confirm("Delete this claim record?")) { try { await deleteDoc(doc(db, "claims", claimId)); this.showNotify("Claim deleted."); } catch (error) { console.error('Claim deletion failed:', error); this.showNotify('Unable to delete claim.'); } } },
 
@@ -1455,7 +1460,7 @@ createApp({
         },
         editRecord(item) {
             if (item.isDoc) { this.editingDocId = item.id; if (item.raw) { this.docForm = JSON.parse(JSON.stringify(item.raw)); this.docForm.status = item.raw.status || item.status || (item.type === 'Invoice' ? 'Unpaid' : 'Open'); } this.currentTab = 'doc-generator'; }
-            else if (item.isPay) { this.editingPayId = item.id; if (item.raw) this.payForm = JSON.parse(JSON.stringify(item.raw)); this.autoCalculatePayroll(); this.currentTab = 'payslip-generator'; }
+            else if (item.isPay) { this.editingPayId = item.id; if (item.raw) { this.payForm = JSON.parse(JSON.stringify(item.raw)); this.selectedPayEmployeeId = this.payForm.empNo || ''; } this.autoCalculatePayroll(); this.currentTab = 'payslip-generator'; }
             else if (item.isClaim) this.editClaimRecord(item);
         },
         async confirmDeleteRecord(item) {
