@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.2)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v7.3)
 // ============================================================
 
 import {
@@ -205,6 +205,14 @@ createApp({
                     'Emergency Operations Purchase',
                     'Equipment Maintenance'
                 ],
+                'Remuneration and Services': [
+                    'Casual Wages / Daily Pay',
+                    'Freelance / Professional Fee',
+                    'Contractor Payment',
+                    'Allowance / Honorarium',
+                    'Vendor / Supplier Payment',
+                    'Temporary Staff Payment'
+                ],
                 'Communications and Utilities': [
                     'Mobile Phone',
                     'Internet / Data',
@@ -256,9 +264,10 @@ createApp({
             },
 
             claimForm: {
-                name: '', empNo: '', empEmail: '', dept: '',
+                documentType: 'Claim', name: '', empNo: '', empEmail: '', position: '', dept: '',
                 expenseDate: new Date().toISOString().substr(0, 10),
                 category: 'Medical', subCategory: 'Clinic / Hospital Treatment',
+                payeeName: '', payeeType: 'Individual', payeeReference: '', paymentPurpose: '',
                 amount: 0, receiptNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', status: 'Pending HR',
                 assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
             },
@@ -474,7 +483,8 @@ createApp({
                 basic: 0, ot: 0, phone: 0, transport: 0, meal: 0, bonus: 0, dedEpf: 0, dedSocso: 0, dedEis: 0, dedPcb: 0, dedAdvance: 0, dedOther: 0
             };
             this.claimForm = {
-                name: '', empNo: '', empEmail: '', dept: '', expenseDate: new Date().toISOString().substr(0, 10), category: 'Medical', subCategory: 'Clinic / Hospital Treatment',
+                documentType: 'Claim', name: '', empNo: '', empEmail: '', position: '', dept: '', expenseDate: new Date().toISOString().substr(0, 10), category: 'Medical', subCategory: 'Clinic / Hospital Treatment',
+                payeeName: '', payeeType: 'Individual', payeeReference: '', paymentPurpose: '',
                 amount: 0, receiptNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', status: 'Pending HR',
                 assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
             };
@@ -1135,7 +1145,12 @@ createApp({
             this.autoCalculatePayroll(); this.showNotify(`Employee loaded.`);
         },
         selectEmployeeForPayslip(e) { const emp = this.employees.find(x => x.empNo === e.target.value); if (emp) this.selectEmployeeFromTable(emp); },
-        selectEmployeeForClaim(e) { const emp = this.employees.find(x => x.empNo === e.target.value); if (emp) { this.claimForm.name = emp.name||''; this.claimForm.empNo = emp.empNo||''; this.claimForm.empEmail = emp.email||''; this.claimForm.dept = emp.dept||''; this.showNotify(`Applicant loaded.`); } },
+        selectEmployeeForClaim(e) { const emp = this.employees.find(x => x.empNo === e.target.value); if (emp) { this.claimForm.name = emp.name||''; this.claimForm.empNo = emp.empNo||''; this.claimForm.empEmail = emp.email||''; this.claimForm.position = emp.position||''; this.claimForm.dept = emp.dept||''; this.showNotify(`Applicant loaded.`); } },
+        setClaimDocumentType(type) {
+            this.claimForm.documentType = type;
+            if (type === 'Payment Voucher' && !this.claimForm.receiptNo) this.claimForm.receiptNo = `PV-${this.currentYear}-${String(Date.now()).slice(-6)}`;
+            if (type === 'Claim' && /^PV-\d{4}-\d{6}$/.test(this.claimForm.receiptNo || '')) this.claimForm.receiptNo = '';
+        },
 
         // WORKFLOW: Staff/Client -> HR -> Account -> Director (final approval)
         canApproveClaim(clm) {
@@ -1145,7 +1160,7 @@ createApp({
             return !!expectedStatus && clm.status === expectedStatus && (!clm.assignedToEmail || clm.assignedToEmail === this.userProfile.email);
         },
         canEditClaim(clm) {
-            return clm.empEmail === this.userProfile.email && clm.status === 'Pending HR';
+            return (clm.createdByUid === this.userProfile.uid || clm.empEmail === this.userProfile.email) && clm.status === 'Pending HR';
         },
         async approveClaim(clm) {
             if (this.attachmentUploadState.director) { this.showNotify('Wait for the Director approval document upload to finish.'); return false; }
@@ -1175,6 +1190,7 @@ createApp({
         async saveClaimRecord() {
                 if (this.attachmentUploadState.receipt) return alert('Wait for the receipt upload to finish.');
                 if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo || !this.claimForm.description.trim() || !this.claimForm.receiptAttachment) return alert("Complete all required claim fields, including Expense Description and Receipt Attachment.");
+                if (this.claimForm.documentType === 'Payment Voucher' && (!this.claimForm.payeeName.trim() || !this.claimForm.paymentPurpose.trim())) return alert('Complete the Payee Name and Payment Purpose for this Payment Voucher.');
             try {
                 const applicantUser = this.users.find(u => u.email === (this.claimForm.empEmail || this.userProfile.email));
                 const applicantRole = applicantUser ? applicantUser.role : 'Staff';
@@ -1182,9 +1198,10 @@ createApp({
                 const assignee = { id: '', name: 'Human Resource Management', email: '', role: 'HR' };
 
                 const claimId = String(this.editingClaimId || Date.now());
-                const payload = { id: claimId, type: 'Claim', date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: this.claimForm.empEmail || this.userProfile.email, position: this.claimForm.position || '', dept: this.claimForm.dept, category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
+                const documentType = this.claimForm.documentType === 'Payment Voucher' ? 'Payment Voucher' : 'Claim';
+                const payload = { id: claimId, type: documentType, documentType, date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: this.claimForm.empEmail || this.userProfile.email, position: this.claimForm.position || '', dept: this.claimForm.dept, payeeName: this.claimForm.payeeName || '', payeeType: this.claimForm.payeeType || '', payeeReference: this.claimForm.payeeReference || '', paymentPurpose: this.claimForm.paymentPurpose || '', category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', createdByUid: this.editingClaimId ? (this.claimForm.createdByUid || this.userProfile.uid) : this.userProfile.uid, createdByEmail: this.editingClaimId ? (this.claimForm.createdByEmail || this.userProfile.email) : this.userProfile.email, createdAt: this.editingClaimId ? (this.claimForm.createdAt || new Date().toISOString()) : new Date().toISOString(), status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
                 await setDoc(doc(db, "claims", claimId), payload);
-                this.editingClaimId = null; this.showNotify(`Claim submitted.`); this.resetClaimForm();
+                this.editingClaimId = null; this.showNotify(`${documentType} submitted.`); this.resetClaimForm();
             } catch (error) { console.error('Claim save failed:', error); this.showNotify('Unable to submit claim. Check the attachment size and try again.'); }
         },
         editClaimRecord(clm) { this.editingClaimId = clm.id; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; window.scrollTo({ top:0, behavior:'smooth' }); },
