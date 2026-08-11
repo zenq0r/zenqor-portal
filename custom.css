@@ -697,3 +697,50 @@ input[type="password"],
 input[type="url"] {
     text-transform: none;
 }
+
+/* Project Activities: structured responsive workflow and summary layout. */
+.project-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.project-summary-card {
+    min-width: 0;
+    border-top: 3px solid #0F766E;
+}
+
+.project-board-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: start;
+    gap: 14px;
+    width: 100%;
+}
+
+@media (max-width: 1450px) {
+    .project-board-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1024px) {
+    .project-summary-grid,
+    .project-board-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .project-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .project-summary-card:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .project-board-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

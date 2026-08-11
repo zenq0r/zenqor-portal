@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.2)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.2.1)
 // ============================================================
 
 import {
@@ -133,6 +133,7 @@ createApp({
             payslipHistory: [],
             claimsHistory: [],
             projects: [],
+            projectViewMode: 'board',
             projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
             projectModal: {
                 show: false,

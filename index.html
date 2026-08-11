@@ -1343,21 +1343,29 @@
                                 <p class="text-slate-500 text-xs mt-0.5">Real-time project progress across five controlled workflow stages.</p>
                             </div>
                         </div>
-                        <button v-if="canManageProjects" type="button" @click="openProjectModal()" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-plus"></i><span>Add Project</span>
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                        <div v-for="stage in projectStages" :key="`summary-${stage}`" class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                            <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">{{ stage }}</p>
-                            <p class="mt-1 text-2xl font-black text-brand-dark">{{ getProjectsByStage(stage).length }}</p>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" aria-label="Project view selection">
+                                <button type="button" @click="projectViewMode = 'board'" :class="projectViewMode === 'board' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 hover:bg-slate-100'" class="rounded-lg px-3 py-2 text-xs font-bold transition"><i class="fa-solid fa-table-columns mr-1.5"></i>Board</button>
+                                <button type="button" @click="projectViewMode = 'list'" :class="projectViewMode === 'list' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 hover:bg-slate-100'" class="rounded-lg px-3 py-2 text-xs font-bold transition"><i class="fa-solid fa-list mr-1.5"></i>List</button>
+                            </div>
+                            <button v-if="canManageProjects" type="button" @click="openProjectModal()" class="bg-brand-blue hover:bg-teal-800 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-plus"></i><span>Add Project</span>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto pb-3">
-                        <div class="grid min-w-[1450px] grid-cols-5 gap-4">
-                            <section v-for="(stage, stageIndex) in projectStages" :key="stage" class="rounded-2xl border border-slate-200 bg-slate-100/70 p-3 shadow-sm">
+                    <div class="project-summary-grid">
+                        <div v-for="(stage, stageIndex) in projectStages" :key="`summary-${stage}`" class="project-summary-card rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                            <div class="flex items-center justify-between gap-3">
+                                <span :class="['bg-blue-500','bg-amber-500','bg-orange-500','bg-violet-500','bg-emerald-500'][stageIndex]" class="h-2.5 w-2.5 shrink-0 rounded-full"></span>
+                                <p class="text-2xl font-black leading-none text-brand-dark">{{ getProjectsByStage(stage).length }}</p>
+                            </div>
+                            <p class="mt-3 text-[10px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">{{ stage }}</p>
+                        </div>
+                    </div>
+
+                    <div v-if="projectViewMode === 'board'" class="project-board-grid">
+                            <section v-for="(stage, stageIndex) in projectStages" :key="stage" class="min-w-0 rounded-2xl border border-slate-200 bg-slate-100/70 p-3 shadow-sm">
                                 <header class="mb-3 flex items-center justify-between rounded-xl bg-white px-3 py-3 border border-slate-200">
                                     <div class="flex items-center gap-2">
                                         <span :class="['bg-blue-500','bg-amber-500','bg-orange-500','bg-violet-500','bg-emerald-500'][stageIndex]" class="h-2.5 w-2.5 rounded-full"></span>
@@ -1391,6 +1399,26 @@
                                     </div>
                                 </div>
                             </section>
+                    </div>
+
+                    <div v-else class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div class="overflow-x-auto">
+                            <table class="w-full min-w-[1000px] border-collapse text-left">
+                                <thead class="bg-slate-100 text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
+                                    <tr><th class="px-5 py-4">Reference / Project</th><th class="px-5 py-4">Client</th><th class="px-5 py-4">Person In Charge</th><th class="px-5 py-4">Target Date</th><th class="px-5 py-4">Workflow Status</th><th v-if="canManageProjects" class="px-5 py-4 text-center">Actions</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-xs">
+                                    <tr v-for="project in filteredProjects" :key="`list-${project.id}`" class="transition hover:bg-slate-50">
+                                        <td class="px-5 py-4"><p class="text-[10px] font-extrabold text-brand-blue">{{ project.projectRef }}</p><p class="mt-1 max-w-sm font-extrabold text-brand-dark">{{ project.title }}</p><p v-if="project.description" class="mt-1 max-w-sm truncate text-[10px] text-slate-500">{{ project.description }}</p></td>
+                                        <td class="px-5 py-4"><p class="font-bold text-slate-700">{{ project.clientName || '—' }}</p><p v-if="project.clientEmail" class="mt-1 text-[10px] lowercase text-slate-500">{{ project.clientEmail }}</p></td>
+                                        <td class="px-5 py-4"><p class="font-bold text-slate-700">{{ project.ownerName || '—' }}</p><p v-if="project.ownerEmail" class="mt-1 text-[10px] lowercase text-slate-500">{{ project.ownerEmail }}</p></td>
+                                        <td class="px-5 py-4 font-bold text-slate-700">{{ project.targetDate || '—' }}</td>
+                                        <td class="px-5 py-4"><span :class="['bg-blue-50 text-blue-700','bg-amber-50 text-amber-700','bg-orange-50 text-orange-700','bg-violet-50 text-violet-700','bg-emerald-50 text-emerald-700'][projectStages.indexOf(project.status)] || 'bg-slate-100 text-slate-700'" class="inline-flex rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase whitespace-nowrap">{{ project.status }}</span></td>
+                                        <td v-if="canManageProjects" class="px-5 py-4"><div class="flex justify-center gap-2"><button type="button" @click="openProjectModal(project)" class="h-8 w-8 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100" title="Edit project"><i class="fa-solid fa-pen"></i></button><button type="button" @click="deleteProject(project)" class="h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete project"><i class="fa-solid fa-trash"></i></button></div></td>
+                                    </tr>
+                                    <tr v-if="!filteredProjects.length"><td :colspan="canManageProjects ? 6 : 5" class="px-6 py-14 text-center"><i class="fa-regular fa-folder-open text-2xl text-slate-300"></i><p class="mt-2 text-xs font-bold text-slate-400">No project activity found</p></td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
