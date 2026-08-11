@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.3.1)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.4)
 // ============================================================
 
 import {
@@ -135,6 +135,7 @@ createApp({
             claimsHistory: [],
             projects: [],
             projectViewMode: 'board',
+            projectPreview: { show: false, project: null },
             projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
             projectModal: {
                 show: false,
@@ -457,6 +458,17 @@ createApp({
         },
         getProjectsByStage(stage) {
             return this.filteredProjects.filter(project => project.status === stage);
+        },
+        openProjectDetails(project) {
+            this.projectPreview = { show: true, project: JSON.parse(JSON.stringify(project)) };
+        },
+        closeProjectDetails() {
+            this.projectPreview = { show: false, project: null };
+        },
+        editProjectFromPreview() {
+            const project = this.projectPreview.project ? JSON.parse(JSON.stringify(this.projectPreview.project)) : null;
+            this.closeProjectDetails();
+            if (project) this.openProjectModal(project);
         },
         selectProjectClientDirectory(event) {
             const customer = this.customers.find(item => item.id === event.target.value);
