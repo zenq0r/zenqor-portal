@@ -773,13 +773,13 @@ createApp({
             }
         },
         async deleteProject(project) {
-            if (!this.canManageProjects) { this.showNotify('You do not have permission to delete project activities.'); return; }
+            if (!this.canManageProjects) { this.showNotify('You do not have permission to delete project activities.'); return false; }
             const linkedActivities = this.projectActivitiesFor(project.id);
             const linkedUpdates = this.clientUpdatesFor(project.id);
             const cascadeWarning = (linkedActivities.length || linkedUpdates.length)
                 ? ` This will also permanently delete ${linkedActivities.length} activity issue(s) and ${linkedUpdates.length} client update(s) linked to this project.`
                 : '';
-            if (!confirm(`Delete project ${project.projectRef}?${cascadeWarning} This action cannot be undone.`)) return;
+            if (!confirm(`Delete project ${project.projectRef}?${cascadeWarning} This action cannot be undone.`)) return false;
             try {
                 const batch = writeBatch(db);
                 linkedActivities.forEach(activity => batch.delete(doc(db, 'project_activities', activity.id)));
@@ -788,10 +788,22 @@ createApp({
                 await batch.commit();
                 this.logAudit('DELETE', `Project activity ${project.projectRef} (with ${linkedActivities.length} activity issue(s) and ${linkedUpdates.length} client update(s))`);
                 this.showNotify('Project and all linked records deleted.');
+                return true;
             } catch (error) {
                 console.error('Project deletion failed:', error);
                 this.showNotify(this.getFirestoreWriteError(error, 'delete the project activity'));
+                return false;
             }
+        },
+        async deleteProjectFromPreview() {
+            const project = this.projectPreview.project;
+            if (!project) return;
+            if (await this.deleteProject(project)) this.closeProjectDetails();
+        },
+        async deleteProjectFromModal() {
+            const project = this.projectModal.form;
+            if (!project?.id) return;
+            if (await this.deleteProject(project)) this.closeProjectModal();
         },
         async syncAssignedProjectPresence(employee, isOnline, timestamp) {
             if (!auth.currentUser || !employee?.empNo || !employee?.email) return;
