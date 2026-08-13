@@ -1499,7 +1499,7 @@
                                         <button type="button" @click="sendClientReply" class="shrink-0 rounded-xl bg-brand-blue px-4 py-2.5 text-xs font-bold text-white hover:bg-teal-800"><i class="fa-solid fa-paper-plane"></i></button>
                                     </div>
                                 </section>
-                                <div class="flex justify-end gap-2 border-t border-slate-200 pt-4"><button v-if="canManageProjects" type="button" @click="deleteProjectFromPreview" class="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-100"><i class="fa-solid fa-trash mr-1.5"></i>Delete Project</button><button v-if="canEditProject(projectPreview.project)" type="button" @click="editProjectFromPreview" class="rounded-xl bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-100"><i class="fa-solid fa-pen mr-1.5"></i>Edit Project</button><button type="button" @click="closeProjectDetails" class="rounded-xl bg-brand-dark px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-blue">Close</button></div>
+                                <div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4"><button v-if="canManageProjects" type="button" @click="deleteProjectFromPreview" class="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-100"><i class="fa-solid fa-trash mr-1.5"></i>Delete Project</button><button v-if="canEditProject(projectPreview.project)" type="button" @click="editProjectFromPreview" class="rounded-xl bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-100"><i class="fa-solid fa-pen mr-1.5"></i>Edit Project</button><button type="button" @click="closeProjectDetails" class="rounded-xl bg-brand-dark px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-blue">Close</button></div>
                             </div>
                         </div>
                     </div>
@@ -1514,7 +1514,7 @@
                                 <label class="text-xs font-bold text-slate-700 md:col-span-2">Assigned To *<select v-model="activityModal.form.assignedEmpNo" @change="selectActivityAssignee" required class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none focus:border-brand-blue"><option value="">-- Select Employee --</option><option v-for="employee in projectStaffOptions" :key="`activity-${employee.empNo}`" :value="employee.empNo">{{ employee.empNo }} · {{ employee.name }} · {{ employee.position || 'NO POSITION' }}</option></select><div v-if="activityModal.form.assignedEmpNo" class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-[10px] text-slate-600"><b>{{ activityModal.form.assignedName }}</b> · {{ activityModal.form.assignedPosition || 'NO POSITION' }} · <span class="lowercase">{{ activityModal.form.assignedEmail }}</span></div></label>
                                 <label class="text-xs font-bold text-slate-700 md:col-span-2">Activity Details<textarea v-model="activityModal.form.details" rows="5" placeholder="DOCUMENTS REQUIRED, FOLLOW-UP INSTRUCTIONS OR ISSUE DETAILS" class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></textarea></label>
                             </div>
-                            <div class="flex justify-end gap-2 border-t border-slate-200 px-6 py-4"><button type="button" @click="closeActivityModal" class="rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200">Cancel</button><button type="submit" class="rounded-xl bg-brand-blue px-5 py-2.5 text-xs font-bold text-white hover:bg-teal-800"><i :class="activityModal.isEdit ? 'fa-pen-to-square' : 'fa-calendar-check'" class="fa-solid mr-1.5"></i>{{ activityModal.isEdit ? 'Save Changes' : 'Schedule Activity' }}</button></div>
+                            <div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-6 py-4"><button type="button" @click="closeActivityModal" class="rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200">Cancel</button><button type="submit" class="rounded-xl bg-brand-blue px-5 py-2.5 text-xs font-bold text-white hover:bg-teal-800"><i :class="activityModal.isEdit ? 'fa-pen-to-square' : 'fa-calendar-check'" class="fa-solid mr-1.5"></i>{{ activityModal.isEdit ? 'Save Changes' : 'Schedule Activity' }}</button></div>
                         </form>
                     </div>
 
@@ -1526,7 +1526,7 @@
                                 <label class="text-xs font-bold text-slate-700">Update Date *<input v-model="clientUpdateModal.form.updateDate" type="date" required class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></label>
                                 <label class="text-xs font-bold text-slate-700 md:col-span-2">Client Message *<textarea v-model="clientUpdateModal.form.message" rows="6" required placeholder="WRITE ONLY INFORMATION APPROVED FOR CLIENT VIEW" class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></textarea><span class="mt-1.5 block text-[9px] font-semibold text-amber-700"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Do not include internal notes, passwords or confidential employee information.</span></label>
                             </div>
-                            <div class="flex justify-end gap-2 border-t border-slate-200 px-6 py-4"><button type="button" @click="closeClientUpdateModal" class="rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200">Cancel</button><button type="submit" class="rounded-xl bg-brand-blue px-5 py-2.5 text-xs font-bold text-white hover:bg-teal-800"><i :class="clientUpdateModal.isEdit ? 'fa-floppy-disk' : 'fa-paper-plane'" class="fa-solid mr-1.5"></i>{{ clientUpdateModal.isEdit ? 'Save Changes' : 'Send to Client' }}</button></div>
+                            <div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 px-6 py-4"><button type="button" @click="closeClientUpdateModal" class="rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200">Cancel</button><button type="submit" class="rounded-xl bg-brand-blue px-5 py-2.5 text-xs font-bold text-white hover:bg-teal-800"><i :class="clientUpdateModal.isEdit ? 'fa-floppy-disk' : 'fa-paper-plane'" class="fa-solid mr-1.5"></i>{{ clientUpdateModal.isEdit ? 'Save Changes' : 'Send to Client' }}</button></div>
                         </form>
                     </div>
 
@@ -1573,10 +1573,10 @@
                                 </div>
                             </section>
 
-                            <div class="mt-6 flex items-center justify-between gap-2 border-t border-slate-200 pt-4">
+                            <div class="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-4">
                                 <button v-if="projectModal.isEdit && canManageProjects" type="button" @click="deleteProjectFromModal" class="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-100"><i class="fa-solid fa-trash mr-1.5"></i>Delete Project</button>
                                 <div v-else></div>
-                                <div class="flex gap-2">
+                                <div class="flex flex-wrap gap-2">
                                     <button type="button" @click="closeProjectModal" class="rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200">Cancel</button>
                                     <button type="submit" class="rounded-xl bg-brand-dark px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-blue"><i class="fa-solid fa-floppy-disk mr-2"></i>Save Project</button>
                                 </div>
@@ -1734,7 +1734,7 @@
                                     </div>
                                 </div>
                                 
-                                <div class="sm:col-span-2 flex justify-end pt-1 space-x-2">
+                                <div class="sm:col-span-2 flex flex-wrap justify-end gap-2 pt-1">
                                     <button type="button" @click="changePasswordModal.show = true" class="bg-brand-gold hover:bg-yellow-500 text-brand-dark font-extrabold px-5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                         <i class="fa-solid fa-key"></i><span>Tukar Kata Laluan</span>
                                     </button>
