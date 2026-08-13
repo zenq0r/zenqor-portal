@@ -45,7 +45,7 @@ const RBAC_ROLES = {
     'Account': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'profile'],
     'IT': ['dashboard', 'project-activities', 'audit-logs', 'settings', 'profile'],
     'Client': ['dashboard', 'project-activities', 'client-portal', 'profile'],
-    'Staff': ['dashboard', 'project-activities', 'claims', 'client-portal', 'profile']
+    'Staff': ['dashboard', 'project-activities', 'claims', 'profile']
 };
 
 createApp({
@@ -1435,7 +1435,7 @@ createApp({
                 if (!this.userProfile.email) return;
                 this.userProfile.name = this.toOfficialUppercase(this.userProfile.name);
                 const userRef = doc(db, "users", this.userProfile.uid);
-                await setDoc(userRef, { name: this.userProfile.name, email: this.userProfile.email, role: this.userProfile.role, photo: this.userProfile.photo }, { merge: true });
+                await setDoc(userRef, { name: this.userProfile.name, email: this.userProfile.email, photo: this.userProfile.photo }, { merge: true });
                 this.logAudit('UPDATE', `User updated own profile: ${this.userProfile.email}`); this.showNotify('Your profile has been updated successfully!');
             } catch (error) { this.showNotify('Error updating profile.'); }
         },
@@ -1803,7 +1803,6 @@ createApp({
         // WORKFLOW: Staff/Client -> HR -> Account -> Director (final approval)
         canApproveClaim(clm) {
             const role = this.userProfile.role;
-            if (role === 'Client') this.projectActivities = [];
             if (role === 'Director') return typeof clm.status === 'string' && clm.status.startsWith('Pending');
             const expectedStatus = { HR: 'Pending HR', Account: 'Pending Account', Director: 'Pending Director' }[role];
             return !!expectedStatus && clm.status === expectedStatus && (!clm.assignedToEmail || clm.assignedToEmail === this.userProfile.email);

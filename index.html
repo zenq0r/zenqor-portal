@@ -725,6 +725,9 @@
                                              <button type="button" @click="viewClaimRecord(clm)" class="bg-blue-50 text-brand-blue hover:bg-blue-100 p-1.5 rounded" title="View Claim Record">
                                                  <i class="fa-solid fa-eye"></i>
                                              </button>
+                                             <button v-if="canEditClaim(clm)" type="button" @click="editClaimRecord(clm)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit Claim Record">
+                                                 <i class="fa-solid fa-pen"></i>
+                                             </button>
                                          </td>
                                     </tr>
                                     <tr v-if="filteredSortedClaims.length === 0">
@@ -1681,15 +1684,8 @@
                                 <div><label for="prof-email" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Sign-In Email</label><input id="prof-email" name="profEmail" type="email" v-model="userProfile.email" disabled class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-400 rounded-xl text-xs cursor-not-allowed"></div>
                                 <div>
                                     <label for="prof-role" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">User Role (RBAC)</label>
-                                    <select id="prof-role" name="profRole" v-model="userProfile.role" :disabled="!canManageRBAC" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold bg-slate-50 disabled:bg-slate-100 dark:disabled:bg-slate-700/50 disabled:cursor-not-allowed">
-                                         <option value="Director">Director</option>
-                                         <option value="Superadmin">Super Admin</option>
-                                         <option value="HR">Human Resource Management</option>
-                                         <option value="Account">Finance Account Management</option>
-                                         <option value="IT">Intelligence Team Management</option>
-                                         <option value="Staff">Operation Team Management</option>
-                                         <option value="Client">Client Users System Terminal</option>
-                                    </select>
+                                    <input id="prof-role" name="profRole" type="text" :value="getRoleDisplayName(userProfile.role)" disabled class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-400 rounded-xl text-xs font-bold bg-slate-100 cursor-not-allowed">
+                                    <p v-if="canManageRBAC" class="mt-1 text-[10px] text-slate-400">To change your own role, use Portal Access Management below (requires a second look to avoid accidental self-lockout).</p>
                                 </div>
                                 <div class="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 p-4">
                                     <label for="prof-photo" class="block text-xs font-bold uppercase mb-2 dark:text-slate-300">Avatar / Profile Photo</label>
@@ -1740,12 +1736,13 @@
                                                     <span class="bg-brand-gold/20 text-brand-dark dark:text-brand-gold font-extrabold px-2 py-0.5 rounded text-[10px] uppercase">{{ getRoleDisplayName(usr.role) }}</span>
                                                 </td>
                                                 <td class="p-3 text-center space-x-1">
-                                                    <button type="button" @click="openUserAccessModal(usr)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit Access">
+                                                    <button v-if="usr.email !== 'admin@zenq0r.com'" type="button" @click="openUserAccessModal(usr)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit Access">
                                                         <i class="fa-solid fa-pen"></i>
                                                     </button>
                                                     <button v-if="usr.email !== 'admin@zenq0r.com'" type="button" @click="deletePortalUser(usr.id, usr.email)" class="bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded" title="Delete Access">
                                                         <i class="fa-solid fa-trash"></i>
                                                     </button>
+                                                    <span v-if="usr.email === 'admin@zenq0r.com'" class="text-[9px] font-bold uppercase text-slate-400">Protected Seed Account</span>
                                                 </td>
                                             </tr>
                                         </tbody>

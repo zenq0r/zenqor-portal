@@ -138,7 +138,8 @@ service cloud.firestore {
       allow read: if isAdmin() || isHR() || isAccount() || (
         (isStaff() || isIT()) && resource.data.email == request.auth.token.email
       );
-      allow create, delete: if isAdmin() || isHR();
+      allow create: if isAdmin() || isHR();
+      allow delete: if isAdmin();
       allow update: if isAdmin() || isHR() || (
         isAuthenticated() &&
         resource.data.email is string &&
@@ -155,7 +156,8 @@ service cloud.firestore {
       allow read: if isAdmin() || isHR() || isAccount() || (
         isClient() && resource.data.clientEmail == request.auth.token.email
       );
-      allow write: if isAdmin() || isHR() || isAccount();
+      allow create, update: if isAdmin() || isHR() || isAccount();
+      allow delete: if isAdmin();
     }
 
     match /docs/{docId} {
