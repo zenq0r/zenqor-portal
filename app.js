@@ -452,7 +452,7 @@ createApp({
                 return Object.fromEntries(Object.entries(value).map(([childKey, childValue]) => [childKey, this.normalizeOfficialRecord(childValue, childKey)]));
             }
             if (typeof value !== 'string') return value;
-            const protectedKey = /(^id$|uid$|email|password|photo|attachment|status|role|type|category|date|method|url|website)/i.test(key);
+            const protectedKey = /(id$|email|password|photo|attachment|status|role|type|category|date|method|url|website)/i.test(key);
             const protectedValue = /^(data:|https?:\/\/)/i.test(value.trim());
             return protectedKey || protectedValue ? value.trim() : this.toOfficialUppercase(value);
         },
