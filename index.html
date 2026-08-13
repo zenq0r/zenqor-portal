@@ -479,7 +479,7 @@
                                 <label for="pay-emp-select" class="sr-only">Select Employee</label>
                                 <select id="pay-emp-select" name="payEmpSelect" v-model="selectedPayEmployeeId" @change="selectEmployeeForPayslip($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
                                     <option value="">-- Auto-Fill HR Employee --</option>
-                                    <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
+                                    <option v-for="emp in employees" :key="`payslip-emp-${emp.empNo}`" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
                                 </select>
                             </div>
                         </div>
@@ -579,7 +579,7 @@
                                 <label for="claim-emp-select" class="sr-only">Select Employee</label>
                                 <select id="claim-emp-select" name="claimEmpSelect" v-model="selectedClaimEmployeeId" @change="selectEmployeeForClaim($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
                                     <option value="">-- Auto-Fill HR Employee --</option>
-                                    <option v-for="emp in employees" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
+                                    <option v-for="emp in employees" :key="`claim-emp-${emp.empNo}`" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
                                 </select>
                             </div>
                         </div>

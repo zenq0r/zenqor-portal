@@ -1432,14 +1432,21 @@ createApp({
                 const userCredential = await signInWithEmailAndPassword(auth, this.loginForm.email, this.loginForm.password);
                 const firebaseUser = userCredential.user;
                 const userData = await this.loadOrMigrateUserMetadata(firebaseUser);
+                const isSeedAdmin = firebaseUser.email === 'admin@zenq0r.com';
 
-                let role = 'Staff';
-                let name = firebaseUser.displayName || firebaseUser.email;
-                let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
+                if (!userData && !isSeedAdmin) {
+                    await signOut(auth);
+                    this.loginError = 'This account is not provisioned or your access has been revoked. Contact your administrator.';
+                    this.loginLoading = false;
+                    return;
+                }
+
+                let role = userData?.role || 'Staff';
+                let name = userData?.name || firebaseUser.displayName || firebaseUser.email;
+                let photo = userData?.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
 
                 const mustChangePassword = userData?.mustChangePassword === true;
-                if (userData) { role = userData.role || 'Staff'; name = userData.name || name; photo = userData.photo || photo; }
-                if (firebaseUser.email === 'admin@zenq0r.com') role = 'Superadmin';
+                if (isSeedAdmin) role = 'Superadmin';
                 if (role !== 'Client' && !this.isOfficialEmail(firebaseUser.email)) {
                     await signOut(auth);
                     this.loginError = `Only Client Users System Terminal may use an external email. Other roles must use @${this.officialEmailDomain}.`;
@@ -2238,22 +2245,23 @@ createApp({
 
         onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
+                if (this.isLoggedIn && this.userProfile.uid === firebaseUser.uid) { this.authLoading = false; return; }
                 try {
                     this.loginLoading = true;
                     const userData = await this.loadOrMigrateUserMetadata(firebaseUser);
-                    let role = 'Staff';
-                    let name = firebaseUser.displayName || firebaseUser.email;
-                    let photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
+                    const isSeedAdmin = firebaseUser.email === 'admin@zenq0r.com';
 
+                    if (!userData && !isSeedAdmin) {
+                        this.loginError = 'This account is not provisioned or your access has been revoked. Contact your administrator.';
+                        await signOut(auth);
+                        return;
+                    }
+
+                    let role = userData?.role || 'Staff';
+                    let name = userData?.name || firebaseUser.displayName || firebaseUser.email;
+                    let photo = userData?.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0B1E36&color=D4AF37`;
                     const mustChangePassword = userData?.mustChangePassword === true;
-                    if (userData) {
-                        role = userData.role || 'Staff';
-                        name = userData.name || name;
-                        photo = userData.photo || photo;
-                    }
-                    if (firebaseUser.email === 'admin@zenq0r.com') {
-                        role = 'Superadmin';
-                    }
+                    if (isSeedAdmin) role = 'Superadmin';
                     if (role !== 'Client' && !this.isOfficialEmail(firebaseUser.email)) {
                         this.loginError = `Only Client Users System Terminal may use an external email. Other roles must use @${this.officialEmailDomain}.`;
                         await signOut(auth);
@@ -2282,6 +2290,18 @@ createApp({
                 this.userProfile = { name: '', email: '', role: '', photo: '' };
                 this.unsubscribers.forEach(unsub => unsub && unsub());
                 this.unsubscribers = [];
+                this.projects = [];
+                this.projectActivities = [];
+                this.projectClientUpdates = [];
+                this.projectActivitiesLoaded = false;
+                this.projectClientUpdatesLoaded = false;
+                this.employees = [];
+                this.customers = [];
+                this.docHistory = [];
+                this.payslipHistory = [];
+                this.claimsHistory = [];
+                this.users = [];
+                this.auditLogs = [];
             }
             this.authLoading = false;
         });
