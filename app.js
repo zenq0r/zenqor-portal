@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.6)
+// ZENQOR TECHNOLOGIES - app.js (ENTERPRISE FINAL BUILD v8.7)
 // ============================================================
 
 import {
@@ -139,9 +139,9 @@ createApp({
             projectClientUpdates: [],
             projectClientUpdatesLoaded: false,
             activityTypes: ['To-Do', 'Document Request', 'Client Follow-Up', 'Government Submission', 'Review', 'Meeting', 'Payment Follow-Up', 'Other'],
-            activityModal: { show: false, project: null, form: { activityType: 'To-Do', summary: '', dueDate: '', assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } },
+            activityModal: { show: false, isEdit: false, activityId: '', project: null, form: { activityType: 'To-Do', summary: '', dueDate: '', assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } },
             clientUpdateTypes: ['Progress Update', 'Document Update', 'Government Update', 'Client Action Required', 'Milestone Completed', 'General Notice'],
-            clientUpdateModal: { show: false, project: null, form: { updateType: 'Progress Update', updateDate: '', message: '' } },
+            clientUpdateModal: { show: false, isEdit: false, updateId: '', original: null, project: null, form: { updateType: 'Progress Update', updateDate: '', message: '' } },
             projectViewMode: 'board',
             projectPreview: { show: false, project: null },
             projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
@@ -492,18 +492,43 @@ createApp({
             const email = String(this.userProfile.email || '').trim().toLowerCase();
             return this.canManageProjects || (this.userProfile.role !== 'Client' && String(project?.ownerEmail || '').trim().toLowerCase() === email);
         },
-        openClientUpdateModal(project) {
-            if (!this.canSendClientUpdate(project)) { this.showNotify('Only the assigned PIC, Director or Superadmin may send a Client update.'); return; }
-            this.clientUpdateModal = { show: true, project: JSON.parse(JSON.stringify(project)), form: { updateType: 'Progress Update', updateDate: this.getLocalDateKey(), message: '' } };
+        canEditClientUpdate(update) {
+            return this.canManageProjects || (this.userProfile.role !== 'Client' && String(update?.senderUid || '') === String(this.userProfile.uid || ''));
+        },
+        canDeleteClientUpdate() { return this.canManageProjects; },
+        openClientUpdateModal(project, update = null) {
+            if (update ? !this.canEditClientUpdate(update) : !this.canSendClientUpdate(project)) { this.showNotify('Only the assigned PIC, original sender, Director or Superadmin may manage this Client update.'); return; }
+            this.clientUpdateModal = {
+                show: true,
+                isEdit: Boolean(update),
+                updateId: update?.id || '',
+                original: update ? JSON.parse(JSON.stringify(update)) : null,
+                project: JSON.parse(JSON.stringify(project)),
+                form: { updateType: update?.updateType || 'Progress Update', updateDate: update?.updateDate || this.getLocalDateKey(), message: update?.message || '' }
+            };
         },
         closeClientUpdateModal() {
-            this.clientUpdateModal = { show: false, project: null, form: { updateType: 'Progress Update', updateDate: '', message: '' } };
+            this.clientUpdateModal = { show: false, isEdit: false, updateId: '', original: null, project: null, form: { updateType: 'Progress Update', updateDate: '', message: '' } };
         },
         async saveClientUpdate() {
             const project = this.clientUpdateModal.project;
             const form = this.clientUpdateModal.form;
-            if (!project || !this.canSendClientUpdate(project)) { this.showNotify('You do not have permission to send this Client update.'); return; }
+            const isEdit = this.clientUpdateModal.isEdit;
+            const original = this.clientUpdateModal.original;
+            if (!project || (isEdit ? !this.canEditClientUpdate(original) : !this.canSendClientUpdate(project))) { this.showNotify('You do not have permission to save this Client update.'); return; }
             if (!form.updateType || !form.updateDate || !form.message?.trim()) { this.showNotify('Complete Update Type, Update Date and Client Message.'); return; }
+            if (isEdit) {
+                try {
+                    await setDoc(doc(db, 'project_client_updates', this.clientUpdateModal.updateId), this.normalizeOfficialRecord({ updateType: form.updateType, updateDate: form.updateDate, message: form.message, updatedAt: new Date().toISOString(), updatedByUid: this.userProfile.uid }), { merge: true });
+                    this.logAudit('UPDATE', `Updated Client activity history for ${project.projectRef}`);
+                    this.closeClientUpdateModal();
+                    this.showNotify('Client activity history updated.');
+                } catch (error) {
+                    console.error('Client project update edit failed:', error);
+                    this.showNotify(this.getFirestoreWriteError(error, 'update the Client activity history'));
+                }
+                return;
+            }
             const currentEmployee = this.employees.find(employee => String(employee.email || '').trim().toLowerCase() === String(this.userProfile.email || '').trim().toLowerCase());
             const updateId = `UPD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
             const payload = this.normalizeOfficialRecord({
@@ -531,6 +556,18 @@ createApp({
                 this.showNotify(this.getFirestoreWriteError(error, 'send the Client project update'));
             }
         },
+        async deleteClientUpdate(update) {
+            if (!this.canDeleteClientUpdate()) { this.showNotify('Only Director and Superadmin may delete Client activity history.'); return; }
+            if (!confirm(`Delete Client update dated ${update.updateDate || '-'}? This action cannot be undone.`)) return;
+            try {
+                await deleteDoc(doc(db, 'project_client_updates', update.id));
+                this.logAudit('DELETE', `Deleted Client activity history ${update.id}`);
+                this.showNotify('Client activity history deleted.');
+            } catch (error) {
+                console.error('Client activity history deletion failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'delete the Client activity history'));
+            }
+        },
         projectActivityDueState(activity) {
             if (activity.status === 'Done') return { label: 'Done', className: 'bg-slate-200 text-slate-700', borderClass: 'border-l-slate-400', dotClass: 'bg-slate-400', daysRemaining: null };
             const today = this.getLocalDateKey();
@@ -542,12 +579,17 @@ createApp({
             if (daysRemaining <= 3) return { label: `Due In ${daysRemaining} Day${daysRemaining === 1 ? '' : 's'}`, className: 'bg-emerald-100 text-emerald-800', borderClass: 'border-l-emerald-500', dotClass: 'bg-emerald-500', daysRemaining };
             return { label: `Scheduled · ${daysRemaining} Days`, className: 'bg-blue-100 text-blue-800', borderClass: 'border-l-blue-500', dotClass: 'bg-blue-500', daysRemaining };
         },
-        openActivityModal(project) {
+        canCompleteProjectActivity(activity) {
+            return this.canManageProjects || (this.userProfile.role !== 'Client' && String(activity?.assignedEmail || '').trim().toLowerCase() === String(this.userProfile.email || '').trim().toLowerCase());
+        },
+        canEditProjectActivity() { return this.canManageProjects; },
+        canDeleteProjectActivity() { return this.canManageProjects; },
+        openActivityModal(project, activity = null) {
             if (!this.canManageProjects) { this.showNotify('Only Director and Superadmin may schedule project activities.'); return; }
-            this.activityModal = { show: true, project: JSON.parse(JSON.stringify(project)), form: { activityType: 'To-Do', summary: '', dueDate: this.getLocalDateKey(), assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } };
+            this.activityModal = { show: true, isEdit: Boolean(activity), activityId: activity?.id || '', project: JSON.parse(JSON.stringify(project)), form: { activityType: activity?.activityType || 'To-Do', summary: activity?.summary || '', dueDate: activity?.dueDate || this.getLocalDateKey(), assignedEmpNo: activity?.assignedEmpNo || '', assignedName: activity?.assignedName || '', assignedEmail: activity?.assignedEmail || '', assignedPosition: activity?.assignedPosition || '', details: activity?.details || '' } };
         },
         closeActivityModal() {
-            this.activityModal = { show: false, project: null, form: { activityType: 'To-Do', summary: '', dueDate: '', assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } };
+            this.activityModal = { show: false, isEdit: false, activityId: '', project: null, form: { activityType: 'To-Do', summary: '', dueDate: '', assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } };
         },
         selectActivityAssignee(event) {
             const employee = this.projectStaffOptions.find(item => item.empNo === event.target.value);
@@ -560,8 +602,20 @@ createApp({
             if (!this.canManageProjects || !this.activityModal.project) { this.showNotify('You do not have permission to schedule this activity.'); return; }
             const form = this.activityModal.form;
             if (!form.activityType || !form.summary?.trim() || !form.dueDate || !form.assignedEmpNo || !form.assignedEmail) { this.showNotify('Complete Activity Type, Summary, Due Date and Assigned To.'); return; }
-            const activityId = `ACT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
             const project = this.activityModal.project;
+            if (this.activityModal.isEdit) {
+                try {
+                    await setDoc(doc(db, 'project_activities', this.activityModal.activityId), this.normalizeOfficialRecord({ activityType: form.activityType, summary: form.summary, dueDate: form.dueDate, assignedEmpNo: form.assignedEmpNo, assignedName: form.assignedName, assignedEmail: form.assignedEmail, assignedPosition: form.assignedPosition, details: form.details, updatedAt: new Date().toISOString(), updatedByUid: this.userProfile.uid, updatedByEmail: this.userProfile.email }), { merge: true });
+                    this.logAudit('UPDATE', `Updated project activity for ${project.projectRef}`);
+                    this.closeActivityModal();
+                    this.showNotify('Project activity updated.');
+                } catch (error) {
+                    console.error('Project activity update failed:', error);
+                    this.showNotify(this.getFirestoreWriteError(error, 'update the project activity'));
+                }
+                return;
+            }
+            const activityId = `ACT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
             const payload = this.normalizeOfficialRecord({
                 projectId: project.id,
                 projectRef: project.projectRef,
@@ -592,8 +646,7 @@ createApp({
             }
         },
         async markProjectActivityDone(activity) {
-            const assignedToMe = String(activity.assignedEmail || '').trim().toLowerCase() === String(this.userProfile.email || '').trim().toLowerCase();
-            if (!this.canManageProjects && !assignedToMe) { this.showNotify('Only the assigned employee, Director or Superadmin may complete this activity.'); return; }
+            if (!this.canCompleteProjectActivity(activity)) { this.showNotify('Only the assigned employee, Director or Superadmin may complete this activity.'); return; }
             try {
                 await updateDoc(doc(db, 'project_activities', activity.id), { status: 'Done', completedAt: new Date().toISOString(), completedByUid: this.userProfile.uid, completedByEmail: this.userProfile.email });
                 this.logAudit('UPDATE', `Completed project activity ${activity.summary}`);
@@ -601,6 +654,18 @@ createApp({
             } catch (error) {
                 console.error('Project activity completion failed:', error);
                 this.showNotify(this.getFirestoreWriteError(error, 'complete the project activity'));
+            }
+        },
+        async deleteProjectActivity(activity) {
+            if (!this.canDeleteProjectActivity(activity)) { this.showNotify('Only Director and Superadmin may delete project activities.'); return; }
+            if (!confirm(`Delete activity "${activity.summary || activity.id}"? This action cannot be undone.`)) return;
+            try {
+                await deleteDoc(doc(db, 'project_activities', activity.id));
+                this.logAudit('DELETE', `Deleted project activity ${activity.id}`);
+                this.showNotify('Project activity deleted.');
+            } catch (error) {
+                console.error('Project activity deletion failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'delete the project activity'));
             }
         },
         selectProjectClientDirectory(event) {

@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.6)
+// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.7)
 // ============================================================
 // PERUBAHAN v3.1:
 //   - getUserRole() kini baca dokumen guna UID (request.auth.uid)
@@ -316,7 +316,18 @@ service cloud.firestore {
           get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.ownerEmail == request.auth.token.email
         ) &&
         get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.clientPortalUid == request.resource.data.clientPortalUid;
-      allow update, delete: if isProjectManager();
+      allow update: if isProjectManager() || (
+        isAuthenticated() && !isClient() &&
+        resource.data.senderUid == request.auth.uid &&
+        request.resource.data.senderUid == resource.data.senderUid &&
+        request.resource.data.projectId == resource.data.projectId &&
+        request.resource.data.clientPortalUid == resource.data.clientPortalUid &&
+        request.resource.data.updatedByUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'updateType', 'updateDate', 'message', 'updatedAt', 'updatedByUid'
+        ])
+      );
+      allow delete: if isProjectManager();
     }
 
     match /audit_logs/{logId} {
