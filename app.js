@@ -729,18 +729,43 @@ createApp({
         },
         async saveProject() {
             const source = this.projectModal.form;
-            const authorized = this.projectModal.isEdit
-                ? this.canEditProject(this.projects.find(p => p.id === source.id))
-                : this.canManageProjects;
+            const isEdit = this.projectModal.isEdit;
+            const original = isEdit ? this.projects.find(p => p.id === source.id) : null;
+            if (isEdit && !original) { this.showNotify('This project no longer exists. It may have been deleted.'); this.closeProjectModal(); return; }
+            const isAdminEditor = this.canManageProjects;
+            const authorized = isEdit ? (isAdminEditor || this.isProjectOwner(original)) : isAdminEditor;
             if (!authorized) { this.showNotify('You do not have permission to save this project.'); return; }
-            if (!source.projectRef?.trim() || !source.title?.trim() || !source.status) { this.showNotify('Project reference, title and status are required.'); return; }
+            if (!source.status || !this.projectStages.includes(source.status)) { this.showNotify('Invalid project stage.'); return; }
+            const now = new Date().toISOString();
+
+            if (isEdit && !isAdminEditor) {
+                const payload = this.normalizeOfficialRecord({
+                    status: source.status,
+                    startDate: source.startDate,
+                    targetDate: source.targetDate,
+                    description: source.description,
+                    updatedAt: now,
+                    updatedByUid: this.userProfile.uid,
+                    updatedByEmail: this.userProfile.email
+                });
+                try {
+                    await setDoc(doc(db, 'projects', source.id), payload, { merge: true });
+                    this.logAudit('UPDATE', `Project progress updated for ${original.projectRef}`);
+                    this.closeProjectModal();
+                    this.showNotify('Project progress updated successfully.');
+                } catch (error) {
+                    console.error('Project save failed:', error);
+                    this.showNotify(this.getFirestoreWriteError(error, 'update the project'));
+                }
+                return;
+            }
+
+            if (!source.projectRef?.trim() || !source.title?.trim()) { this.showNotify('Project reference and title are required.'); return; }
             if (!source.clientDirectoryId || !source.clientPortalUid || !source.clientEmail) { this.showNotify('Select a Client Directory record and its matching Client Portal Access account.'); return; }
             if (!source.ownerEmpNo || !source.ownerEmail) { this.showNotify('Select a Person In Charge from HR Employee Management.'); return; }
-            if (!this.projectStages.includes(source.status)) { this.showNotify('Invalid project stage.'); return; }
             const projectId = source.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-            const now = new Date().toISOString();
             const payload = this.normalizeOfficialRecord({
-                projectRef: source.projectRef,
+                projectRef: isEdit ? original.projectRef : source.projectRef,
                 title: source.title,
                 clientDirectoryId: source.clientDirectoryId,
                 clientPortalUid: source.clientPortalUid,
@@ -762,11 +787,11 @@ createApp({
                 updatedAt: now,
                 updatedByUid: this.userProfile.uid,
                 updatedByEmail: this.userProfile.email,
-                ...(this.projectModal.isEdit ? {} : { createdAt: now, createdByUid: this.userProfile.uid, createdByEmail: this.userProfile.email })
+                ...(isEdit ? {} : { createdAt: now, createdByUid: this.userProfile.uid, createdByEmail: this.userProfile.email })
             });
             try {
-                await setDoc(doc(db, 'projects', projectId), payload, { merge: this.projectModal.isEdit });
-                this.logAudit(this.projectModal.isEdit ? 'UPDATE' : 'CREATE', `Project activity ${payload.projectRef}`);
+                await setDoc(doc(db, 'projects', projectId), payload, { merge: isEdit });
+                this.logAudit(isEdit ? 'UPDATE' : 'CREATE', `Project activity ${payload.projectRef}`);
                 this.closeProjectModal();
                 this.showNotify('Project activity saved successfully.');
             } catch (error) {

@@ -249,6 +249,7 @@ service cloud.firestore {
         isProjectManager() &&
           request.resource.data.createdByUid == resource.data.createdByUid &&
           request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.projectRef == resource.data.projectRef &&
           request.resource.data.updatedByUid == request.auth.uid &&
           request.resource.data.updatedByEmail == request.auth.token.email &&
           request.resource.data.projectRef is string &&
@@ -259,15 +260,12 @@ service cloud.firestore {
       ) || (
         isAuthenticated() && !isClient() &&
           resource.data.ownerEmail == request.auth.token.email &&
-          request.resource.data.createdByUid == resource.data.createdByUid &&
-          request.resource.data.createdAt == resource.data.createdAt &&
           request.resource.data.updatedByUid == request.auth.uid &&
           request.resource.data.updatedByEmail == request.auth.token.email &&
-          request.resource.data.projectRef is string &&
-          request.resource.data.title is string &&
-          request.resource.data.clientEmail is string &&
-          hasValidProjectLinks(request.resource.data) &&
-          hasValidProjectStage(request.resource.data)
+          hasValidProjectStage(request.resource.data) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'startDate', 'targetDate', 'description', 'updatedAt', 'updatedByUid', 'updatedByEmail'
+          ])
       ) || (
         (isAdmin() || isHR()) &&
           request.resource.data.ownerEmpNo == resource.data.ownerEmpNo &&
