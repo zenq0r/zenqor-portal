@@ -1297,6 +1297,9 @@
                                             <button @click="openEmployeeView(emp)" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2.5 py-2 rounded-lg text-xs font-bold transition" title="View Employee Information">
                                                 <i class="fa-solid fa-eye mr-1"></i>View Employee
                                             </button>
+                                            <button v-if="employeeHasActiveProjectWork(emp.empNo)" @click="viewEmployeeProjectAssignments(emp)" class="bg-blue-50 text-blue-700 hover:bg-blue-100 p-2 rounded-lg text-xs font-bold transition" title="View Active Project Assignments">
+                                                <i class="fa-solid fa-diagram-project"></i>
+                                            </button>
                                             <button v-if="canManageEmployees" @click="requestEmployeeAction('edit', emp)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-2 rounded-lg text-xs font-bold transition" title="Edit Employee">
                                                 <i class="fa-solid fa-pen"></i>
                                             </button>

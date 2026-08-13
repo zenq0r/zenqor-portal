@@ -774,11 +774,20 @@ createApp({
         },
         async deleteProject(project) {
             if (!this.canManageProjects) { this.showNotify('You do not have permission to delete project activities.'); return; }
-            if (!confirm(`Delete project ${project.projectRef}? This action cannot be undone.`)) return;
+            const linkedActivities = this.projectActivitiesFor(project.id);
+            const linkedUpdates = this.clientUpdatesFor(project.id);
+            const cascadeWarning = (linkedActivities.length || linkedUpdates.length)
+                ? ` This will also permanently delete ${linkedActivities.length} activity issue(s) and ${linkedUpdates.length} client update(s) linked to this project.`
+                : '';
+            if (!confirm(`Delete project ${project.projectRef}?${cascadeWarning} This action cannot be undone.`)) return;
             try {
-                await deleteDoc(doc(db, 'projects', project.id));
-                this.logAudit('DELETE', `Project activity ${project.projectRef}`);
-                this.showNotify('Project activity deleted.');
+                const batch = writeBatch(db);
+                linkedActivities.forEach(activity => batch.delete(doc(db, 'project_activities', activity.id)));
+                linkedUpdates.forEach(update => batch.delete(doc(db, 'project_client_updates', update.id)));
+                batch.delete(doc(db, 'projects', project.id));
+                await batch.commit();
+                this.logAudit('DELETE', `Project activity ${project.projectRef} (with ${linkedActivities.length} activity issue(s) and ${linkedUpdates.length} client update(s))`);
+                this.showNotify('Project and all linked records deleted.');
             } catch (error) {
                 console.error('Project deletion failed:', error);
                 this.showNotify(this.getFirestoreWriteError(error, 'delete the project activity'));
@@ -1687,6 +1696,20 @@ createApp({
             if (action === 'edit') this.openEmployeeModal(employee);
             if (action === 'delete') await this.deleteEmployee(employee.empNo, false);
         },
+        employeeActiveProjectAssignments(empNo) {
+            return this.projects.filter(project => project.ownerEmpNo === empNo && project.status !== 'Completed & Done');
+        },
+        employeeActiveActivityAssignments(empNo) {
+            return this.projectActivities.filter(activity => activity.assignedEmpNo === empNo && activity.status !== 'Done');
+        },
+        employeeHasActiveProjectWork(empNo) {
+            return this.employeeActiveProjectAssignments(empNo).length > 0 || this.employeeActiveActivityAssignments(empNo).length > 0;
+        },
+        viewEmployeeProjectAssignments(emp) {
+            this.searchQuery = emp.name || emp.empNo;
+            this.projectViewMode = 'list';
+            this.switchTab('project-activities');
+        },
         async deleteEmployee(empNo, requiresConfirmation = true) {
             if (requiresConfirmation) {
                 const employee = this.employees.find(emp => emp.empNo === empNo);
@@ -1694,7 +1717,22 @@ createApp({
                 return;
             }
             if (!this.canDelete) { this.showNotify('Only Superadmin and Director can delete employee records.'); return; }
-            try { await deleteDoc(doc(db, "employees", empNo)); this.showNotify('Employee deleted.'); } catch (error) { this.showNotify('Unable to delete employee.'); }
+            const blockingProjects = this.employeeActiveProjectAssignments(empNo);
+            const blockingActivities = this.employeeActiveActivityAssignments(empNo);
+            if (blockingProjects.length || blockingActivities.length) {
+                const parts = [];
+                if (blockingProjects.length) parts.push(`Person In Charge on ${blockingProjects.length} active project(s) (${blockingProjects.slice(0, 3).map(p => p.projectRef).join(', ')}${blockingProjects.length > 3 ? '…' : ''})`);
+                if (blockingActivities.length) parts.push(`assigned to ${blockingActivities.length} open activity issue(s)`);
+                this.showNotify(`Cannot delete: this employee is still ${parts.join(' and ')}. Reassign in Project Activities first.`);
+                return;
+            }
+            try {
+                await deleteDoc(doc(db, "employees", empNo));
+                this.logAudit('DELETE', `Deleted employee ${empNo}`);
+                this.showNotify('Employee deleted.');
+            } catch (error) {
+                this.showNotify('Unable to delete employee.');
+            }
         },
         selectEmployeeFromTable(emp) {
             this.selectedPayEmployeeId = emp.empNo || '';
