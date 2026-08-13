@@ -579,13 +579,26 @@ createApp({
             if (daysRemaining <= 3) return { label: `Due In ${daysRemaining} Day${daysRemaining === 1 ? '' : 's'}`, className: 'bg-emerald-100 text-emerald-800', borderClass: 'border-l-emerald-500', dotClass: 'bg-emerald-500', daysRemaining };
             return { label: `Scheduled · ${daysRemaining} Days`, className: 'bg-blue-100 text-blue-800', borderClass: 'border-l-blue-500', dotClass: 'bg-blue-500', daysRemaining };
         },
+        isProjectOwner(project) {
+            if (!project) return false;
+            return this.userProfile.role !== 'Client' && String(project.ownerEmail || '').trim().toLowerCase() === String(this.userProfile.email || '').trim().toLowerCase();
+        },
+        canEditProject(project) {
+            return this.canManageProjects || this.isProjectOwner(project);
+        },
+        canManageProjectActivities(project) {
+            return this.canManageProjects || this.isProjectOwner(project);
+        },
         canCompleteProjectActivity(activity) {
             return this.canManageProjects || (this.userProfile.role !== 'Client' && String(activity?.assignedEmail || '').trim().toLowerCase() === String(this.userProfile.email || '').trim().toLowerCase());
         },
-        canEditProjectActivity() { return this.canManageProjects; },
+        canEditProjectActivity(activity) {
+            const project = this.projects.find(p => p.id === activity?.projectId);
+            return this.canManageProjectActivities(project);
+        },
         canDeleteProjectActivity() { return this.canManageProjects; },
         openActivityModal(project, activity = null) {
-            if (!this.canManageProjects) { this.showNotify('Only Director and Superadmin may schedule project activities.'); return; }
+            if (!this.canManageProjectActivities(project)) { this.showNotify('Only Director, Superadmin, or this project\'s Person In Charge may schedule activities.'); return; }
             this.activityModal = { show: true, isEdit: Boolean(activity), activityId: activity?.id || '', project: JSON.parse(JSON.stringify(project)), form: { activityType: activity?.activityType || 'To-Do', summary: activity?.summary || '', dueDate: activity?.dueDate || this.getLocalDateKey(), assignedEmpNo: activity?.assignedEmpNo || '', assignedName: activity?.assignedName || '', assignedEmail: activity?.assignedEmail || '', assignedPosition: activity?.assignedPosition || '', details: activity?.details || '' } };
         },
         closeActivityModal() {
@@ -599,7 +612,7 @@ createApp({
             this.activityModal.form.assignedPosition = employee?.position || '';
         },
         async saveProjectActivity() {
-            if (!this.canManageProjects || !this.activityModal.project) { this.showNotify('You do not have permission to schedule this activity.'); return; }
+            if (!this.activityModal.project || !this.canManageProjectActivities(this.activityModal.project)) { this.showNotify('You do not have permission to schedule this activity.'); return; }
             const form = this.activityModal.form;
             if (!form.activityType || !form.summary?.trim() || !form.dueDate || !form.assignedEmpNo || !form.assignedEmail) { this.showNotify('Complete Activity Type, Summary, Due Date and Assigned To.'); return; }
             const project = this.activityModal.project;
@@ -707,7 +720,7 @@ createApp({
             return project.ownerLastSeen ? `Last seen ${this.formatDateTime(project.ownerLastSeen)}` : 'Offline — no recent activity';
         },
         openProjectModal(project = null) {
-            if (!this.canManageProjects) { this.showNotify('Only Director and Superadmin may manage project activities.'); return; }
+            if (project ? !this.canEditProject(project) : !this.canManageProjects) { this.showNotify(project ? 'Only Director, Superadmin, or this project\'s Person In Charge may edit this project.' : 'Only Director and Superadmin may create new projects.'); return; }
             const emptyForm = { id: '', projectRef: `PRJ-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`, title: '', clientDirectoryId: '', clientPortalUid: '', clientName: '', clientEmail: '', ownerEmpNo: '', ownerName: '', ownerEmail: '', ownerPosition: '', ownerDepartment: '', ownerAssignedAt: '', ownerPresenceStatus: 'Offline', ownerPresenceUpdatedAt: '', ownerLastSeen: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' };
             this.projectModal = { show: true, isEdit: Boolean(project), form: project ? JSON.parse(JSON.stringify(project)) : emptyForm };
         },
@@ -715,8 +728,11 @@ createApp({
             this.projectModal.show = false;
         },
         async saveProject() {
-            if (!this.canManageProjects) { this.showNotify('You do not have permission to save project activities.'); return; }
             const source = this.projectModal.form;
+            const authorized = this.projectModal.isEdit
+                ? this.canEditProject(this.projects.find(p => p.id === source.id))
+                : this.canManageProjects;
+            if (!authorized) { this.showNotify('You do not have permission to save this project.'); return; }
             if (!source.projectRef?.trim() || !source.title?.trim() || !source.status) { this.showNotify('Project reference, title and status are required.'); return; }
             if (!source.clientDirectoryId || !source.clientPortalUid || !source.clientEmail) { this.showNotify('Select a Client Directory record and its matching Client Portal Access account.'); return; }
             if (!source.ownerEmpNo || !source.ownerEmail) { this.showNotify('Select a Person In Charge from HR Employee Management.'); return; }
@@ -759,7 +775,7 @@ createApp({
             }
         },
         async moveProject(project, direction) {
-            if (!this.canManageProjects) { this.showNotify('You do not have permission to update project stages.'); return; }
+            if (!this.canEditProject(project)) { this.showNotify('You do not have permission to update this project stage.'); return; }
             const currentIndex = this.projectStages.indexOf(project.status);
             const nextIndex = currentIndex + direction;
             if (currentIndex < 0 || nextIndex < 0 || nextIndex >= this.projectStages.length) return;

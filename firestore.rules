@@ -257,6 +257,18 @@ service cloud.firestore {
           hasValidProjectLinks(request.resource.data) &&
           hasValidProjectStage(request.resource.data)
       ) || (
+        isAuthenticated() && !isClient() &&
+          resource.data.ownerEmail == request.auth.token.email &&
+          request.resource.data.createdByUid == resource.data.createdByUid &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.updatedByUid == request.auth.uid &&
+          request.resource.data.updatedByEmail == request.auth.token.email &&
+          request.resource.data.projectRef is string &&
+          request.resource.data.title is string &&
+          request.resource.data.clientEmail is string &&
+          hasValidProjectLinks(request.resource.data) &&
+          hasValidProjectStage(request.resource.data)
+      ) || (
         (isAdmin() || isHR()) &&
           request.resource.data.ownerEmpNo == resource.data.ownerEmpNo &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -275,7 +287,11 @@ service cloud.firestore {
 
     match /project_activities/{activityId} {
       allow read: if isAuthenticated() && !isClient();
-      allow create: if isProjectManager() &&
+      allow create: if (
+        isProjectManager() ||
+        (isAuthenticated() && !isClient() &&
+          get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.ownerEmail == request.auth.token.email)
+      ) &&
         request.resource.data.createdByUid == request.auth.uid &&
         request.resource.data.projectId is string &&
         request.resource.data.projectId.size() > 0 &&
@@ -289,6 +305,14 @@ service cloud.firestore {
         request.resource.data.status == 'Scheduled';
       allow update: if (
         isProjectManager()
+      ) || (
+        isAuthenticated() && !isClient() &&
+        get(/databases/$(database)/documents/projects/$(resource.data.projectId)).data.ownerEmail == request.auth.token.email &&
+        request.resource.data.projectId == resource.data.projectId &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'activityType', 'summary', 'dueDate', 'assignedEmpNo', 'assignedName', 'assignedEmail', 'assignedPosition', 'details', 'updatedAt', 'updatedByUid', 'updatedByEmail'
+        ])
       ) || (
         isAuthenticated() &&
         resource.data.assignedEmail == request.auth.token.email &&
