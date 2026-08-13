@@ -142,6 +142,9 @@ createApp({
             activityModal: { show: false, isEdit: false, activityId: '', project: null, form: { activityType: 'To-Do', summary: '', dueDate: '', assignedEmpNo: '', assignedName: '', assignedEmail: '', assignedPosition: '', details: '' } },
             clientUpdateTypes: ['Progress Update', 'Document Update', 'Government Update', 'Client Action Required', 'Milestone Completed', 'General Notice'],
             clientUpdateModal: { show: false, isEdit: false, updateId: '', original: null, project: null, form: { updateType: 'Progress Update', updateDate: '', message: '' } },
+            clientReplyMessage: '',
+            editingReplyId: '',
+            editingReplyMessage: '',
             projectViewMode: 'board',
             projectPreview: { show: false, project: null },
             projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
@@ -476,6 +479,9 @@ createApp({
         },
         closeProjectDetails() {
             this.projectPreview = { show: false, project: null };
+            this.clientReplyMessage = '';
+            this.editingReplyId = '';
+            this.editingReplyMessage = '';
         },
         editProjectFromPreview() {
             const project = this.projectPreview.project ? JSON.parse(JSON.stringify(this.projectPreview.project)) : null;
@@ -486,16 +492,21 @@ createApp({
             return this.projectActivities.filter(activity => activity.projectId === projectId).sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
         },
         clientUpdatesFor(projectId) {
-            return this.projectClientUpdates.filter(update => update.projectId === projectId).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+            return this.projectClientUpdates.filter(update => update.projectId === projectId).sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
         },
         canSendClientUpdate(project) {
             const email = String(this.userProfile.email || '').trim().toLowerCase();
             return this.canManageProjects || (this.userProfile.role !== 'Client' && String(project?.ownerEmail || '').trim().toLowerCase() === email);
         },
-        canEditClientUpdate(update) {
-            return this.canManageProjects || (this.userProfile.role !== 'Client' && String(update?.senderUid || '') === String(this.userProfile.uid || ''));
+        canReplyAsClient(project) {
+            return this.userProfile.role === 'Client' && String(project?.clientPortalUid || '') === String(this.userProfile.uid || '');
         },
-        canDeleteClientUpdate() { return this.canManageProjects; },
+        canEditClientUpdate(update) {
+            return this.canManageProjects || String(update?.senderUid || '') === String(this.userProfile.uid || '');
+        },
+        canDeleteClientUpdate(update) {
+            return this.canManageProjects || (this.userProfile.role === 'Client' && update?.senderRole === 'Client' && String(update?.senderUid || '') === String(this.userProfile.uid || ''));
+        },
         openClientUpdateModal(project, update = null) {
             if (update ? !this.canEditClientUpdate(update) : !this.canSendClientUpdate(project)) { this.showNotify('Only the assigned PIC, original sender, Director or Superadmin may manage this Client update.'); return; }
             this.clientUpdateModal = {
@@ -544,6 +555,7 @@ createApp({
                 senderName: this.userProfile.name,
                 senderEmail: this.userProfile.email,
                 senderPosition: currentEmployee?.position || this.getRoleDisplayName(this.userProfile.role),
+                senderRole: this.userProfile.role,
                 createdAt: new Date().toISOString()
             });
             try {
@@ -556,8 +568,61 @@ createApp({
                 this.showNotify(this.getFirestoreWriteError(error, 'send the Client project update'));
             }
         },
+        async sendClientReply() {
+            const project = this.projectPreview.project;
+            if (!project || !this.canReplyAsClient(project)) { this.showNotify('You do not have permission to reply on this project.'); return; }
+            const message = this.clientReplyMessage.trim();
+            if (!message) { this.showNotify('Write a message before sending.'); return; }
+            const updateId = `UPD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+            const payload = this.normalizeOfficialRecord({
+                projectId: project.id,
+                projectRef: project.projectRef,
+                projectTitle: project.title,
+                clientPortalUid: this.userProfile.uid,
+                clientEmail: project.clientEmail,
+                updateType: 'Client Reply',
+                updateDate: this.getLocalDateKey(),
+                message,
+                senderUid: this.userProfile.uid,
+                senderName: this.userProfile.name,
+                senderEmail: this.userProfile.email,
+                senderPosition: 'Client',
+                senderRole: 'Client',
+                createdAt: new Date().toISOString()
+            });
+            try {
+                await setDoc(doc(db, 'project_client_updates', updateId), payload);
+                this.logAudit('CREATE', `Client reply sent for ${payload.projectRef}`);
+                this.clientReplyMessage = '';
+                this.showNotify('Your reply has been sent.');
+            } catch (error) {
+                console.error('Client reply failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'send your reply'));
+            }
+        },
+        startEditReply(update) {
+            this.editingReplyId = update.id;
+            this.editingReplyMessage = update.message;
+        },
+        cancelEditReply() {
+            this.editingReplyId = '';
+            this.editingReplyMessage = '';
+        },
+        async saveReplyEdit(update) {
+            const message = this.editingReplyMessage.trim();
+            if (!message) { this.showNotify('Message cannot be empty.'); return; }
+            try {
+                await setDoc(doc(db, 'project_client_updates', update.id), this.normalizeOfficialRecord({ message, updatedAt: new Date().toISOString(), updatedByUid: this.userProfile.uid }), { merge: true });
+                this.logAudit('UPDATE', `Edited client reply for ${update.projectRef}`);
+                this.cancelEditReply();
+                this.showNotify('Reply updated.');
+            } catch (error) {
+                console.error('Reply edit failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'update your reply'));
+            }
+        },
         async deleteClientUpdate(update) {
-            if (!this.canDeleteClientUpdate()) { this.showNotify('Only Director and Superadmin may delete Client activity history.'); return; }
+            if (!this.canDeleteClientUpdate(update)) { this.showNotify('Only Director, Superadmin, or the original sender may delete this Client activity history entry.'); return; }
             if (!confirm(`Delete Client update dated ${update.updateDate || '-'}? This action cannot be undone.`)) return;
             try {
                 await deleteDoc(doc(db, 'project_client_updates', update.id));

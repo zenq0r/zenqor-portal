@@ -329,17 +329,29 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (
         !isClient() || resource.data.clientPortalUid == request.auth.uid
       );
-      allow create: if isAuthenticated() && !isClient() &&
+      allow create: if isAuthenticated() &&
         request.resource.data.senderUid == request.auth.uid &&
         request.resource.data.projectId is string &&
         request.resource.data.projectId.size() > 0 &&
         request.resource.data.message is string &&
         request.resource.data.message.size() > 0 &&
         exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId)) && (
-          isProjectManager() ||
-          get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.ownerEmail == request.auth.token.email
-        ) &&
-        get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.clientPortalUid == request.resource.data.clientPortalUid;
+          (
+            !isClient() &&
+            request.resource.data.senderRole != 'Client' &&
+            (
+              isProjectManager() ||
+              get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.ownerEmail == request.auth.token.email
+            ) &&
+            get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.clientPortalUid == request.resource.data.clientPortalUid
+          ) || (
+            isClient() &&
+            request.resource.data.senderRole == 'Client' &&
+            request.resource.data.clientPortalUid == request.auth.uid &&
+            get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.clientPortalUid == request.auth.uid &&
+            get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.clientEmail == request.auth.token.email
+          )
+        );
       allow update: if isProjectManager() || (
         isAuthenticated() && !isClient() &&
         resource.data.senderUid == request.auth.uid &&
@@ -350,8 +362,23 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'updateType', 'updateDate', 'message', 'updatedAt', 'updatedByUid'
         ])
+      ) || (
+        isClient() &&
+        resource.data.senderRole == 'Client' &&
+        resource.data.senderUid == request.auth.uid &&
+        request.resource.data.senderUid == resource.data.senderUid &&
+        request.resource.data.projectId == resource.data.projectId &&
+        request.resource.data.clientPortalUid == resource.data.clientPortalUid &&
+        request.resource.data.updatedByUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'message', 'updatedAt', 'updatedByUid'
+        ])
       );
-      allow delete: if isProjectManager();
+      allow delete: if isProjectManager() || (
+        isClient() &&
+        resource.data.senderRole == 'Client' &&
+        resource.data.senderUid == request.auth.uid
+      );
     }
 
     match /audit_logs/{logId} {

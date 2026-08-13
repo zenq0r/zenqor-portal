@@ -721,13 +721,15 @@
                                              <span class="font-bold text-slate-700 dark:text-slate-200 block">{{ clm.assignedToName || '-' }}</span>
                                              <span class="text-slate-400 text-[10px] block">{{ clm.assignedToRole || '-' }}</span>
                                          </td>
-                                         <td class="py-3 px-3 text-center space-x-1">
-                                             <button type="button" @click="viewClaimRecord(clm)" class="bg-blue-50 text-brand-blue hover:bg-blue-100 p-1.5 rounded" title="View Claim Record">
+                                         <td class="py-2.5 px-3 text-center">
+                                             <div class="flex items-center justify-center gap-1">
+                                             <button type="button" @click="viewClaimRecord(clm)" class="h-8 w-8 rounded-lg bg-blue-50 text-brand-blue hover:bg-blue-100 transition" title="View Claim Record">
                                                  <i class="fa-solid fa-eye"></i>
                                              </button>
-                                             <button v-if="canEditClaim(clm)" type="button" @click="editClaimRecord(clm)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1.5 rounded" title="Edit Claim Record">
+                                             <button v-if="canEditClaim(clm)" type="button" @click="editClaimRecord(clm)" class="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition" title="Edit Claim Record">
                                                  <i class="fa-solid fa-pen"></i>
                                              </button>
+                                             </div>
                                          </td>
                                     </tr>
                                     <tr v-if="filteredSortedClaims.length === 0">
@@ -929,17 +931,17 @@
                     </div>
 
                     <!-- 3. VIEW EKSEKUTIF (SUPERADMIN / HR / ACCOUNT / IT / OWNER) -->
-                    <div v-else class="space-y-8">
+                    <div v-else class="space-y-6">
                         <div>
                             <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Enterprise Executive Dashboard</h2>
                             <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Real-time executive monitoring of financial KPIs, HR, corporate documents, and system activities.</p>
                         </div>
 
                         <!-- KAD KPI EKSEKUTIF (GRID 4x2 - 8 METRIK UTAMA TERMASUK CLAIMS) -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             
                             <!-- 1. Total Employees -->
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
                                 <div class="flex items-center justify-between gap-3">
                                     <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Employees</p>
                                     <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-brand-blue dark:text-blue-400 flex items-center justify-center text-base font-bold shrink-0">
@@ -955,7 +957,7 @@
                             </div>
 
                             <!-- 2. Total Clients -->
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
                                 <div class="flex items-center justify-between gap-3">
                                     <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Clients</p>
                                     <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base font-bold shrink-0">
@@ -969,7 +971,7 @@
                             </div>
 
                             <!-- 3. Total Quotations -->
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
                                 <div class="flex items-center justify-between gap-3">
                                     <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Quotations</p>
                                     <div class="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-base font-bold shrink-0">
@@ -983,7 +985,7 @@
                             </div>
 
                             <!-- 4. Total Invoices -->
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
                                 <div class="flex items-center justify-between gap-3">
                                     <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Invoices</p>
                                     <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-base font-bold shrink-0">
@@ -997,7 +999,7 @@
                             </div>
 
                             <!-- 5. Revenue (Paid) -->
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
                                 <div class="flex items-center justify-between gap-3">
                                     <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Revenue (Paid)</p>
                                     <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base font-bold shrink-0">
@@ -1011,7 +1013,7 @@
                             </div>
 
                             <!-- 6. Pending Receivables -->
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
                                 <div class="flex items-center justify-between gap-3">
                                     <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Pending Receivables</p>
                                     <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 flex items-center justify-center text-base font-bold shrink-0">
@@ -1025,7 +1027,7 @@
                             </div>
 
                             <!-- 7. Total Payroll (Net) -->
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
                                 <div class="flex items-center justify-between gap-3">
                                     <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Payroll (Net)</p>
                                     <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-base font-bold shrink-0">
@@ -1039,7 +1041,7 @@
                             </div>
 
                             <!-- 8. Total Claims (Approved) -->
-                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
+                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
                                 <div class="flex items-center justify-between gap-3">
                                     <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Claims (Approved)</p>
                                     <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center text-base font-bold shrink-0">
@@ -1129,10 +1131,12 @@
                                             <td class="py-3 px-4 font-medium text-slate-700 dark:text-slate-200">{{ item.name }}</td>
                                              <td class="py-3 px-4 text-right font-extrabold text-brand-dark dark:text-slate-100">{{ formatCurrency(item.amount) }}</td>
                                              <td class="py-3 px-4"><span :class="getActivityStatus(item).className" class="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase">{{ getActivityStatus(item).label }}</span><p class="text-[10px] text-slate-400 mt-1">{{ getActivityStatus(item).detail }}</p></td>
-                                             <td class="py-3 px-4 text-center space-x-1.5">
-                                                 <button type="button" @click="item.isClaim ? viewClaimRecord(item) : viewRecord(item)" class="bg-blue-50 text-brand-blue hover:bg-blue-100 p-2 rounded-lg text-xs font-bold transition" title="View Record"><i class="fa-solid fa-eye"></i></button>
-                                                <button v-if="(item.isDoc && canManageDocuments) || (item.isPay && canManagePayroll)" type="button" @click="editRecord(item)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-2 rounded-lg text-xs font-bold transition" title="Edit Record"><i class="fa-solid fa-pen"></i></button>
-                                                <button v-if="canDelete" type="button" @click="confirmDeleteRecord(item)" class="bg-red-50 text-red-600 hover:bg-red-100 p-2 rounded-lg text-xs font-bold transition" title="Delete Record"><i class="fa-solid fa-trash"></i></button>
+                                             <td class="py-2.5 px-4 text-center">
+                                                 <div class="flex items-center justify-center gap-1">
+                                                 <button type="button" @click="item.isClaim ? viewClaimRecord(item) : viewRecord(item)" class="h-8 w-8 rounded-lg bg-blue-50 text-brand-blue hover:bg-blue-100 transition" title="View Record"><i class="fa-solid fa-eye"></i></button>
+                                                <button v-if="(item.isDoc && canManageDocuments) || (item.isPay && canManagePayroll)" type="button" @click="editRecord(item)" class="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition" title="Edit Record"><i class="fa-solid fa-pen"></i></button>
+                                                <button v-if="canDelete" type="button" @click="confirmDeleteRecord(item)" class="h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" title="Delete Record"><i class="fa-solid fa-trash"></i></button>
+                                                 </div>
                                             </td>
                                         </tr>
                                         <tr v-if="filteredRecentActivities.length === 0">
@@ -1212,16 +1216,18 @@
                                         <td class="py-3 px-3 text-slate-600 dark:text-slate-300">
                                             <span>{{ cust.clientAddress }}</span>
                                         </td>
-                                        <td class="py-3 px-3 text-center space-x-1.5">
-                                            <button @click="openClientView(cust)" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2.5 py-2 rounded-lg text-xs font-bold transition" title="View Client Information">
-                                                <i class="fa-solid fa-eye mr-1"></i>View Client
+                                        <td class="py-2.5 px-3 text-center">
+                                            <div class="flex items-center justify-center gap-1">
+                                            <button @click="openClientView(cust)" class="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition" title="View Client Information">
+                                                <i class="fa-solid fa-eye"></i>
                                             </button>
-                                            <button v-if="canManageClients" @click="requestClientAction('edit', cust)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-2 rounded-lg text-xs font-bold transition" title="Edit Client">
+                                            <button v-if="canManageClients" @click="requestClientAction('edit', cust)" class="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition" title="Edit Client">
                                                 <i class="fa-solid fa-pen"></i>
                                             </button>
-                                            <button v-if="canDelete" @click="requestClientAction('delete', cust)" class="bg-red-50 text-red-600 hover:bg-red-100 p-2 rounded-lg text-xs font-bold transition" title="Delete Client">
+                                            <button v-if="canDelete" @click="requestClientAction('delete', cust)" class="h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" title="Delete Client">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr v-if="customers.length === 0">
@@ -1296,19 +1302,21 @@
                                             <span>PCB: {{ maskSensitive(emp.taxNo) }}</span>
                                         </td>
                                         <td class="py-3 px-3 text-right font-extrabold text-sm text-brand-dark dark:text-slate-100">{{ formatCurrency(emp.basicSalary) }}</td>
-                                        <td class="py-3 px-3 text-center space-x-1.5">
-                                            <button @click="openEmployeeView(emp)" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2.5 py-2 rounded-lg text-xs font-bold transition" title="View Employee Information">
-                                                <i class="fa-solid fa-eye mr-1"></i>View Employee
+                                        <td class="py-2.5 px-3 text-center">
+                                            <div class="flex items-center justify-center gap-1">
+                                            <button @click="openEmployeeView(emp)" class="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition" title="View Employee Information">
+                                                <i class="fa-solid fa-eye"></i>
                                             </button>
-                                            <button v-if="employeeHasActiveProjectWork(emp.empNo)" @click="viewEmployeeProjectAssignments(emp)" class="bg-blue-50 text-blue-700 hover:bg-blue-100 p-2 rounded-lg text-xs font-bold transition" title="View Active Project Assignments">
+                                            <button v-if="employeeHasActiveProjectWork(emp.empNo)" @click="viewEmployeeProjectAssignments(emp)" class="h-8 w-8 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition" title="View Active Project Assignments">
                                                 <i class="fa-solid fa-diagram-project"></i>
                                             </button>
-                                            <button v-if="canManageEmployees" @click="requestEmployeeAction('edit', emp)" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-2 rounded-lg text-xs font-bold transition" title="Edit Employee">
+                                            <button v-if="canManageEmployees" @click="requestEmployeeAction('edit', emp)" class="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition" title="Edit Employee">
                                                 <i class="fa-solid fa-pen"></i>
                                             </button>
-                                            <button v-if="canDelete" @click="requestEmployeeAction('delete', emp)" class="bg-red-50 text-red-600 hover:bg-red-100 p-2 rounded-lg text-xs font-bold transition" title="Delete Employee">
+                                            <button v-if="canDelete" @click="requestEmployeeAction('delete', emp)" class="h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" title="Delete Employee">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr v-if="employees.length === 0">
@@ -1462,8 +1470,34 @@
                                     <div class="space-y-2"><article v-for="activity in projectActivitiesFor(projectPreview.project.id)" :key="activity.id" class="rounded-xl border border-slate-200 p-4"><div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="rounded-md bg-slate-100 px-2 py-1 text-[9px] font-extrabold uppercase text-slate-600">{{ activity.activityType }}</span><span :class="projectActivityDueState(activity).className" class="rounded-full px-2 py-1 text-[9px] font-extrabold uppercase">{{ projectActivityDueState(activity).label }}</span></div><p class="mt-2 text-xs font-extrabold text-brand-dark">{{ activity.summary }}</p><p v-if="activity.details" class="mt-1 whitespace-pre-wrap text-[10px] leading-relaxed text-slate-500">{{ activity.details }}</p><p class="mt-2 text-[10px] text-slate-600"><i class="fa-solid fa-user-check mr-1.5 text-slate-400"></i>{{ activity.assignedName }} · {{ activity.assignedPosition || 'NO POSITION' }}</p></div><div class="shrink-0 text-left sm:text-right"><p class="text-[9px] font-bold uppercase text-slate-400">Due Date</p><p class="mt-1 text-xs font-extrabold text-slate-700">{{ activity.dueDate }}</p><div class="mt-3 flex flex-wrap gap-1.5 sm:justify-end"><button v-if="activity.status !== 'Done' && canCompleteProjectActivity(activity)" type="button" @click="markProjectActivityDone(activity)" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-emerald-700" title="Complete activity"><i class="fa-solid fa-check mr-1"></i>Mark Done</button><button v-if="canEditProjectActivity(activity)" type="button" @click="openActivityModal(projectPreview.project, activity)" class="h-7 w-7 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100" title="Edit activity"><i class="fa-solid fa-pen text-[10px]"></i></button><button v-if="canDeleteProjectActivity(activity)" type="button" @click="deleteProjectActivity(activity)" class="h-7 w-7 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete activity"><i class="fa-solid fa-trash text-[10px]"></i></button></div></div></div></article><div v-if="!projectActivitiesFor(projectPreview.project.id).length" class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center"><i class="fa-regular fa-calendar-xmark text-xl text-slate-300"></i><p class="mt-2 text-[10px] font-bold text-slate-400">No activity issue scheduled</p></div></div>
                                 </section>
                                 <section>
-                                    <div class="mb-3 flex items-center justify-between gap-3"><div><h4 class="text-[10px] font-extrabold uppercase tracking-widest text-brand-blue">Client Activity History</h4><p class="mt-1 text-[10px] text-slate-500">Updates intentionally shared with the Client for this project.</p></div><button v-if="canSendClientUpdate(projectPreview.project)" type="button" @click="openClientUpdateModal(projectPreview.project)" class="rounded-lg bg-brand-blue px-3 py-2 text-[10px] font-bold text-white hover:bg-teal-800"><i class="fa-solid fa-paper-plane mr-1.5"></i>Send Client Update</button></div>
-                                    <div class="space-y-2"><article v-for="update in clientUpdatesFor(projectPreview.project.id)" :key="update.id" class="rounded-xl border border-slate-200 bg-white p-4"><div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="min-w-0"><span class="rounded-md bg-teal-50 px-2 py-1 text-[9px] font-extrabold uppercase text-teal-700">{{ update.updateType }}</span><p class="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-slate-700">{{ update.message }}</p><p class="mt-3 text-[10px] font-semibold text-slate-500"><i class="fa-solid fa-user-tie mr-1.5 text-slate-400"></i>{{ update.senderName }} · {{ update.senderPosition || 'STAFF' }}</p></div><div class="shrink-0 text-left text-[10px] text-slate-500 sm:text-right"><p class="font-bold text-slate-700">{{ update.updateDate }}</p><p class="mt-1">Sent {{ formatDateTime(update.createdAt) }}</p><p v-if="update.updatedAt" class="mt-1">Edited {{ formatDateTime(update.updatedAt) }}</p><div v-if="canEditClientUpdate(update) || canDeleteClientUpdate(update)" class="mt-3 flex gap-1.5 sm:justify-end"><button v-if="canEditClientUpdate(update)" type="button" @click="openClientUpdateModal(projectPreview.project, update)" class="h-7 w-7 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100" title="Edit Client update"><i class="fa-solid fa-pen text-[10px]"></i></button><button v-if="canDeleteClientUpdate(update)" type="button" @click="deleteClientUpdate(update)" class="h-7 w-7 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete Client update"><i class="fa-solid fa-trash text-[10px]"></i></button></div></div></div></article><div v-if="!clientUpdatesFor(projectPreview.project.id).length" class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center"><i class="fa-regular fa-message text-xl text-slate-300"></i><p class="mt-2 text-[10px] font-bold text-slate-400">No Client update has been shared</p></div></div>
+                                    <div class="mb-3 flex items-center justify-between gap-3"><div><h4 class="text-[10px] font-extrabold uppercase tracking-widest text-brand-blue">Client Activity History</h4><p class="mt-1 text-[10px] text-slate-500">Two-way conversation between your team and the client for this project.</p></div><button v-if="canSendClientUpdate(projectPreview.project)" type="button" @click="openClientUpdateModal(projectPreview.project)" class="rounded-lg bg-brand-blue px-3 py-2 text-[10px] font-bold text-white hover:bg-teal-800"><i class="fa-solid fa-paper-plane mr-1.5"></i>Send Client Update</button></div>
+
+                                    <div class="max-h-80 space-y-2.5 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <article v-for="update in clientUpdatesFor(projectPreview.project.id)" :key="update.id" class="flex" :class="update.senderRole === 'Client' ? 'justify-end' : 'justify-start'">
+                                            <div class="max-w-[85%] rounded-xl px-3.5 py-2.5 text-xs shadow-sm" :class="update.senderRole === 'Client' ? 'bg-brand-blue text-white' : 'bg-white border border-slate-200 text-slate-700'">
+                                                <div class="flex items-center gap-1.5 text-[9px] font-extrabold uppercase" :class="update.senderRole === 'Client' ? 'text-teal-100' : 'text-teal-700'"><i class="fa-solid" :class="update.senderRole === 'Client' ? 'fa-user' : 'fa-user-tie'"></i><span>{{ update.senderName }} · {{ update.senderPosition || 'STAFF' }}</span></div>
+
+                                                <template v-if="editingReplyId === update.id">
+                                                    <textarea v-model="editingReplyMessage" rows="3" class="mt-2 w-full rounded-lg border border-white/30 bg-white/95 px-2.5 py-2 text-xs text-slate-800 outline-none"></textarea>
+                                                    <div class="mt-1.5 flex justify-end gap-1.5"><button type="button" @click="cancelEditReply" class="rounded-lg bg-black/10 px-2.5 py-1 text-[10px] font-bold" :class="update.senderRole === 'Client' ? 'text-white' : 'text-slate-600'">Cancel</button><button type="button" @click="saveReplyEdit(update)" class="rounded-lg bg-emerald-600 px-2.5 py-1 text-[10px] font-bold text-white">Save</button></div>
+                                                </template>
+                                                <template v-else>
+                                                    <p class="mt-1.5 whitespace-pre-wrap leading-relaxed">{{ update.message }}</p>
+                                                </template>
+
+                                                <div class="mt-1.5 flex items-center gap-1.5 text-[9px]" :class="update.senderRole === 'Client' ? 'text-teal-100' : 'text-slate-400'">
+                                                    <span>{{ formatDateTime(update.createdAt) }}</span><span v-if="update.updatedAt">· edited</span>
+                                                    <span v-if="canEditClientUpdate(update) || canDeleteClientUpdate(update)" class="ml-auto flex gap-0.5"><button v-if="canEditClientUpdate(update) && editingReplyId !== update.id" type="button" @click="update.senderRole === 'Client' ? startEditReply(update) : openClientUpdateModal(projectPreview.project, update)" title="Edit" class="rounded px-1.5 py-0.5 hover:bg-black/10"><i class="fa-solid fa-pen"></i></button><button v-if="canDeleteClientUpdate(update)" type="button" @click="deleteClientUpdate(update)" title="Delete" class="rounded px-1.5 py-0.5 hover:bg-black/10"><i class="fa-solid fa-trash"></i></button></span>
+                                                </div>
+                                            </div>
+                                        </article>
+                                        <div v-if="!clientUpdatesFor(projectPreview.project.id).length" class="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-8 text-center"><i class="fa-regular fa-message text-xl text-slate-300"></i><p class="mt-2 text-[10px] font-bold text-slate-400">No Client update has been shared</p></div>
+                                    </div>
+
+                                    <div v-if="canReplyAsClient(projectPreview.project)" class="mt-2.5 flex items-end gap-2">
+                                        <textarea v-model="clientReplyMessage" rows="2" placeholder="Write a reply to your project team…" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></textarea>
+                                        <button type="button" @click="sendClientReply" class="shrink-0 rounded-xl bg-brand-blue px-4 py-2.5 text-xs font-bold text-white hover:bg-teal-800"><i class="fa-solid fa-paper-plane"></i></button>
+                                    </div>
                                 </section>
                                 <div class="flex justify-end gap-2 border-t border-slate-200 pt-4"><button v-if="canManageProjects" type="button" @click="deleteProjectFromPreview" class="rounded-xl bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-100"><i class="fa-solid fa-trash mr-1.5"></i>Delete Project</button><button v-if="canEditProject(projectPreview.project)" type="button" @click="editProjectFromPreview" class="rounded-xl bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-100"><i class="fa-solid fa-pen mr-1.5"></i>Edit Project</button><button type="button" @click="closeProjectDetails" class="rounded-xl bg-brand-dark px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-blue">Close</button></div>
                             </div>
