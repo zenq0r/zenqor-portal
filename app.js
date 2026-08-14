@@ -2327,10 +2327,45 @@ createApp({
                 const claimsStageColors = ['#F59E0B', '#3B82F6', '#8B5CF6', '#10B981', '#EF4444'];
                 const claimsStageCounts = claimsStageLabels.map(stage => this.claimsHistory.filter(c => c.status === stage).length);
                 const hasClaimsData = claimsStageCounts.some(value => value > 0);
+                const claimsMaxValue = Math.max(1, ...claimsStageCounts);
+                const claimsValueLabelPlugin = {
+                    id: 'claimsValueLabel',
+                    afterDatasetsDraw(chart) {
+                        if (!hasClaimsData) return;
+                        const { ctx, scales: { x } } = chart;
+                        const meta = chart.getDatasetMeta(0);
+                        ctx.save();
+                        ctx.font = '700 11px Inter, sans-serif';
+                        ctx.fillStyle = textColor;
+                        ctx.textBaseline = 'middle';
+                        meta.data.forEach((bar, i) => {
+                            const value = claimsStageCounts[i];
+                            ctx.textAlign = 'left';
+                            ctx.fillText(String(value), Math.min(bar.x + 8, x.right - 4), bar.y);
+                        });
+                        ctx.restore();
+                    }
+                };
                 const claimsChart = new Chart(ctxClaims, {
                     type: 'bar',
-                    data: { labels: hasClaimsData ? claimsStageLabels : ['No claims data yet'], datasets: [{ label: 'Claims & Vouchers', data: hasClaimsData ? claimsStageCounts : [0], backgroundColor: hasClaimsData ? claimsStageColors : ['#CBD5E1'], borderRadius: 6, maxBarThickness: 48 }] },
-                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 350 }, scales: { x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } }, y: { beginAtZero: true, ticks: { color: textColor, precision: 0 }, grid: { color: gridColor } } }, plugins: { legend: { display: false } } }
+                    data: {
+                        labels: hasClaimsData ? claimsStageLabels : ['No claims data yet'],
+                        datasets: [
+                            { label: 'Track', data: hasClaimsData ? claimsStageLabels.map(() => claimsMaxValue) : [1], backgroundColor: 'rgba(148, 163, 184, 0.12)', borderRadius: 8, barThickness: 20, order: 2, grouped: false },
+                            { label: 'Claims & Vouchers', data: hasClaimsData ? claimsStageCounts : [0], backgroundColor: hasClaimsData ? claimsStageColors : ['#CBD5E1'], borderRadius: 8, barThickness: 20, order: 1, grouped: false }
+                        ]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true, maintainAspectRatio: false, animation: { duration: 350 },
+                        layout: { padding: { right: 24 } },
+                        scales: {
+                            x: { beginAtZero: true, max: claimsMaxValue, stacked: false, grid: { color: gridColor }, ticks: { color: textColor, precision: 0, display: false }, border: { display: false } },
+                            y: { grid: { display: false }, ticks: { color: textColor, font: { size: 11, weight: '700' } }, border: { display: false } }
+                        },
+                        plugins: { legend: { display: false }, tooltip: { filter: item => item.datasetIndex === 1, callbacks: { label: item => ` ${item.raw} record(s)` } } }
+                    },
+                    plugins: [claimsValueLabelPlugin]
                 });
 
                 this.revenueChartInstance = Vue.markRaw ? Vue.markRaw(revenueChart) : revenueChart;
