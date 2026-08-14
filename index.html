@@ -1021,129 +1021,74 @@
 
                     <!-- 3. VIEW EKSEKUTIF (SUPERADMIN / HR / ACCOUNT / IT / OWNER) -->
                     <div v-else class="space-y-6">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Enterprise Executive Dashboard</h2>
-                            <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Real-time executive monitoring of financial KPIs, HR, corporate documents, and system activities.</p>
-                        </div>
-
-                        <!-- KAD KPI EKSEKUTIF (GRID 4x2 - 8 METRIK UTAMA TERMASUK CLAIMS) -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            
-                            <!-- 1. Total Employees -->
-                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Employees</p>
-                                    <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-brand-blue dark:text-blue-400 flex items-center justify-center text-base font-bold shrink-0">
-                                        <i class="fa-solid fa-users"></i>
-                                    </div>
+                        <!-- KAD KPI EKSEKUTIF — satu bekas seragam dengan Project Progress & Priority Clients -->
+                        <section class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+                            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <h2 class="text-sm font-extrabold text-brand-dark dark:text-white">Enterprise Executive Dashboard</h2>
+                                    <p class="mt-1 text-[10px] text-slate-500">Real-time monitoring of financial KPIs, HR, corporate documents, and system activities.</p>
                                 </div>
-                                <div class="mt-3">
-                                    <h3 class="text-3xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ employees.length }}</h3>
-                                    <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center">
-                                        <i class="fa-solid fa-circle-check mr-1.5"></i><span>{{ activeEmployeesCount }} Active</span>
-                                    </p>
+                                <span class="shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-1 text-[9px] font-bold text-slate-500 dark:text-slate-300"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i>Live data</span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                <!-- 1. Total Employees -->
+                                <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
+                                    <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span><i class="fa-solid fa-users text-[10px] text-slate-300 dark:text-slate-500"></i></div>
+                                    <h3 class="mt-2 text-xl font-black leading-none text-brand-dark dark:text-white truncate">{{ employees.length }}</h3>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Employees</p>
+                                    <p class="mt-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 truncate">{{ activeEmployeesCount }} Active</p>
+                                </div>
+                                <!-- 2. Total Clients -->
+                                <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
+                                    <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span><i class="fa-solid fa-building text-[10px] text-slate-300 dark:text-slate-500"></i></div>
+                                    <h3 class="mt-2 text-xl font-black leading-none text-brand-dark dark:text-white truncate">{{ customers.length }}</h3>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Clients</p>
+                                    <p class="mt-1 text-[9px] font-bold text-brand-gold truncate">{{ priorityClients.length }} Priority</p>
+                                </div>
+                                <!-- 3. Total Quotations -->
+                                <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
+                                    <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-yellow-500"></span><i class="fa-solid fa-file-pen text-[10px] text-slate-300 dark:text-slate-500"></i></div>
+                                    <h3 class="mt-2 text-xl font-black leading-none text-brand-dark dark:text-white truncate">{{ totalQuotations }}</h3>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Quotations</p>
+                                    <p class="mt-1 text-[9px] font-bold text-indigo-600 dark:text-indigo-400 truncate">{{ formatCurrency(totalQuotationValue) }}</p>
+                                </div>
+                                <!-- 4. Total Invoices -->
+                                <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
+                                    <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-indigo-500"></span><i class="fa-solid fa-file-invoice-dollar text-[10px] text-slate-300 dark:text-slate-500"></i></div>
+                                    <h3 class="mt-2 text-xl font-black leading-none text-brand-dark dark:text-white truncate">{{ totalInvoices }}</h3>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Invoices</p>
+                                    <p class="mt-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 truncate">{{ paidInvoicesCount }} Paid / {{ unpaidInvoicesCount }} Unpaid</p>
+                                </div>
+                                <!-- 5. Revenue (Paid) -->
+                                <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
+                                    <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span><i class="fa-solid fa-sack-dollar text-[10px] text-slate-300 dark:text-slate-500"></i></div>
+                                    <h3 class="mt-2 text-lg font-black leading-none text-emerald-600 dark:text-emerald-400 truncate">{{ formatCurrency(totalRevenuePaid) }}</h3>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Revenue (Paid)</p>
+                                    <p class="mt-1 text-[9px] font-bold text-slate-400 truncate">Collected Inflow</p>
+                                </div>
+                                <!-- 6. Pending Receivables -->
+                                <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
+                                    <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-orange-500"></span><i class="fa-solid fa-hand-holding-dollar text-[10px] text-slate-300 dark:text-slate-500"></i></div>
+                                    <h3 class="mt-2 text-lg font-black leading-none text-orange-500 dark:text-orange-400 truncate">{{ formatCurrency(totalRevenuePending) }}</h3>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Pending Receivables</p>
+                                    <p class="mt-1 text-[9px] font-bold text-red-500 truncate">{{ unpaidInvoicesCount }} Invoices Unpaid</p>
+                                </div>
+                                <!-- 7. Total Payroll (Net) -->
+                                <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
+                                    <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-purple-500"></span><i class="fa-solid fa-money-bill-transfer text-[10px] text-slate-300 dark:text-slate-500"></i></div>
+                                    <h3 class="mt-2 text-lg font-black leading-none text-brand-dark dark:text-white truncate">{{ formatCurrency(totalPayrollNet) }}</h3>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Payroll (Net)</p>
+                                    <p class="mt-1 text-[9px] font-bold text-purple-600 dark:text-purple-400 truncate">{{ payslipHistory.length }} Payslips Generated</p>
+                                </div>
+                                <!-- 8. Total Claims (Approved) -->
+                                <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
+                                    <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span><i class="fa-solid fa-receipt text-[10px] text-slate-300 dark:text-slate-500"></i></div>
+                                    <h3 class="mt-2 text-lg font-black leading-none text-rose-600 dark:text-rose-400 truncate">{{ formatCurrency(totalApprovedClaimsAmount) }}</h3>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Claims (Approved)</p>
+                                    <p class="mt-1 text-[9px] font-bold text-amber-500 truncate">{{ pendingClaimsCount }} Pending Approval</p>
                                 </div>
                             </div>
-
-                            <!-- 2. Total Clients -->
-                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Clients</p>
-                                    <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base font-bold shrink-0">
-                                        <i class="fa-solid fa-building"></i>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <h3 class="text-3xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ customers.length }}</h3>
-                                    <p class="text-xs font-semibold text-brand-gold mt-1">Enterprise Directory</p>
-                                </div>
-                            </div>
-
-                            <!-- 3. Total Quotations -->
-                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Quotations</p>
-                                    <div class="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 flex items-center justify-center text-base font-bold shrink-0">
-                                        <i class="fa-solid fa-file-pen"></i>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <h3 class="text-3xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ totalQuotations }}</h3>
-                                    <p class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mt-1 truncate">{{ formatCurrency(totalQuotationValue) }}</p>
-                                </div>
-                            </div>
-
-                            <!-- 4. Total Invoices -->
-                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Invoices</p>
-                                    <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-base font-bold shrink-0">
-                                        <i class="fa-solid fa-file-invoice-dollar"></i>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <h3 class="text-3xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ totalInvoices }}</h3>
-                                    <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1 truncate">{{ paidInvoicesCount }} Paid / {{ unpaidInvoicesCount }} Unpaid</p>
-                                </div>
-                            </div>
-
-                            <!-- 5. Revenue (Paid) -->
-                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Revenue (Paid)</p>
-                                    <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base font-bold shrink-0">
-                                        <i class="fa-solid fa-sack-dollar"></i>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <h3 class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight truncate">{{ formatCurrency(totalRevenuePaid) }}</h3>
-                                    <p class="text-xs font-semibold text-slate-400 mt-1 truncate">Collected Inflow</p>
-                                </div>
-                            </div>
-
-                            <!-- 6. Pending Receivables -->
-                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Pending Receivables</p>
-                                    <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 flex items-center justify-center text-base font-bold shrink-0">
-                                        <i class="fa-solid fa-hand-holding-dollar"></i>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <h3 class="text-2xl font-extrabold text-orange-500 dark:text-orange-400 tracking-tight truncate">{{ formatCurrency(totalRevenuePending) }}</h3>
-                                    <p class="text-xs font-semibold text-red-500 mt-1 truncate">{{ unpaidInvoicesCount }} Invoices Unpaid</p>
-                                </div>
-                            </div>
-
-                            <!-- 7. Total Payroll (Net) -->
-                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Payroll (Net)</p>
-                                    <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-base font-bold shrink-0">
-                                        <i class="fa-solid fa-money-bill-transfer"></i>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <h3 class="text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight truncate">{{ formatCurrency(totalPayrollNet) }}</h3>
-                                    <p class="text-xs font-semibold text-purple-600 dark:text-purple-400 mt-1 truncate">{{ payslipHistory.length }} Payslips Generated</p>
-                                </div>
-                            </div>
-
-                            <!-- 8. Total Claims (Approved) -->
-                            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition flex flex-col justify-between">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Claims (Approved)</p>
-                                    <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center text-base font-bold shrink-0">
-                                        <i class="fa-solid fa-receipt"></i>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <h3 class="text-2xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight truncate">{{ formatCurrency(totalApprovedClaimsAmount) }}</h3>
-                                    <p class="text-xs font-semibold text-amber-500 mt-1 truncate">{{ pendingClaimsCount }} Pending Approval</p>
-                                </div>
-                            </div>
-
-                        </div>
+                        </section>
 
                         <!-- PRIORITY CLIENTS WIDGET -->
                         <div v-if="priorityClients.length" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
