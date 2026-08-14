@@ -1692,41 +1692,39 @@
                         </div>
                     </div>
 
-                    <!-- CLIENT-FACING PROJECT TRACKER -->
-                    <div v-if="userProfile.role === 'Client'" class="space-y-4">
-                        <div v-for="project in projects" :key="`track-${project.id}`" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                <div class="min-w-0">
-                                    <span class="rounded-md bg-blue-50 px-2 py-1 text-[10px] font-extrabold text-brand-blue border border-blue-100">{{ project.projectRef }}</span>
-                                    <h3 class="mt-2 text-base font-extrabold leading-snug text-brand-dark">{{ project.title }}</h3>
-                                    <p v-if="project.description" class="mt-1 max-w-2xl text-xs text-slate-500 line-clamp-2">{{ project.description }}</p>
+                    <!-- CLIENT-FACING PROJECT TRACKER (compact) -->
+                    <div v-if="userProfile.role === 'Client'" class="space-y-3">
+                        <div v-for="project in projects" :key="`track-${project.id}`" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex min-w-0 items-center gap-2">
+                                    <span class="shrink-0 rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold text-brand-blue border border-blue-100">{{ project.projectRef }}</span>
+                                    <h3 class="truncate text-sm font-extrabold text-brand-dark">{{ project.title }}</h3>
                                 </div>
-                                <div class="shrink-0 text-left sm:text-right">
-                                    <p class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Target Completion</p>
-                                    <p class="mt-1 text-sm font-extrabold text-slate-700">{{ project.targetDate || 'Not scheduled' }}</p>
+                                <div class="shrink-0 flex items-center gap-3 text-[10px] text-slate-500">
+                                    <span><i class="fa-solid fa-calendar-check mr-1 text-slate-400"></i>{{ project.targetDate || 'Not scheduled' }}</span>
                                 </div>
                             </div>
 
-                            <div class="mt-5 flex items-center">
+                            <div class="mt-3 flex items-center">
                                 <template v-for="(stage, stageIndex) in projectStages" :key="stage">
                                     <div class="flex flex-1 flex-col items-center text-center">
-                                        <div class="flex h-9 w-9 items-center justify-center rounded-full text-xs font-black"
-                                             :class="stageIndex < projectStages.indexOf(project.status) ? 'bg-emerald-500 text-white' : stageIndex === projectStages.indexOf(project.status) ? 'bg-brand-blue text-white ring-4 ring-blue-100' : 'bg-slate-100 text-slate-400'">
-                                            <i v-if="stageIndex < projectStages.indexOf(project.status)" class="fa-solid fa-check"></i>
+                                        <div class="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black"
+                                             :class="stageIndex < projectStages.indexOf(project.status) ? 'bg-emerald-500 text-white' : stageIndex === projectStages.indexOf(project.status) ? 'bg-brand-blue text-white ring-2 ring-blue-100' : 'bg-slate-100 text-slate-400'">
+                                            <i v-if="stageIndex < projectStages.indexOf(project.status)" class="fa-solid fa-check text-[9px]"></i>
                                             <span v-else>{{ stageIndex + 1 }}</span>
                                         </div>
-                                        <p class="mt-2 max-w-[92px] text-[9px] font-bold uppercase leading-tight" :class="stageIndex <= projectStages.indexOf(project.status) ? 'text-brand-dark' : 'text-slate-400'">{{ stage }}</p>
+                                        <p class="mt-1 hidden max-w-[80px] text-[8px] font-bold uppercase leading-tight sm:block" :class="stageIndex <= projectStages.indexOf(project.status) ? 'text-brand-dark' : 'text-slate-400'">{{ stage }}</p>
                                     </div>
-                                    <div v-if="stageIndex < projectStages.length - 1" class="mb-5 h-0.5 flex-1 rounded" :class="stageIndex < projectStages.indexOf(project.status) ? 'bg-emerald-500' : 'bg-slate-200'"></div>
+                                    <div v-if="stageIndex < projectStages.length - 1" class="mb-3 sm:mb-4 h-0.5 flex-1 rounded" :class="stageIndex < projectStages.indexOf(project.status) ? 'bg-emerald-500' : 'bg-slate-200'"></div>
                                 </template>
                             </div>
 
-                            <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-                                <div class="flex items-center gap-2 text-[10px] text-slate-500">
-                                    <span :class="isProjectPicOnline(project) ? 'bg-emerald-500' : 'bg-slate-300'" class="h-2 w-2 rounded-full"></span>
-                                    <span>Managed by <span class="font-bold text-slate-700">{{ project.ownerName || 'ZENQOR Team' }}</span></span>
+                            <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+                                <div class="flex items-center gap-1.5 text-[10px] text-slate-500">
+                                    <span :class="isProjectPicOnline(project) ? 'bg-emerald-500' : 'bg-slate-300'" class="h-1.5 w-1.5 rounded-full"></span>
+                                    <span>{{ project.ownerName || 'ZENQOR Team' }}</span>
                                 </div>
-                                <button type="button" @click="openProjectDetails(project)" class="rounded-lg bg-brand-dark px-4 py-2 text-[10px] font-bold text-white hover:bg-brand-blue"><i class="fa-regular fa-eye mr-1.5"></i>View Full Details</button>
+                                <button type="button" @click="openProjectDetails(project)" class="rounded-lg bg-brand-dark px-3 py-1.5 text-[10px] font-bold text-white hover:bg-brand-blue"><i class="fa-regular fa-eye mr-1"></i>View Details</button>
                             </div>
                         </div>
                         <div v-if="!projects.length" class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/60 p-14 text-center">
@@ -1760,27 +1758,28 @@
                                             </div>
                                         </div>
 
-                                        <div v-if="isClientGroupExpanded(`${stage}::${group.key}`)" class="space-y-2.5 border-t border-slate-100 p-3">
-                                            <div v-for="project in group.projects" :key="project.id" class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                                <div class="flex items-start justify-between gap-2">
-                                                    <span class="rounded-md bg-white px-2 py-1 text-[10px] font-extrabold text-slate-600 border border-slate-200">{{ project.projectRef }}</span>
-                                                    <div v-if="canEditProject(project)" class="flex items-center gap-1.5 shrink-0">
-                                                        <button type="button" @click="openProjectModal(project)" class="h-7 w-7 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100" title="Edit project"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                                                        <button v-if="canManageProjects" type="button" @click="deleteProject(project)" class="h-7 w-7 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Delete project"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                                        <div v-if="isClientGroupExpanded(`${stage}::${group.key}`)" class="space-y-2 border-t border-slate-100 p-2.5">
+                                            <div v-for="project in group.projects" :key="project.id" class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                                                <div class="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-3 py-1.5">
+                                                    <span class="rounded-md bg-white px-2 py-0.5 text-[9px] font-extrabold text-slate-600 border border-slate-200">{{ project.projectRef }}</span>
+                                                    <div v-if="canEditProject(project)" class="flex items-center gap-1 shrink-0">
+                                                        <button type="button" @click="openProjectModal(project)" class="h-6 w-6 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100" title="Edit project"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                                                        <button v-if="canManageProjects" type="button" @click="deleteProject(project)" class="h-6 w-6 rounded-md bg-red-50 text-red-600 hover:bg-red-100" title="Delete project"><i class="fa-solid fa-trash text-[9px]"></i></button>
                                                     </div>
                                                 </div>
-                                                <h4 class="mt-2 text-sm font-extrabold leading-snug text-brand-dark">{{ project.title }}</h4>
-                                                <div class="project-card-meta mt-2 space-y-1.5 border-t border-slate-200 pt-2 text-[10px] text-slate-600">
-                                                    <p v-if="project.ownerName"><i class="fa-solid fa-user-gear mr-1.5 w-3 text-slate-400"></i>{{ project.ownerName }}<span v-if="project.ownerPosition"> · {{ project.ownerPosition }}</span></p>
-                                                    <p v-if="project.ownerEmpNo"><i class="fa-solid fa-id-badge mr-1.5 w-3 text-slate-400"></i>{{ project.ownerEmpNo }}</p>
-                                                    <p v-if="project.ownerAssignedAt"><i class="fa-solid fa-clock mr-1.5 w-3 text-slate-400"></i>Assigned {{ formatDateTime(project.ownerAssignedAt) }}</p>
-                                                    <p v-if="project.ownerEmpNo" class="flex items-center gap-1.5"><span :class="isProjectPicOnline(project) ? 'bg-emerald-500' : 'bg-slate-300'" class="h-2 w-2 rounded-full"></span><span :class="isProjectPicOnline(project) ? 'font-bold text-emerald-700' : 'text-slate-500'">{{ projectPicPresenceDetail(project) }}</span></p>
-                                                    <p v-if="project.targetDate"><i class="fa-solid fa-calendar-check mr-1.5 w-3 text-slate-400"></i>Target: {{ project.targetDate }}</p>
-                                                </div>
-                                                <div class="mt-2 flex items-center gap-2 border-t border-slate-200 pt-2">
-                                                    <button type="button" @click="openProjectDetails(project)" class="flex-1 rounded-lg bg-brand-dark px-3 py-2 text-[10px] font-bold text-white hover:bg-brand-blue"><i class="fa-regular fa-eye mr-1.5"></i>View Details</button>
-                                                    <button v-if="canEditProject(project)" type="button" @click="moveProject(project, -1)" :disabled="stageIndex === 0" class="h-8 w-8 rounded-lg bg-white border border-slate-200 text-[10px] font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-30" title="Move to previous stage"><i class="fa-solid fa-arrow-left"></i></button>
-                                                    <button v-if="canEditProject(project)" type="button" @click="moveProject(project, 1)" :disabled="stageIndex === projectStages.length - 1" class="h-8 w-8 rounded-lg bg-white border border-slate-200 text-[10px] font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-30" title="Move to next stage"><i class="fa-solid fa-arrow-right"></i></button>
+                                                <div class="p-3">
+                                                    <h4 class="text-sm font-extrabold leading-snug text-brand-dark">{{ project.title }}</h4>
+                                                    <div class="project-card-meta mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[10px] text-slate-600">
+                                                        <p v-if="project.ownerName" class="truncate" :title="project.ownerName"><i class="fa-solid fa-user-gear mr-1.5 w-3 text-slate-400"></i>{{ project.ownerName }}</p>
+                                                        <p v-if="project.ownerEmpNo" class="truncate"><i class="fa-solid fa-id-badge mr-1.5 w-3 text-slate-400"></i>{{ project.ownerEmpNo }}</p>
+                                                        <p v-if="project.targetDate" class="truncate"><i class="fa-solid fa-calendar-check mr-1.5 w-3 text-slate-400"></i>{{ project.targetDate }}</p>
+                                                        <p v-if="project.ownerEmpNo" class="flex items-center gap-1.5 truncate"><span :class="isProjectPicOnline(project) ? 'bg-emerald-500' : 'bg-slate-300'" class="h-1.5 w-1.5 shrink-0 rounded-full"></span><span :class="isProjectPicOnline(project) ? 'font-bold text-emerald-700' : 'text-slate-500'" class="truncate">{{ projectPicPresenceDetail(project) }}</span></p>
+                                                    </div>
+                                                    <div class="mt-2.5 flex items-center gap-2 border-t border-slate-100 pt-2.5">
+                                                        <button type="button" @click="openProjectDetails(project)" class="flex-1 rounded-lg bg-brand-dark px-3 py-2 text-[10px] font-bold text-white hover:bg-brand-blue"><i class="fa-regular fa-eye mr-1.5"></i>View Details</button>
+                                                        <button v-if="canEditProject(project)" type="button" @click="moveProject(project, -1)" :disabled="stageIndex === 0" class="h-8 w-8 rounded-lg bg-white border border-slate-200 text-[10px] font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-30" title="Move to previous stage"><i class="fa-solid fa-arrow-left"></i></button>
+                                                        <button v-if="canEditProject(project)" type="button" @click="moveProject(project, 1)" :disabled="stageIndex === projectStages.length - 1" class="h-8 w-8 rounded-lg bg-white border border-slate-200 text-[10px] font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-30" title="Move to next stage"><i class="fa-solid fa-arrow-right"></i></button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
