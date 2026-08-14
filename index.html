@@ -53,6 +53,16 @@
             </div>
         </transition>
 
+        <!-- APP UPDATE AVAILABLE BANNER -->
+        <transition name="fade">
+            <div v-if="appUpdateAvailable" class="fixed inset-x-0 top-0 z-[101] flex items-center justify-center gap-3 bg-brand-blue px-4 py-2.5 text-white shadow-lg no-print">
+                <i class="fa-solid fa-rotate text-sm"></i>
+                <span class="text-xs font-semibold">A new version of this portal is available.</span>
+                <button type="button" @click="refreshApp" class="rounded-lg bg-white px-3 py-1 text-[11px] font-extrabold text-brand-blue hover:bg-slate-100">Refresh Now</button>
+                <button type="button" @click="appUpdateAvailable = false" class="text-white/70 hover:text-white" title="Dismiss for now"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </transition>
+
         <!-- LOGIN WELCOME / LOADING SCREEN -->
         <transition name="fade">
             <div v-if="loginLoading" class="login-splash fixed inset-0 z-[100] flex items-center justify-center p-6" role="status" aria-live="polite">
@@ -80,6 +90,32 @@
                 <div class="mt-6 flex justify-end gap-2">
                     <button type="button" @click="logoutConfirm = false" class="rounded-lg bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200">No</button>
                     <button type="button" @click="handleLogout" class="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700">Yes, Sign Out</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- FIRST-LOGIN ONBOARDING -->
+        <div v-if="isLoggedIn && showOnboarding" class="fixed inset-0 z-[92] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 no-print" @click.self="dismissOnboarding">
+            <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+                <div class="bg-brand-dark px-6 py-5 text-white">
+                    <p class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand-gold">Welcome</p>
+                    <h3 class="mt-1 text-lg font-extrabold">Hi {{ userProfile.name }}, glad to have you here!</h3>
+                </div>
+                <div class="p-6">
+                    <p class="text-xs text-slate-500 mb-4">{{ userProfile.role === 'Client' ? 'Here\'s a quick look at your Client Portal:' : 'Here\'s a quick look at what you can do:' }}</p>
+                    <ul class="space-y-3 text-xs text-slate-700">
+                        <template v-if="userProfile.role === 'Client'">
+                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-diagram-project mt-0.5 w-4 text-brand-blue"></i><span>Track your project progress and workflow stage in real time under <b>Project Activities</b>.</span></li>
+                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-comments mt-0.5 w-4 text-brand-blue"></i><span>Reply directly to your project team in <b>Client Activity History</b> — it's a two-way conversation now.</span></li>
+                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-file-invoice-dollar mt-0.5 w-4 text-brand-blue"></i><span>View and filter your quotations and invoices anytime in the <b>Client Portal</b>.</span></li>
+                        </template>
+                        <template v-else>
+                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-diagram-project mt-0.5 w-4 text-brand-blue"></i><span>Use <b>My Projects</b> in Project Activities to see only the projects you're responsible for.</span></li>
+                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-bell mt-0.5 w-4 text-brand-blue"></i><span>Check the bell icon up top for a running log of your recent activity notifications.</span></li>
+                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-moon mt-0.5 w-4 text-brand-blue"></i><span>Prefer a darker screen? Toggle Dark Mode from the same top bar.</span></li>
+                        </template>
+                    </ul>
+                    <button type="button" @click="dismissOnboarding" class="mt-6 w-full rounded-xl bg-brand-dark px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-blue">Got it, let's start</button>
                 </div>
             </div>
         </div>
@@ -137,8 +173,9 @@
             <!-- SIDEBAR -->
             <aside :class="[
                        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-                       desktopSidebarOpen ? 'md:w-64 md:block' : 'md:w-0 md:hidden md:overflow-hidden'
-                   ]" 
+                       desktopSidebarOpen ? 'md:w-64 md:block' : 'md:w-0 md:hidden md:overflow-hidden',
+                       userProfile.role === 'Client' ? 'client-portal-theme' : ''
+                   ]"
                    class="w-64 bg-brand-dark text-white flex flex-col no-print shrink-0 shadow-2xl fixed inset-y-0 left-0 z-50 md:relative transition-all duration-300 ease-in-out border-r border-slate-800">
                 
                 <div class="p-4 border-b border-slate-800 flex items-center justify-between">
@@ -147,8 +184,8 @@
                             <img src="./logo.png" onerror="this.style.display='none'" class="h-6 w-auto object-contain">
                         </div>
                         <div class="truncate">
-                            <h1 class="font-extrabold text-xs tracking-wide text-white truncate">ZENQOR HRMS/CDTS</h1>
-                            <p class="text-[9px] text-brand-gold uppercase tracking-widest font-semibold truncate">Enterprise v2.0</p>
+                            <h1 class="font-extrabold text-xs tracking-wide text-white truncate">{{ userProfile.role === 'Client' ? 'ZENQOR Client Portal' : 'ZENQOR HRMS/CDTS' }}</h1>
+                            <p class="text-[9px] text-brand-gold uppercase tracking-widest font-semibold truncate">{{ userProfile.role === 'Client' ? (userProfile.name || 'Client Access') : 'Enterprise v2.0' }}</p>
                         </div>
                     </div>
                     <button type="button" @click="mobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white text-lg">
@@ -162,7 +199,7 @@
                     </button>
 
                     <div class="pt-3 pb-1">
-                        <p class="px-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Operation Center</p>
+                        <p class="px-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">{{ userProfile.role === 'Client' ? 'My Workspace' : 'Operation Center' }}</p>
                     </div>
 
                     <button v-if="hasAccess('project-activities')" type="button" @click="switchTab('project-activities')" :class="{'sidebar-item-active': currentTab === 'project-activities', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'project-activities'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
@@ -191,7 +228,7 @@
                     </button>
 
                     <div v-if="hasAccess('settings') || hasAccess('profile') || hasAccess('audit-logs')" class="pt-3 pb-1">
-                        <p class="px-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">System & Admin</p>
+                        <p class="px-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">{{ userProfile.role === 'Client' ? 'My Account' : 'System & Admin' }}</p>
                     </div>
 
                     <button v-if="hasAccess('audit-logs')" type="button" @click="switchTab('audit-logs')" :class="{'sidebar-item-active': currentTab === 'audit-logs', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'audit-logs'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
@@ -225,7 +262,7 @@
                         <div class="relative w-full max-w-sm">
                             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400 text-xs"></i>
                             <label for="global-search" class="sr-only">Search System</label>
-                            <input id="global-search" name="search" type="text" v-model="searchQuery" placeholder="Search Documents, Employees, TIN, ID..." class="w-full pl-9 pr-4 py-1.5 bg-slate-100 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-semibold focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-brand-gold focus:outline-none transition">
+                            <input id="global-search" name="search" type="text" v-model="searchQuery" :placeholder="userProfile.role === 'Client' ? 'Search your projects, documents...' : 'Search Documents, Employees, TIN, ID...'" class="w-full pl-9 pr-4 py-1.5 bg-slate-100 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-semibold focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-brand-gold focus:outline-none transition">
                         </div>
                     </div>
 
@@ -236,9 +273,37 @@
                             <button v-if="hasAccess('claims')" type="button" @click="switchTab('claims')" :class="currentTab === 'claims' ? 'bg-brand-gold text-brand-dark shadow' : 'text-slate-600 dark:text-slate-300 hover:text-brand-dark'" class="px-3 py-1 rounded-lg transition">Claims</button>
                         </div>
 
+                        <button type="button" @click="toggleDarkMode" class="rounded-lg bg-slate-100 dark:bg-slate-700 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition" :title="darkMode ? 'Switch to light mode' : 'Switch to dark mode'">
+                            <i class="fa-solid" :class="darkMode ? 'fa-sun' : 'fa-moon'"></i>
+                        </button>
+
+                        <div class="relative">
+                            <button type="button" @click="toggleNotificationsPanel" class="relative rounded-lg bg-slate-100 dark:bg-slate-700 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition" title="Notifications">
+                                <i class="fa-solid fa-bell text-sm"></i>
+                                <span v-if="unreadNotificationsCount" class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-extrabold text-white">{{ unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount }}</span>
+                            </button>
+                            <div v-if="notificationsPanelOpen" class="fixed inset-0 z-40" @click="notificationsPanelOpen = false"></div>
+                            <div v-if="notificationsPanelOpen" class="absolute right-0 top-full z-50 mt-2 w-80 max-w-[90vw] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl">
+                                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 px-4 py-3">
+                                    <h4 class="text-xs font-extrabold uppercase tracking-wide text-brand-dark dark:text-white">Notifications</h4>
+                                    <div class="flex gap-2">
+                                        <button v-if="unreadNotificationsCount" type="button" @click="markAllNotificationsRead" class="text-[10px] font-bold text-brand-blue hover:underline">Mark all read</button>
+                                        <button v-if="notificationsLog.length" type="button" @click="clearNotificationsLog" class="text-[10px] font-bold text-red-500 hover:underline">Clear</button>
+                                    </div>
+                                </div>
+                                <div class="max-h-80 overflow-y-auto">
+                                    <div v-for="n in notificationsLog" :key="n.id" class="flex items-start gap-2 border-b border-slate-50 dark:border-slate-700/50 px-4 py-2.5 text-xs" :class="!n.read ? 'bg-blue-50/50 dark:bg-slate-700/30' : ''">
+                                        <span :class="!n.read ? 'bg-brand-blue' : 'bg-slate-300'" class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"></span>
+                                        <div class="min-w-0"><p class="text-slate-700 dark:text-slate-200">{{ n.message }}</p><p class="mt-0.5 text-[9px] text-slate-400">{{ formatDateTime(n.timestamp) }}</p></div>
+                                    </div>
+                                    <div v-if="!notificationsLog.length" class="px-4 py-8 text-center text-xs text-slate-400">No notifications yet.</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="text-right hidden md:block">
                             <p class="text-xs font-bold text-slate-800 dark:text-slate-100">{{ userProfile.name }}</p>
-                            <span class="inline-block bg-brand-gold/20 text-brand-dark dark:text-brand-gold text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase">{{ getRoleDisplayName(userProfile.role) }}</span>
+                            <span class="inline-block bg-brand-gold/20 text-brand-dark dark:text-brand-gold text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase">{{ userProfile.role === 'Client' ? 'Client Portal Access' : getRoleDisplayName(userProfile.role) }}</span>
                         </div>
                         <img :src="userProfile.photo" class="w-8 h-8 rounded-full object-cover border-2 border-brand-gold shrink-0 shadow-sm">
                     </div>
@@ -848,14 +913,18 @@
 
                     <!-- 2. VIEW PELANGGAN (CLIENT DASHBOARD) -->
                     <div v-else-if="userProfile.role === 'Client'" class="space-y-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Executive Dashboard</h2>
-                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Welcome, {{ userProfile.name }}. View your official quotations and invoices.</p>
+                        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-dark via-brand-dark to-blue-900 p-6 text-white shadow-lg">
+                            <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand-gold">Client Portal</p>
+                                    <h2 class="mt-1 text-2xl font-extrabold tracking-tight">Welcome back, {{ userProfile.name }}</h2>
+                                    <p class="mt-1 text-xs text-blue-100">Here's a snapshot of your projects and official documents today.</p>
+                                </div>
+                                <button @click="switchTab('client-portal')" class="shrink-0 bg-white text-brand-dark hover:bg-slate-100 font-bold px-4 py-2.5 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
+                                    <i class="fa-solid fa-folder-open"></i><span>Open Client Portal</span>
+                                </button>
                             </div>
-                            <button @click="switchTab('client-portal')" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2.5 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
-                                <i class="fa-solid fa-folder-open"></i><span>Open Client Portal</span>
-                            </button>
+                            <i class="fa-solid fa-building absolute -right-4 -bottom-6 text-[120px] text-white/5"></i>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1384,6 +1453,10 @@
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
+                            <div v-if="userProfile.role !== 'Client'" class="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" aria-label="Project scope selection">
+                                <button type="button" @click="projectScopeFilter = 'all'" :class="projectScopeFilter === 'all' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 hover:bg-slate-100'" class="rounded-lg px-3 py-2 text-xs font-bold transition">All Projects</button>
+                                <button type="button" @click="projectScopeFilter = 'mine'" :class="projectScopeFilter === 'mine' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 hover:bg-slate-100'" class="rounded-lg px-3 py-2 text-xs font-bold transition"><i class="fa-solid fa-user mr-1.5"></i>My Projects</button>
+                            </div>
                             <div class="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" aria-label="Project view selection">
                                 <button type="button" @click="projectViewMode = 'board'" :class="projectViewMode === 'board' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 hover:bg-slate-100'" class="rounded-lg px-3 py-2 text-xs font-bold transition"><i class="fa-solid fa-table-columns mr-1.5"></i>Board</button>
                                 <button type="button" @click="projectViewMode = 'list'" :class="projectViewMode === 'list' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 hover:bg-slate-100'" class="rounded-lg px-3 py-2 text-xs font-bold transition"><i class="fa-solid fa-list mr-1.5"></i>List</button>
@@ -1621,6 +1694,21 @@
                     </div>
 
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+                        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <span class="text-xs font-bold text-slate-400">Showing {{ filteredClientPortalDocs.length }} of {{ clientPortalDocs.length }} document(s)</span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <div class="flex rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 p-1 text-xs font-bold">
+                                    <button type="button" @click="clientPortalFilter.type = 'all'" :class="clientPortalFilter.type === 'all' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">All</button>
+                                    <button type="button" @click="clientPortalFilter.type = 'Quotation'" :class="clientPortalFilter.type === 'Quotation' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">Quotations</button>
+                                    <button type="button" @click="clientPortalFilter.type = 'Invoice'" :class="clientPortalFilter.type === 'Invoice' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">Invoices</button>
+                                </div>
+                                <div class="flex rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 p-1 text-xs font-bold">
+                                    <button type="button" @click="clientPortalFilter.status = 'all'" :class="clientPortalFilter.status === 'all' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">All</button>
+                                    <button type="button" @click="clientPortalFilter.status = 'Paid'" :class="clientPortalFilter.status === 'Paid' ? 'bg-emerald-600 text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">Paid</button>
+                                    <button type="button" @click="clientPortalFilter.status = 'Unpaid'" :class="clientPortalFilter.status === 'Unpaid' ? 'bg-red-600 text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">Unpaid</button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
@@ -1634,7 +1722,8 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
-                                    <tr v-for="d in clientPortalDocs" :key="d.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                    <tr v-if="!filteredClientPortalDocs.length"><td colspan="6" class="py-8 text-center text-slate-400">No documents match this filter.</td></tr>
+                                    <tr v-for="d in filteredClientPortalDocs" :key="d.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                         <td class="py-3 px-4 font-bold">{{ d.type }}</td>
                                         <td class="py-3 px-4 font-bold text-brand-dark dark:text-slate-100">{{ d.docNo }}</td>
                                         <td class="py-3 px-4 text-slate-600 dark:text-slate-300">{{ d.date }}</td>
@@ -1738,7 +1827,7 @@
                                 <div><label for="prof-email" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Sign-In Email</label><input id="prof-email" name="profEmail" type="email" v-model="userProfile.email" disabled class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-400 rounded-xl text-xs cursor-not-allowed"></div>
                                 <div>
                                     <label for="prof-role" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">User Role (RBAC)</label>
-                                    <input id="prof-role" name="profRole" type="text" :value="getRoleDisplayName(userProfile.role)" disabled class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-400 rounded-xl text-xs font-bold bg-slate-100 cursor-not-allowed">
+                                    <input id="prof-role" name="profRole" type="text" :value="userProfile.role === 'Client' ? 'Client Portal Access' : getRoleDisplayName(userProfile.role)" disabled class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-400 rounded-xl text-xs font-bold bg-slate-100 cursor-not-allowed">
                                     <p v-if="canManageRBAC" class="mt-1 text-[10px] text-slate-400">To change your own role, use Portal Access Management below (requires a second look to avoid accidental self-lockout).</p>
                                 </div>
                                 <div class="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 p-4">

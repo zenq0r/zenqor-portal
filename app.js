@@ -56,6 +56,8 @@ createApp({
             loginLoading: false,
             logoutConfirm: false,
             browserBackHandler: null,
+            appUpdateCheckInterval: null,
+            appVisibilityHandler: null,
             showPassword: false,
             loginForm: { 
                 email: '', 
@@ -77,6 +79,12 @@ createApp({
             claimsItemsPerPage: 10,
 
             notification: { show: false, message: '' },
+            notificationsLog: [],
+            notificationsPanelOpen: false,
+            darkMode: false,
+            appUpdateAvailable: false,
+            appVersionMarker: '',
+            showOnboarding: false,
 
             activePrintModule: null,
             claimPrint: null,
@@ -146,6 +154,8 @@ createApp({
             editingReplyId: '',
             editingReplyMessage: '',
             projectViewMode: 'board',
+            projectScopeFilter: 'all',
+            clientPortalFilter: { type: 'all', status: 'all' },
             expandedClientGroups: new Set(),
             projectPreview: { show: false, project: null },
             projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
@@ -307,6 +317,7 @@ createApp({
         canManageCompanySettings() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
         canManageProjects() { return ['Director', 'Superadmin'].includes(this.userProfile.role); },
         canBackupDatabase() { return ['Director', 'Superadmin'].includes(this.userProfile.role); },
+        unreadNotificationsCount() { return this.notificationsLog.filter(n => !n.read).length; },
         currentYear() { return new Date().getFullYear(); },
         payslipYtdMultiplier() {
             const month = Number(String(this.payForm.month || '').split('-')[1]);
@@ -356,6 +367,13 @@ createApp({
                 return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email);
             }
             return this.docHistory;
+        },
+        filteredClientPortalDocs() {
+            return this.clientPortalDocs.filter(d => {
+                const typeOk = this.clientPortalFilter.type === 'all' || d.type === this.clientPortalFilter.type;
+                const statusOk = this.clientPortalFilter.status === 'all' || (d.status || 'Unpaid') === this.clientPortalFilter.status;
+                return typeOk && statusOk;
+            });
         },
 
         // PAGINATION & SORTING UNTUK CLAIMS MODULE
@@ -421,7 +439,11 @@ createApp({
         },
         filteredProjects() {
             const queryText = this.searchQuery.trim().toLowerCase();
-            const records = [...this.projects].sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+            let records = [...this.projects].sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+            if (this.projectScopeFilter === 'mine' && this.userProfile.role !== 'Client') {
+                const email = String(this.userProfile.email || '').trim().toLowerCase();
+                records = records.filter(project => String(project.ownerEmail || '').trim().toLowerCase() === email);
+            }
             if (!queryText) return records;
             return records.filter(project => [project.projectRef, project.title, project.clientName, project.ownerName, project.status, project.description].some(value => String(value || '').toLowerCase().includes(queryText)));
         },
@@ -1338,6 +1360,18 @@ createApp({
         showNotify(msg) {
             this.notification = { show: true, message: msg };
             setTimeout(() => { this.notification.show = false; }, 3500);
+            this.notificationsLog.unshift({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, message: msg, read: false, timestamp: new Date().toISOString() });
+            if (this.notificationsLog.length > 30) this.notificationsLog.length = 30;
+        },
+        toggleNotificationsPanel() {
+            this.notificationsPanelOpen = !this.notificationsPanelOpen;
+        },
+        markAllNotificationsRead() {
+            this.notificationsLog.forEach(n => { n.read = true; });
+        },
+        clearNotificationsLog() {
+            this.notificationsLog = [];
+            this.notificationsPanelOpen = false;
         },
 
         isSupportedImageAttachment(attachment) {
@@ -1359,6 +1393,39 @@ createApp({
         toggleSidebar() {
             if (window.innerWidth < 768) this.mobileMenuOpen = !this.mobileMenuOpen;
             else this.desktopSidebarOpen = !this.desktopSidebarOpen;
+        },
+        applyDarkModePreference() {
+            let saved = null;
+            try { saved = window.localStorage.getItem('zenqor_theme'); } catch (error) { saved = null; }
+            this.darkMode = saved === 'dark';
+            document.documentElement.classList.toggle('dark', this.darkMode);
+        },
+        toggleDarkMode() {
+            this.darkMode = !this.darkMode;
+            document.documentElement.classList.toggle('dark', this.darkMode);
+            try { window.localStorage.setItem('zenqor_theme', this.darkMode ? 'dark' : 'light'); } catch (error) { /* storage unavailable, preference just won't persist */ }
+        },
+        async checkForAppUpdate() {
+            try {
+                const response = await fetch(`${window.location.pathname}?_v=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+                const marker = response.headers.get('etag') || response.headers.get('last-modified');
+                if (!marker) return;
+                if (!this.appVersionMarker) { this.appVersionMarker = marker; return; }
+                if (marker !== this.appVersionMarker) this.appUpdateAvailable = true;
+            } catch (error) { /* offline or blocked request, ignore and retry next interval */ }
+        },
+        refreshApp() {
+            window.location.reload();
+        },
+        dismissOnboarding() {
+            this.showOnboarding = false;
+            try { window.localStorage.setItem(`zenqor_onboarded_${this.userProfile.email}`, '1'); } catch (error) { /* storage unavailable, will show again next session */ }
+        },
+        maybeShowOnboarding() {
+            try {
+                const key = `zenqor_onboarded_${this.userProfile.email}`;
+                if (!window.localStorage.getItem(key)) this.showOnboarding = true;
+            } catch (error) { /* storage unavailable, skip onboarding rather than block login */ }
         },
         switchTab(tabName) {
             if (!this.hasAccess(tabName)) { this.showNotify('Access Denied: Your role does not permit access to this module.'); return; }
@@ -1469,6 +1536,7 @@ createApp({
                 this.showNotify(`Welcome back (${this.getRoleDisplayName(role)}): ${name}`);
                 this.currentTab = mustChangePassword ? 'profile' : 'dashboard';
                 if (mustChangePassword) { this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
+                else this.maybeShowOnboarding();
                 await this.initFirebaseRealtime();
                 await this.startPresenceTracking();
                 this.loginLoading = false;
@@ -2287,7 +2355,7 @@ createApp({
         }
     },
     mounted() {
-        document.documentElement.classList.remove('dark');
+        this.applyDarkModePreference();
         this.autoCalculatePayroll();
         this.generateDocNo();
         window.history.replaceState({ zenqorPortal: true }, '', window.location.href);
@@ -2295,6 +2363,11 @@ createApp({
             if (this.isLoggedIn && this.currentTab !== 'dashboard') this.returnToDashboard();
         };
         window.addEventListener('popstate', this.browserBackHandler);
+
+        this.checkForAppUpdate();
+        this.appUpdateCheckInterval = setInterval(() => this.checkForAppUpdate(), 5 * 60 * 1000);
+        this.appVisibilityHandler = () => { if (document.visibilityState === 'visible') this.checkForAppUpdate(); };
+        document.addEventListener('visibilitychange', this.appVisibilityHandler);
 
         onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
@@ -2324,6 +2397,7 @@ createApp({
                     this.resetAllForms();
                     this.isLoggedIn = true;
                     if (mustChangePassword) { this.currentTab = 'profile'; this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
+                    else this.maybeShowOnboarding();
                     await this.initFirebaseRealtime();
                     await this.startPresenceTracking();
                     this.loginLoading = false;
@@ -2364,5 +2438,7 @@ createApp({
         this.stopPresenceTracking();
         this.unsubscribers.forEach(unsub => unsub && unsub());
         if (this.browserBackHandler) window.removeEventListener('popstate', this.browserBackHandler);
+        if (this.appUpdateCheckInterval) clearInterval(this.appUpdateCheckInterval);
+        if (this.appVisibilityHandler) document.removeEventListener('visibilitychange', this.appVisibilityHandler);
     }
 }).mount('#app');

@@ -125,6 +125,15 @@ body {
     pointer-events: auto;
 }
 
+/* Client Portal — distinct accent so client sessions read visually apart from internal staff sessions */
+.client-portal-theme {
+    border-right-color: #1D4ED8;
+}
+.client-portal-theme .sidebar-item-active {
+    background-color: #1D4ED8;
+    border-left-color: #93C5FD;
+}
+
 /* ============================================================
    PORTAL UI POLISH — consistent, calm and accessible surfaces
    ============================================================ */
