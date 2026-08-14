@@ -1466,8 +1466,8 @@
                                 <i class="fa-solid fa-arrow-left"></i><span class="hidden sm:inline">Dashboard</span>
                             </button>
                             <div>
-                                <h2 class="text-xl font-extrabold text-brand-dark tracking-tight">Project Activities</h2>
-                                <p class="text-slate-500 text-xs mt-0.5">Real-time project progress across five controlled workflow stages.</p>
+                                <h2 class="text-xl font-extrabold text-brand-dark tracking-tight">{{ userProfile.role === 'Client' ? 'My Project Tracker' : 'Project Activities' }}</h2>
+                                <p class="text-slate-500 text-xs mt-0.5">{{ userProfile.role === 'Client' ? 'Follow your project progress across five workflow stages, in real time.' : 'Real-time project progress across five controlled workflow stages.' }}</p>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -1475,7 +1475,7 @@
                                 <button type="button" @click="projectScopeFilter = 'all'" :class="projectScopeFilter === 'all' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 hover:bg-slate-100'" class="rounded-lg px-3 py-2 text-xs font-bold transition">All Projects</button>
                                 <button type="button" @click="projectScopeFilter = 'mine'" :class="projectScopeFilter === 'mine' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 hover:bg-slate-100'" class="rounded-lg px-3 py-2 text-xs font-bold transition"><i class="fa-solid fa-user mr-1.5"></i>My Projects</button>
                             </div>
-                            <div class="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" aria-label="Project view selection">
+                            <div v-if="userProfile.role !== 'Client'" class="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" aria-label="Project view selection">
                                 <button type="button" @click="projectViewMode = 'board'" :class="projectViewMode === 'board' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 hover:bg-slate-100'" class="rounded-lg px-3 py-2 text-xs font-bold transition"><i class="fa-solid fa-table-columns mr-1.5"></i>Board</button>
                                 <button type="button" @click="projectViewMode = 'list'" :class="projectViewMode === 'list' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 hover:bg-slate-100'" class="rounded-lg px-3 py-2 text-xs font-bold transition"><i class="fa-solid fa-list mr-1.5"></i>List</button>
                             </div>
@@ -1485,7 +1485,50 @@
                         </div>
                     </div>
 
-                    <div v-if="projectViewMode === 'board'" class="project-board-grid">
+                    <!-- CLIENT-FACING PROJECT TRACKER -->
+                    <div v-if="userProfile.role === 'Client'" class="space-y-4">
+                        <div v-for="project in projects" :key="`track-${project.id}`" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="min-w-0">
+                                    <span class="rounded-md bg-blue-50 px-2 py-1 text-[10px] font-extrabold text-brand-blue border border-blue-100">{{ project.projectRef }}</span>
+                                    <h3 class="mt-2 text-base font-extrabold leading-snug text-brand-dark">{{ project.title }}</h3>
+                                    <p v-if="project.description" class="mt-1 max-w-2xl text-xs text-slate-500 line-clamp-2">{{ project.description }}</p>
+                                </div>
+                                <div class="shrink-0 text-left sm:text-right">
+                                    <p class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Target Completion</p>
+                                    <p class="mt-1 text-sm font-extrabold text-slate-700">{{ project.targetDate || 'Not scheduled' }}</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 flex items-center">
+                                <template v-for="(stage, stageIndex) in projectStages" :key="stage">
+                                    <div class="flex flex-1 flex-col items-center text-center">
+                                        <div class="flex h-9 w-9 items-center justify-center rounded-full text-xs font-black"
+                                             :class="stageIndex < projectStages.indexOf(project.status) ? 'bg-emerald-500 text-white' : stageIndex === projectStages.indexOf(project.status) ? 'bg-brand-blue text-white ring-4 ring-blue-100' : 'bg-slate-100 text-slate-400'">
+                                            <i v-if="stageIndex < projectStages.indexOf(project.status)" class="fa-solid fa-check"></i>
+                                            <span v-else>{{ stageIndex + 1 }}</span>
+                                        </div>
+                                        <p class="mt-2 max-w-[92px] text-[9px] font-bold uppercase leading-tight" :class="stageIndex <= projectStages.indexOf(project.status) ? 'text-brand-dark' : 'text-slate-400'">{{ stage }}</p>
+                                    </div>
+                                    <div v-if="stageIndex < projectStages.length - 1" class="mb-5 h-0.5 flex-1 rounded" :class="stageIndex < projectStages.indexOf(project.status) ? 'bg-emerald-500' : 'bg-slate-200'"></div>
+                                </template>
+                            </div>
+
+                            <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                                <div class="flex items-center gap-2 text-[10px] text-slate-500">
+                                    <span :class="isProjectPicOnline(project) ? 'bg-emerald-500' : 'bg-slate-300'" class="h-2 w-2 rounded-full"></span>
+                                    <span>Managed by <span class="font-bold text-slate-700">{{ project.ownerName || 'ZENQOR Team' }}</span></span>
+                                </div>
+                                <button type="button" @click="openProjectDetails(project)" class="rounded-lg bg-brand-dark px-4 py-2 text-[10px] font-bold text-white hover:bg-brand-blue"><i class="fa-regular fa-eye mr-1.5"></i>View Full Details</button>
+                            </div>
+                        </div>
+                        <div v-if="!projects.length" class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/60 p-14 text-center">
+                            <i class="fa-regular fa-folder-open text-2xl text-slate-300"></i>
+                            <p class="mt-3 text-xs font-bold text-slate-400">No project has been assigned to your account yet.</p>
+                        </div>
+                    </div>
+
+                    <div v-else-if="projectViewMode === 'board'" class="project-board-grid">
                             <section v-for="(stage, stageIndex) in projectStages" :key="stage" class="min-w-0 rounded-2xl border border-slate-200 bg-slate-100/70 p-3 shadow-sm">
                                 <header class="mb-3 flex items-center justify-between rounded-xl bg-white px-3 py-3 border border-slate-200">
                                     <div class="flex items-center gap-2">
