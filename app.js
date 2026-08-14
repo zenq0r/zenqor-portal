@@ -48,6 +48,22 @@ const RBAC_ROLES = {
     'Staff': ['dashboard', 'project-activities', 'claims', 'profile']
 };
 
+// Bump the top entry's `version` (and add a new entry above it) whenever a meaningful feature ships.
+// Every signed-in user whose stored `lastSeenChangelogVersion` (in Firestore, users/{uid}) doesn't
+// match APP_CHANGELOG[0].version will automatically see the "What's New" onboarding message once.
+const APP_CHANGELOG = [
+    {
+        version: '2026.08.14',
+        title: "What's New in ZENQOR Portal",
+        notes: [
+            'Client Portal now has its own distinct look, separate from the internal staff system.',
+            'Clients can reply directly to project updates — Client Activity History is now a two-way conversation.',
+            'New "My Projects" quick filter for staff, and document filters for clients.',
+            'Dark mode, a notification center, and project client tagging (Standard/Premium/Priority) added.'
+        ]
+    }
+];
+
 createApp({
     data() {
         return {
@@ -85,6 +101,7 @@ createApp({
             appUpdateAvailable: false,
             appVersionMarker: '',
             showOnboarding: false,
+            onboardingMode: 'welcome',
 
             activePrintModule: null,
             claimPrint: null,
@@ -318,6 +335,7 @@ createApp({
         canManageProjects() { return ['Director', 'Superadmin'].includes(this.userProfile.role); },
         canBackupDatabase() { return ['Director', 'Superadmin'].includes(this.userProfile.role); },
         unreadNotificationsCount() { return this.notificationsLog.filter(n => !n.read).length; },
+        latestChangelog() { return APP_CHANGELOG[0] || null; },
         currentYear() { return new Date().getFullYear(); },
         payslipYtdMultiplier() {
             const month = Number(String(this.payForm.month || '').split('-')[1]);
@@ -1395,15 +1413,19 @@ createApp({
             else this.desktopSidebarOpen = !this.desktopSidebarOpen;
         },
         applyDarkModePreference() {
-            let saved = null;
-            try { saved = window.localStorage.getItem('zenqor_theme'); } catch (error) { saved = null; }
-            this.darkMode = saved === 'dark';
+            this.darkMode = this.userProfile.themePreference === 'dark';
             document.documentElement.classList.toggle('dark', this.darkMode);
         },
-        toggleDarkMode() {
+        async toggleDarkMode() {
             this.darkMode = !this.darkMode;
             document.documentElement.classList.toggle('dark', this.darkMode);
-            try { window.localStorage.setItem('zenqor_theme', this.darkMode ? 'dark' : 'light'); } catch (error) { /* storage unavailable, preference just won't persist */ }
+            this.userProfile.themePreference = this.darkMode ? 'dark' : 'light';
+            if (!this.userProfile.uid) return;
+            try {
+                await setDoc(doc(db, 'users', this.userProfile.uid), { themePreference: this.userProfile.themePreference }, { merge: true });
+            } catch (error) {
+                console.error('Unable to save theme preference:', error);
+            }
         },
         async checkForAppUpdate() {
             try {
@@ -1417,15 +1439,24 @@ createApp({
         refreshApp() {
             window.location.reload();
         },
-        dismissOnboarding() {
+        async dismissOnboarding() {
             this.showOnboarding = false;
-            try { window.localStorage.setItem(`zenqor_onboarded_${this.userProfile.email}`, '1'); } catch (error) { /* storage unavailable, will show again next session */ }
+            const latestVersion = APP_CHANGELOG[0]?.version || '';
+            this.userProfile.lastSeenChangelogVersion = latestVersion;
+            if (!this.userProfile.uid) return;
+            try {
+                await setDoc(doc(db, 'users', this.userProfile.uid), { lastSeenChangelogVersion: latestVersion }, { merge: true });
+            } catch (error) {
+                console.error('Unable to save onboarding/changelog state:', error);
+            }
         },
         maybeShowOnboarding() {
-            try {
-                const key = `zenqor_onboarded_${this.userProfile.email}`;
-                if (!window.localStorage.getItem(key)) this.showOnboarding = true;
-            } catch (error) { /* storage unavailable, skip onboarding rather than block login */ }
+            const latestVersion = APP_CHANGELOG[0]?.version || '';
+            if (!latestVersion) return;
+            const seenVersion = this.userProfile.lastSeenChangelogVersion || '';
+            if (seenVersion === latestVersion) return;
+            this.onboardingMode = seenVersion ? 'whatsnew' : 'welcome';
+            this.showOnboarding = true;
         },
         switchTab(tabName) {
             if (!this.hasAccess(tabName)) { this.showNotify('Access Denied: Your role does not permit access to this module.'); return; }
@@ -1529,7 +1560,8 @@ createApp({
                     return;
                 }
 
-                this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword };
+                this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '' };
+                this.applyDarkModePreference();
 
                 this.resetAllForms(); this.isLoggedIn = true; this.desktopSidebarOpen = false; this.mobileMenuOpen = false;
                 this.logAudit('LOGIN', `User logged in with role ${this.getRoleDisplayName(role)}`);
@@ -2355,7 +2387,6 @@ createApp({
         }
     },
     mounted() {
-        this.applyDarkModePreference();
         this.autoCalculatePayroll();
         this.generateDocNo();
         window.history.replaceState({ zenqorPortal: true }, '', window.location.href);
@@ -2393,7 +2424,8 @@ createApp({
                         await signOut(auth);
                         return;
                     }
-                    this.userProfile = { name, email: firebaseUser.email, role, uid: firebaseUser.uid, photo, mustChangePassword };
+                    this.userProfile = { name, email: firebaseUser.email, role, uid: firebaseUser.uid, photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '' };
+                    this.applyDarkModePreference();
                     this.resetAllForms();
                     this.isLoggedIn = true;
                     if (mustChangePassword) { this.currentTab = 'profile'; this.changePasswordModal.required = true; this.changePasswordModal.show = true; }

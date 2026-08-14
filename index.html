@@ -94,27 +94,35 @@
             </div>
         </div>
 
-        <!-- FIRST-LOGIN ONBOARDING -->
+        <!-- ONBOARDING / WHAT'S NEW (version-driven, tracked per user in Firestore) -->
         <div v-if="isLoggedIn && showOnboarding" class="fixed inset-0 z-[92] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 no-print" @click.self="dismissOnboarding">
             <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
                 <div class="bg-brand-dark px-6 py-5 text-white">
-                    <p class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand-gold">Welcome</p>
-                    <h3 class="mt-1 text-lg font-extrabold">Hi {{ userProfile.name }}, glad to have you here!</h3>
+                    <p class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand-gold">{{ onboardingMode === 'whatsnew' ? `Updated · v${latestChangelog?.version}` : 'Welcome' }}</p>
+                    <h3 class="mt-1 text-lg font-extrabold">{{ onboardingMode === 'whatsnew' ? (latestChangelog?.title || "What's New") : `Hi ${userProfile.name}, glad to have you here!` }}</h3>
                 </div>
                 <div class="p-6">
-                    <p class="text-xs text-slate-500 mb-4">{{ userProfile.role === 'Client' ? 'Here\'s a quick look at your Client Portal:' : 'Here\'s a quick look at what you can do:' }}</p>
-                    <ul class="space-y-3 text-xs text-slate-700">
-                        <template v-if="userProfile.role === 'Client'">
-                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-diagram-project mt-0.5 w-4 text-brand-blue"></i><span>Track your project progress and workflow stage in real time under <b>Project Activities</b>.</span></li>
-                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-comments mt-0.5 w-4 text-brand-blue"></i><span>Reply directly to your project team in <b>Client Activity History</b> — it's a two-way conversation now.</span></li>
-                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-file-invoice-dollar mt-0.5 w-4 text-brand-blue"></i><span>View and filter your quotations and invoices anytime in the <b>Client Portal</b>.</span></li>
-                        </template>
-                        <template v-else>
-                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-diagram-project mt-0.5 w-4 text-brand-blue"></i><span>Use <b>My Projects</b> in Project Activities to see only the projects you're responsible for.</span></li>
-                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-bell mt-0.5 w-4 text-brand-blue"></i><span>Check the bell icon up top for a running log of your recent activity notifications.</span></li>
-                            <li class="flex items-start gap-2.5"><i class="fa-solid fa-moon mt-0.5 w-4 text-brand-blue"></i><span>Prefer a darker screen? Toggle Dark Mode from the same top bar.</span></li>
-                        </template>
-                    </ul>
+                    <template v-if="onboardingMode === 'whatsnew'">
+                        <p class="text-xs text-slate-500 mb-4">This portal was just updated. Here's what's new since your last visit:</p>
+                        <ul class="space-y-3 text-xs text-slate-700">
+                            <li v-for="(note, idx) in (latestChangelog?.notes || [])" :key="idx" class="flex items-start gap-2.5"><i class="fa-solid fa-sparkles mt-0.5 w-4 text-brand-gold"></i><span>{{ note }}</span></li>
+                        </ul>
+                    </template>
+                    <template v-else>
+                        <p class="text-xs text-slate-500 mb-4">{{ userProfile.role === 'Client' ? 'Here\'s a quick look at your Client Portal:' : 'Here\'s a quick look at what you can do:' }}</p>
+                        <ul class="space-y-3 text-xs text-slate-700">
+                            <template v-if="userProfile.role === 'Client'">
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-diagram-project mt-0.5 w-4 text-brand-blue"></i><span>Track your project progress and workflow stage in real time under <b>Project Activities</b>.</span></li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-comments mt-0.5 w-4 text-brand-blue"></i><span>Reply directly to your project team in <b>Client Activity History</b> — it's a two-way conversation now.</span></li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-file-invoice-dollar mt-0.5 w-4 text-brand-blue"></i><span>View and filter your quotations and invoices anytime in the <b>Client Portal</b>.</span></li>
+                            </template>
+                            <template v-else>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-diagram-project mt-0.5 w-4 text-brand-blue"></i><span>Use <b>My Projects</b> in Project Activities to see only the projects you're responsible for.</span></li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-bell mt-0.5 w-4 text-brand-blue"></i><span>Check the bell icon up top for a running log of your recent activity notifications.</span></li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-moon mt-0.5 w-4 text-brand-blue"></i><span>Prefer a darker screen? Toggle Dark Mode from the same top bar.</span></li>
+                            </template>
+                        </ul>
+                    </template>
                     <button type="button" @click="dismissOnboarding" class="mt-6 w-full rounded-xl bg-brand-dark px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-blue">Got it, let's start</button>
                 </div>
             </div>
