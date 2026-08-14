@@ -1516,12 +1516,12 @@ createApp({
             if (!this.hasAccess(tabName)) { this.showNotify('Access Denied: Your role does not permit access to this module.'); return; }
             if (tabName === 'dashboard') { this.returnToDashboard(); return; }
             if (this.currentTab !== tabName) window.history.pushState({ zenqorPortal: true }, '', window.location.href);
-            this.currentTab = tabName; this.mobileMenuOpen = false;
+            this.currentTab = tabName; this.mobileMenuOpen = false; this.desktopSidebarOpen = false;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         returnToDashboard() {
             this.currentTab = 'dashboard';
-            this.mobileMenuOpen = false;
+            this.mobileMenuOpen = false; this.desktopSidebarOpen = false;
             window.scrollTo({ top: 0, behavior: 'smooth' });
             this.refreshDashboardCharts();
         },
