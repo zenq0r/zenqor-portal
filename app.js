@@ -1689,9 +1689,11 @@ createApp({
             if (!this.docForm.clientName || !this.docForm.clientPhone || !this.docForm.clientAddress) return alert('Enter Client Name, Phone, and Address.');
             try {
                 const docId = this.docForm.clientName.trim().replace(/\s+/g, '_').toLowerCase();
+                const isNewRecord = !this.customers.some(c => c.id === docId);
                 const newCust = this.normalizeOfficialRecord({ clientName: this.docForm.clientName, clientPhone: this.docForm.clientPhone, clientSSM: this.docForm.clientSSM, clientAddress: this.docForm.clientAddress, clientCity: this.docForm.clientCity, clientState: this.docForm.clientState, clientPostcode: this.docForm.clientPostcode, clientCountry: this.docForm.clientCountry, clientEmail: String(this.docForm.clientEmail || '').trim().toLowerCase(), clientContactPerson: this.docForm.clientContactPerson, clientPosition: this.docForm.clientPosition });
+                if (isNewRecord) newCust.createdAt = new Date().toISOString();
                 Object.assign(this.docForm, newCust);
-            await setDoc(doc(db, "customers", docId), newCust); this.clientSavedForDocument = true; this.logAudit('CREATE', `Saved customer ${this.docForm.clientName}`); this.showNotify('Client saved. You can now add document items.'); return true;
+            await setDoc(doc(db, "customers", docId), newCust, { merge: true }); this.clientSavedForDocument = true; this.logAudit(isNewRecord ? 'CREATE' : 'UPDATE', `Saved customer ${this.docForm.clientName}`); this.showNotify('Client saved. You can now add document items.'); return true;
             } catch (error) { console.error('Client save failed:', error); this.showNotify('Unable to save client information.'); return false; }
         },
         selectCustomerFromTable(cust) {
@@ -1729,7 +1731,13 @@ createApp({
             return this.projects.filter(p => p.clientDirectoryId === clientDirectoryId).length;
         },
         isNewClient(clientDirectoryId) {
-            return this.clientProjectCount(clientDirectoryId) <= 1;
+            if (!clientDirectoryId) return false;
+            const customer = this.customers.find(c => c.id === clientDirectoryId);
+            if (!customer?.createdAt) return false;
+            const createdMs = Date.parse(customer.createdAt);
+            if (!Number.isFinite(createdMs)) return false;
+            const ageMs = Date.now() - createdMs;
+            return ageMs >= 0 && ageMs <= 3 * 24 * 60 * 60 * 1000;
         },
         async updateClientTier(cust, tier) {
             if (!this.canManageClients) { this.showNotify('You do not have permission to update client tier.'); return; }
