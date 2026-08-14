@@ -1843,7 +1843,7 @@ createApp({
 
         async saveSettings() {
             if (!this.canManageCompanySettings) { this.showNotify('You do not have permission to update company settings.'); return; }
-            try { this.company = this.normalizeOfficialRecord(this.company); this.company.email = String(this.company.email || '').trim().toLowerCase(); await setDoc(doc(db, "settings", "company_profile"), { ...this.company }); this.logAudit('UPDATE', 'Updated settings'); this.showNotify('Settings updated!'); } catch (error) { this.showNotify('Unable to save company settings.'); }
+            try { this.company = this.normalizeOfficialRecord(this.company); this.company.email = String(this.company.email || '').trim().toLowerCase(); await setDoc(doc(db, "settings", "company_profile"), { ...this.company }, { merge: true }); this.logAudit('UPDATE', 'Updated settings'); this.showNotify('Settings updated!'); } catch (error) { this.showNotify('Unable to save company settings.'); }
         },
 
         selectCustomerForDoc(e) {
@@ -1979,7 +1979,7 @@ createApp({
                 });
                 const employeeId = form.empNo.trim();
                 const wasEdit = this.employeeModal.isEdit;
-                await setDoc(doc(db, "employees", employeeId), { ...form, empNo: employeeId });
+                await setDoc(doc(db, "employees", employeeId), { ...form, empNo: employeeId }, { merge: true });
                 if (wasEdit) await this.syncEmployeeIdentityReferences({ ...form, empNo: employeeId });
                 this.employeeModal.show = false; this.logAudit(wasEdit ? 'UPDATE':'CREATE', `Saved employee ${employeeId}`); this.showNotify(wasEdit ? 'Employee and linked records updated.' : 'Employee data saved!');
             } catch (error) { console.error('Employee save failed:', error); this.showNotify('Unable to save employee information.'); }
@@ -2174,7 +2174,7 @@ createApp({
                 const documentType = this.claimForm.documentType === 'Payment Voucher' ? 'Payment Voucher' : 'Claim';
                 const payload = { id: claimId, type: documentType, documentType, date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: claimOwnerEmail, position: this.claimForm.position || '', dept: this.claimForm.dept, payeeName: this.claimForm.payeeName || '', payeeType: this.claimForm.payeeType || '', payeeReference: this.claimForm.payeeReference || '', paymentPurpose: this.claimForm.paymentPurpose || '', category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', receiptAttachmentOriginalBytes: Number(this.claimForm.receiptAttachmentOriginalBytes || 0), createdByUid: this.editingClaimId ? (this.claimForm.createdByUid || auth.currentUser.uid) : auth.currentUser.uid, createdByEmail: this.editingClaimId ? (this.claimForm.createdByEmail || signedInEmail) : signedInEmail, createdAt: this.editingClaimId ? (this.claimForm.createdAt || new Date().toISOString()) : new Date().toISOString(), status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
                 if (this.getSerializedSize(payload) > 800 * 1024) throw Object.assign(new Error('The claim record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
-                await setDoc(doc(db, "claims", claimId), payload);
+                await setDoc(doc(db, "claims", claimId), payload, { merge: true });
                 this.editingClaimId = null; this.showNotify(`${documentType} submitted.`); this.resetClaimForm();
             } catch (error) { console.error('Claim save failed:', error); this.showNotify(this.getFirestoreWriteError(error, 'submit the claim')); }
         },
@@ -2204,7 +2204,7 @@ createApp({
                 const docId = String(this.editingDocId || Date.now());
                 const payload = { id: docId, type: this.docForm.type, docNo: this.docForm.docNo, status: this.docForm.status || (this.docForm.type === 'Invoice' ? 'Unpaid' : 'Open'), paymentMethod: this.docForm.paymentMethod || 'Bank Transfer', paymentBank: this.docForm.paymentBank || '', paymentReceiver: this.docForm.paymentReceiver || '', paymentRefNo: this.docForm.paymentRefNo || '', paymentAttachment: this.docForm.paymentAttachment || '', date: this.docForm.date, name: this.docForm.clientName, amount: this.docGrandTotal, raw: JSON.parse(JSON.stringify(this.docForm)) };
                 if (!this.clientSavedForDocument) { alert('Save Client information before saving this document.'); return false; }
-                await setDoc(doc(db, "docs", docId), payload); this.editingDocId = docId; this.showNotify(`Document saved.`); return true;
+                await setDoc(doc(db, "docs", docId), payload, { merge: true }); this.editingDocId = docId; this.showNotify(`Document saved.`); return true;
             } catch (error) { console.error('Document save failed:', error); this.showNotify('Unable to save document. Check the attachment size and try again.'); return false; }
         },
         async savePayslipRecord() {
@@ -2215,7 +2215,7 @@ createApp({
                 Object.assign(this.payForm, normalizedPayForm);
                 const docId = String(this.editingPayId || Date.now());
                 const payload = { id: docId, type: 'Payslip', docNo: `PS-${this.currentYear}-${this.payForm.empNo}`, date: this.payForm.payDate, name: this.payForm.name, amount: this.payCalc.net, raw: JSON.parse(JSON.stringify(this.payForm)) };
-                await setDoc(doc(db, "payslips", docId), payload); this.editingPayId = null; this.showNotify(`Payslip saved.`);
+                await setDoc(doc(db, "payslips", docId), payload, { merge: true }); this.editingPayId = null; this.showNotify(`Payslip saved.`);
             } catch (error) { console.error('Payslip save failed:', error); this.showNotify('Unable to save payslip.'); }
         },
         addDocItem() { this.docForm.items.push({ desc: '', qty: 1, price: 0 }); },
