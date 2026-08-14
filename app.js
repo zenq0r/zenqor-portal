@@ -39,7 +39,7 @@ const STATUTORY_RATES = {
 };
 
 const RBAC_ROLES = {
-    'Director': ['dashboard', 'project-activities', 'doc-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
+    'Director': ['dashboard', 'project-activities', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'Superadmin': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'HR': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
     'Account': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'profile'],
@@ -74,6 +74,11 @@ createApp({
             browserBackHandler: null,
             appUpdateCheckInterval: null,
             appVisibilityHandler: null,
+            notificationsSyncTimer: null,
+            idleWarningTimer: null,
+            idleLogoutTimer: null,
+            idleWarningVisible: false,
+            idleActivityHandler: null,
             showPassword: false,
             loginForm: { 
                 email: '', 
@@ -102,6 +107,7 @@ createApp({
             appVersionMarker: '',
             showOnboarding: false,
             onboardingMode: 'welcome',
+            showUpdateHistory: false,
 
             activePrintModule: null,
             claimPrint: null,
@@ -336,6 +342,8 @@ createApp({
         canBackupDatabase() { return ['Director', 'Superadmin'].includes(this.userProfile.role); },
         unreadNotificationsCount() { return this.notificationsLog.filter(n => !n.read).length; },
         latestChangelog() { return APP_CHANGELOG[0] || null; },
+        appChangelog() { return APP_CHANGELOG; },
+        priorityClients() { return this.customers.filter(c => c.clientTier === 'Priority'); },
         currentYear() { return new Date().getFullYear(); },
         payslipYtdMultiplier() {
             const month = Number(String(this.payForm.month || '').split('-')[1]);
@@ -1380,16 +1388,32 @@ createApp({
             setTimeout(() => { this.notification.show = false; }, 3500);
             this.notificationsLog.unshift({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, message: msg, read: false, timestamp: new Date().toISOString() });
             if (this.notificationsLog.length > 30) this.notificationsLog.length = 30;
+            this.scheduleNotificationsSync();
+        },
+        scheduleNotificationsSync() {
+            if (!this.userProfile.uid) return;
+            if (this.notificationsSyncTimer) clearTimeout(this.notificationsSyncTimer);
+            this.notificationsSyncTimer = setTimeout(() => this.syncNotificationsLog(), 2500);
+        },
+        async syncNotificationsLog() {
+            if (!this.userProfile.uid) return;
+            try {
+                await setDoc(doc(db, 'users', this.userProfile.uid), { notificationsLog: this.notificationsLog }, { merge: true });
+            } catch (error) {
+                console.error('Unable to sync notifications log:', error);
+            }
         },
         toggleNotificationsPanel() {
             this.notificationsPanelOpen = !this.notificationsPanelOpen;
         },
         markAllNotificationsRead() {
             this.notificationsLog.forEach(n => { n.read = true; });
+            this.syncNotificationsLog();
         },
         clearNotificationsLog() {
             this.notificationsLog = [];
             this.notificationsPanelOpen = false;
+            this.syncNotificationsLog();
         },
 
         isSupportedImageAttachment(attachment) {
@@ -1438,6 +1462,36 @@ createApp({
         },
         refreshApp() {
             window.location.reload();
+        },
+        startIdleTimeoutWatch() {
+            this.stopIdleTimeoutWatch();
+            const IDLE_EVENTS = ['mousemove', 'keydown', 'mousedown', 'scroll', 'touchstart'];
+            const armTimers = () => {
+                this.idleWarningVisible = false;
+                clearTimeout(this.idleWarningTimer);
+                clearTimeout(this.idleLogoutTimer);
+                this.idleWarningTimer = setTimeout(() => { this.idleWarningVisible = true; }, 29 * 60 * 1000);
+                this.idleLogoutTimer = setTimeout(() => {
+                    if (this.isLoggedIn) { this.showNotify('You were signed out after 30 minutes of inactivity.'); this.handleLogout(); }
+                }, 30 * 60 * 1000);
+            };
+            this.idleActivityHandler = armTimers;
+            IDLE_EVENTS.forEach(evt => window.addEventListener(evt, this.idleActivityHandler, { passive: true }));
+            armTimers();
+        },
+        stopIdleTimeoutWatch() {
+            clearTimeout(this.idleWarningTimer);
+            clearTimeout(this.idleLogoutTimer);
+            this.idleWarningTimer = null;
+            this.idleLogoutTimer = null;
+            this.idleWarningVisible = false;
+            if (this.idleActivityHandler) {
+                ['mousemove', 'keydown', 'mousedown', 'scroll', 'touchstart'].forEach(evt => window.removeEventListener(evt, this.idleActivityHandler));
+                this.idleActivityHandler = null;
+            }
+        },
+        staySignedIn() {
+            if (this.idleActivityHandler) this.idleActivityHandler();
         },
         async dismissOnboarding() {
             this.showOnboarding = false;
@@ -1562,6 +1616,8 @@ createApp({
 
                 this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '' };
                 this.applyDarkModePreference();
+                this.notificationsLog = Array.isArray(userData?.notificationsLog) ? userData.notificationsLog : [];
+                this.startIdleTimeoutWatch();
 
                 this.resetAllForms(); this.isLoggedIn = true; this.desktopSidebarOpen = false; this.mobileMenuOpen = false;
                 this.logAudit('LOGIN', `User logged in with role ${this.getRoleDisplayName(role)}`);
@@ -1863,7 +1919,8 @@ createApp({
         },
         editCustomer(cust) {
             if (!this.canManageClients) { this.showNotify('You do not have permission to update client records.'); return; }
-            this.selectCustomerFromTable(cust); this.currentTab = 'doc-generator'; window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (!this.hasAccess('doc-generator')) { this.showNotify('Editing client details requires Document Generator access, which your role does not have.'); return; }
+            this.selectCustomerFromTable(cust); this.switchTab('doc-generator');
         },
         async deleteCustomer(clientName, requiresConfirmation = true) {
             if (requiresConfirmation) {
@@ -2093,7 +2150,7 @@ createApp({
                 this.editingClaimId = null; this.showNotify(`${documentType} submitted.`); this.resetClaimForm();
             } catch (error) { console.error('Claim save failed:', error); this.showNotify(this.getFirestoreWriteError(error, 'submit the claim')); }
         },
-        editClaimRecord(clm) { this.editingClaimId = clm.id; this.selectedClaimEmployeeId = clm.empNo || ''; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; window.scrollTo({ top:0, behavior:'smooth' }); },
+        editClaimRecord(clm) { this.editingClaimId = clm.id; this.selectedClaimEmployeeId = clm.empNo || ''; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; this.mobileMenuOpen = false; window.scrollTo({ top:0, behavior:'smooth' }); },
         cancelEditClaim() { this.editingClaimId = null; this.resetClaimForm(); },
 
         setPrintOrientation(orientation, margin) { const styleEl = document.getElementById('dynamic-print-orientation'); if (styleEl) styleEl.innerHTML = `@media print { @page { size: A4 ${orientation}; margin: ${margin} !important; } }`; },
@@ -2192,6 +2249,7 @@ createApp({
             this.claimPreview = { show: true, claim: JSON.parse(JSON.stringify(claim)), directorApprovalAttachment: '', directorApprovalAttachmentName: '', directorApprovalOriginalBytes: 0 };
         },
         editRecord(item) {
+            this.mobileMenuOpen = false;
             if (item.isDoc) { this.editingDocId = item.id; if (item.raw) { this.docForm = JSON.parse(JSON.stringify(item.raw)); this.docForm.status = item.raw.status || item.status || (item.type === 'Invoice' ? 'Unpaid' : 'Open'); } this.currentTab = 'doc-generator'; }
             else if (item.isPay) { this.editingPayId = item.id; if (item.raw) { this.payForm = JSON.parse(JSON.stringify(item.raw)); this.selectedPayEmployeeId = this.payForm.empNo || ''; } this.autoCalculatePayroll(); this.currentTab = 'payslip-generator'; }
             else if (item.isClaim) this.editClaimRecord(item);
@@ -2426,6 +2484,8 @@ createApp({
                     }
                     this.userProfile = { name, email: firebaseUser.email, role, uid: firebaseUser.uid, photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '' };
                     this.applyDarkModePreference();
+                    this.notificationsLog = Array.isArray(userData?.notificationsLog) ? userData.notificationsLog : [];
+                    this.startIdleTimeoutWatch();
                     this.resetAllForms();
                     this.isLoggedIn = true;
                     if (mustChangePassword) { this.currentTab = 'profile'; this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
@@ -2461,6 +2521,10 @@ createApp({
                 this.claimsHistory = [];
                 this.users = [];
                 this.auditLogs = [];
+                this.notificationsLog = [];
+                this.notificationsPanelOpen = false;
+                if (this.notificationsSyncTimer) { clearTimeout(this.notificationsSyncTimer); this.notificationsSyncTimer = null; }
+                this.stopIdleTimeoutWatch();
             }
             this.authLoading = false;
         });
@@ -2472,5 +2536,7 @@ createApp({
         if (this.browserBackHandler) window.removeEventListener('popstate', this.browserBackHandler);
         if (this.appUpdateCheckInterval) clearInterval(this.appUpdateCheckInterval);
         if (this.appVisibilityHandler) document.removeEventListener('visibilitychange', this.appVisibilityHandler);
+        if (this.notificationsSyncTimer) clearTimeout(this.notificationsSyncTimer);
+        this.stopIdleTimeoutWatch();
     }
 }).mount('#app');

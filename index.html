@@ -81,6 +81,19 @@
             </div>
         </transition>
 
+        <!-- IDLE TIMEOUT WARNING -->
+        <div v-if="isLoggedIn && idleWarningVisible" class="fixed inset-0 z-[93] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 no-print">
+            <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
+                <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-600"><i class="fa-solid fa-hourglass-half"></i></div>
+                <h3 class="text-base font-extrabold text-brand-dark">Still there?</h3>
+                <p class="mt-2 text-xs leading-relaxed text-slate-500">You've been inactive for a while. For your security, this session will sign out automatically in about 1 minute unless you stay active.</p>
+                <div class="mt-6 flex justify-end gap-2">
+                    <button type="button" @click="handleLogout" class="rounded-lg bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200">Sign Out Now</button>
+                    <button type="button" @click="staySignedIn" class="rounded-lg bg-brand-dark px-4 py-2 text-xs font-bold text-white hover:bg-brand-blue">I'm Still Here</button>
+                </div>
+            </div>
+        </div>
+
         <!-- LOGOUT CONFIRMATION -->
         <div v-if="logoutConfirm" class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 no-print" @click.self="logoutConfirm = false">
             <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
@@ -192,8 +205,8 @@
                             <img src="./logo.png" onerror="this.style.display='none'" class="h-6 w-auto object-contain">
                         </div>
                         <div class="truncate">
-                            <h1 class="font-extrabold text-xs tracking-wide text-white truncate">{{ userProfile.role === 'Client' ? 'ZENQOR Client Portal' : 'ZENQOR HRMS/CDTS' }}</h1>
-                            <p class="text-[9px] text-brand-gold uppercase tracking-widest font-semibold truncate">{{ userProfile.role === 'Client' ? (userProfile.name || 'Client Access') : 'Enterprise v2.0' }}</p>
+                            <h1 class="font-extrabold text-xs tracking-wide text-white truncate">{{ userProfile.role === 'Client' ? 'ZENQOR Client Portal' : 'ZENQOR Enterprise' }}</h1>
+                            <p class="text-[9px] text-brand-gold uppercase tracking-widest font-semibold truncate">{{ userProfile.role === 'Client' ? (userProfile.name || 'Client Access') : 'Staff Workspace' }}</p>
                         </div>
                     </div>
                     <button type="button" @click="mobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white text-lg">
@@ -1132,6 +1145,20 @@
 
                         </div>
 
+                        <!-- PRIORITY CLIENTS WIDGET -->
+                        <div v-if="priorityClients.length" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+                            <div class="mb-3 flex items-center justify-between gap-3">
+                                <h3 class="text-sm font-extrabold text-brand-dark dark:text-white flex items-center gap-2"><i class="fa-solid fa-star text-rose-500"></i>Priority Clients<span class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700">{{ priorityClients.length }}</span></h3>
+                                <button type="button" @click="switchTab('client-directory')" v-if="hasAccess('client-directory')" class="text-[10px] font-bold text-brand-blue hover:underline">View Client Directory</button>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <button type="button" v-for="cust in priorityClients" :key="cust.id" @click="openClientView(cust)" class="flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3 py-2.5 text-left transition hover:border-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/20">
+                                    <span class="min-w-0 truncate text-xs font-extrabold text-brand-dark dark:text-white">{{ cust.clientName }}</span>
+                                    <span class="shrink-0 rounded-full bg-slate-200 dark:bg-slate-600 px-1.5 py-0.5 text-[9px] font-bold text-slate-600 dark:text-slate-200">{{ clientProjectCount(cust.id) }} proj</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- REAL DATA CHARTS -->
                         <div v-if="portalDataReady && !['Staff', 'Client'].includes(userProfile.role)" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
@@ -1256,7 +1283,7 @@
                                 <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage client directory, auto-fill into Quotation/Invoice forms, update or delete records.</p>
                             </div>
                         </div>
-                        <button v-if="canManageClients" type="button" @click="switchTab('doc-generator')" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
+                        <button v-if="canManageClients && hasAccess('doc-generator')" type="button" @click="switchTab('doc-generator')" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
                             <i class="fa-solid fa-plus"></i><span>Create New Document</span>
                         </button>
                     </div>
@@ -1301,7 +1328,7 @@
                                             <button @click="openClientView(cust)" class="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition" title="View Client Information">
                                                 <i class="fa-solid fa-eye"></i>
                                             </button>
-                                            <button v-if="canManageClients" @click="requestClientAction('edit', cust)" class="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition" title="Edit Client">
+                                            <button v-if="canManageClients && hasAccess('doc-generator')" @click="requestClientAction('edit', cust)" class="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition" title="Edit Client">
                                                 <i class="fa-solid fa-pen"></i>
                                             </button>
                                             <button v-if="canDelete" @click="requestClientAction('delete', cust)" class="h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" title="Delete Client">
@@ -1852,12 +1879,25 @@
                                 </div>
                                 
                                 <div class="sm:col-span-2 flex flex-wrap justify-end gap-2 pt-1">
+                                    <button type="button" @click="showUpdateHistory = !showUpdateHistory" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-clock-rotate-left"></i><span>{{ showUpdateHistory ? 'Hide' : 'View' }} Update History</span>
+                                    </button>
                                     <button type="button" @click="changePasswordModal.show = true" class="bg-brand-gold hover:bg-yellow-500 text-brand-dark font-extrabold px-5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                         <i class="fa-solid fa-key"></i><span>Tukar Kata Laluan</span>
                                     </button>
                                     <button type="button" @click="saveMyProfile" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
                                         <i class="fa-solid fa-user-check"></i><span>Save My Profile</span>
                                     </button>
+                                </div>
+
+                                <div v-if="showUpdateHistory" class="sm:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 p-4 space-y-4">
+                                    <div v-for="entry in appChangelog" :key="entry.version">
+                                        <div class="flex items-center gap-2"><span class="rounded-full bg-brand-dark px-2 py-0.5 text-[9px] font-extrabold text-white">v{{ entry.version }}</span><h4 class="text-xs font-extrabold text-brand-dark dark:text-white">{{ entry.title }}</h4></div>
+                                        <ul class="mt-2 space-y-1.5 pl-1">
+                                            <li v-for="(note, idx) in entry.notes" :key="idx" class="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300"><i class="fa-solid fa-circle text-[4px] mt-1.5 text-slate-400 shrink-0"></i><span>{{ note }}</span></li>
+                                        </ul>
+                                    </div>
+                                    <p v-if="!appChangelog.length" class="text-xs text-slate-400">No update history recorded yet.</p>
                                 </div>
                             </div>
 
