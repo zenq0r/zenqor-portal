@@ -1688,12 +1688,48 @@ createApp({
         },
         openClientView(cust) {
             this.clientView.client = {
-                clientName: cust.clientName || '-', clientSSM: cust.clientSSM || '-', clientContactPerson: cust.clientContactPerson || '-',
+                id: cust.id || '', clientName: cust.clientName || '-', clientSSM: cust.clientSSM || '-', clientContactPerson: cust.clientContactPerson || '-',
                 clientPosition: cust.clientPosition || '-', clientEmail: cust.clientEmail || '-', clientPhone: cust.clientPhone || '-',
                 clientAddress: cust.clientAddress || '-', clientCity: cust.clientCity || '-', clientState: cust.clientState || '-',
-                clientPostcode: cust.clientPostcode || '-', clientCountry: cust.clientCountry || '-'
+                clientPostcode: cust.clientPostcode || '-', clientCountry: cust.clientCountry || '-', clientTier: cust.clientTier || 'Standard'
             };
             this.clientView.show = true;
+        },
+        openClientQuickViewForProject(project) {
+            const customer = this.customers.find(c => c.id === project.clientDirectoryId);
+            if (customer) { this.openClientView(customer); return; }
+            this.openClientView({ clientName: project.clientName || 'Unknown Client', clientEmail: project.clientEmail || '' });
+        },
+        clientTierMeta(tier) {
+            const map = {
+                Priority: { label: 'Priority', badgeClass: 'bg-rose-100 text-rose-700' },
+                Premium: { label: 'Premium', badgeClass: 'bg-amber-100 text-amber-700' },
+                Standard: { label: 'Standard', badgeClass: 'bg-slate-100 text-slate-600' }
+            };
+            return map[tier] || map.Standard;
+        },
+        clientTierForId(clientDirectoryId) {
+            const customer = this.customers.find(c => c.id === clientDirectoryId);
+            return customer?.clientTier || 'Standard';
+        },
+        clientProjectCount(clientDirectoryId) {
+            if (!clientDirectoryId) return 0;
+            return this.projects.filter(p => p.clientDirectoryId === clientDirectoryId).length;
+        },
+        isNewClient(clientDirectoryId) {
+            return this.clientProjectCount(clientDirectoryId) <= 1;
+        },
+        async updateClientTier(cust, tier) {
+            if (!this.canManageClients) { this.showNotify('You do not have permission to update client tier.'); return; }
+            if (!cust?.id) return;
+            try {
+                await setDoc(doc(db, 'customers', cust.id), { clientTier: tier, updatedAt: new Date().toISOString(), updatedByUid: this.userProfile.uid }, { merge: true });
+                this.logAudit('UPDATE', `Set ${tier} tier for client ${cust.clientName}`);
+                this.showNotify(`${cust.clientName} tagged as ${tier} Client.`);
+            } catch (error) {
+                console.error('Client tier update failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'update the client tier'));
+            }
         },
         requestClientAction(action, cust) {
             this.clientActionConfirm = { show: true, action, client: cust };

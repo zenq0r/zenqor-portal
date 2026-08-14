@@ -719,9 +719,8 @@ input[type="url"] {
 }
 
 /* Board cards remain concise; full metadata is available in View Details. */
-.project-card-meta > p:nth-child(1),
-.project-card-meta > p:nth-child(3),
-.project-card-meta > p:nth-child(4) {
+.project-card-meta > p:nth-child(2),
+.project-card-meta > p:nth-child(3) {
     display: none;
 }
 
