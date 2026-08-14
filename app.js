@@ -101,6 +101,11 @@ createApp({
             claimsCurrentPage: 1,
             claimsItemsPerPage: 10,
 
+            // PAGINATION & SORTING UNTUK PAYMENT VOUCHERS
+            vouchersSortOption: 'latest',
+            vouchersCurrentPage: 1,
+            vouchersItemsPerPage: 10,
+
             notification: { show: false, message: '' },
             notificationsLog: [],
             notificationsPanelOpen: false,
@@ -167,6 +172,7 @@ createApp({
             docHistory: [],
             payslipHistory: [],
             claimsHistory: [],
+            paymentVouchers: [],
             projects: [],
             projectActivities: [],
             projectActivitiesLoaded: false,
@@ -199,8 +205,11 @@ createApp({
             clientSavedForDocument: false,
             editingPayId: null,
             editingClaimId: null,
+            editingVoucherId: null,
             selectedPayEmployeeId: '',
             selectedClaimEmployeeId: '',
+            selectedVoucherEmployeeId: '',
+            claimFormMode: 'Claim',
 
             employeeModal: {
                 show: false,
@@ -285,6 +294,35 @@ createApp({
                 ]
             },
 
+            voucherSubCategories: {
+                'Vendor and Supplier': [
+                    'Supplier Invoice Payment',
+                    'Vendor Service Payment',
+                    'Utility Bill Payment',
+                    'Rental / Lease Payment'
+                ],
+                'Wages and Contractor': [
+                    'Casual Wages / Daily Pay',
+                    'Freelance / Professional Fee',
+                    'Contractor Payment',
+                    'Temporary Staff Payment'
+                ],
+                'Allowance and Honorarium': [
+                    'Staff Allowance',
+                    'Honorarium',
+                    'Meeting / Committee Allowance'
+                ],
+                'Operations and Projects': [
+                    'Project Equipment Purchase',
+                    'Software / SaaS Subscription',
+                    'Emergency Operations Purchase'
+                ],
+                'Miscellaneous': [
+                    'Bank Charges / Fees',
+                    'Other (Specify in Description)'
+                ]
+            },
+
             docForm: {
                 type: 'Invoice',
                 docNo: `INV-${new Date().getFullYear()}-01001`,
@@ -329,6 +367,15 @@ createApp({
                 assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
             },
 
+            voucherForm: {
+                documentType: 'Payment Voucher', name: '', empNo: '', empEmail: '', position: '', dept: '',
+                paymentDate: new Date().toISOString().substr(0, 10),
+                category: 'Vendor and Supplier', subCategory: 'Supplier Invoice Payment',
+                payeeName: '', payeeType: 'Vendor / Supplier', payeeReference: '', paymentPurpose: '',
+                amount: 0, voucherNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', receiptAttachmentOriginalBytes: 0, status: 'Pending HR',
+                assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
+            },
+
             payCalc: { gross: 0, deduct: 0, net: 0, epfEmpr: 0, socsoEmpr: 0, eisEmpr: 0 }
         };
     },
@@ -355,13 +402,15 @@ createApp({
                 { key: 'Approved', label: 'Approved', color: '#10B981' },
                 { key: 'Rejected', label: 'Rejected', color: '#EF4444' }
             ];
-            const total = this.claimsHistory.length;
+            const combined = [...this.claimsHistory, ...this.paymentVouchers];
+            const total = combined.length;
             return stages.map(stage => {
-                const count = this.claimsHistory.filter(c => c.status === stage.key).length;
+                const count = combined.filter(c => c.status === stage.key).length;
                 return { ...stage, count, pct: total ? Math.round((count / total) * 100) : 0 };
             });
         },
-        claimsPipelineTotal() { return this.claimsHistory.length; },
+        claimsPipelineTotal() { return this.claimsHistory.length + this.paymentVouchers.length; },
+        legacyPaymentVouchersCount() { return this.claimsHistory.filter(c => (c.documentType || c.type) === 'Payment Voucher').length; },
         currentYear() { return new Date().getFullYear(); },
         payslipYtdMultiplier() {
             const month = Number(String(this.payForm.month || '').split('-')[1]);
@@ -378,8 +427,9 @@ createApp({
             return Number(sorted[0].amount) || 0;
         },
         myClaims() { return this.claimsHistory.filter(c => c.empEmail === this.userProfile.email || c.name === this.userProfile.name); },
-        myPendingClaimsCount() { return this.myClaims.filter(c => c.status && c.status.includes('Pending')).length; },
-        myApprovedClaimsAmount() { return this.myClaims.filter(c => c.status === 'Approved').reduce((sum, c) => sum + (Number(c.amount) || 0), 0); },
+        myPaymentVouchers() { return this.paymentVouchers.filter(v => v.empEmail === this.userProfile.email || v.name === this.userProfile.name); },
+        myPendingClaimsCount() { return [...this.myClaims, ...this.myPaymentVouchers].filter(c => c.status && c.status.includes('Pending')).length; },
+        myApprovedClaimsAmount() { return [...this.myClaims, ...this.myPaymentVouchers].filter(c => c.status === 'Approved').reduce((sum, c) => sum + (Number(c.amount) || 0), 0); },
 
         myClientDocs() { return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email); },
         myUnpaidInvoicesCount() { return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').length; },
@@ -402,9 +452,9 @@ createApp({
         activeEmployeesCount() { return this.employees.filter(e => e.status === 'Aktif').length; },
         totalPayrollNet() { return this.payslipHistory.reduce((s, p) => s + (Number(p.amount) || 0), 0); },
 
-        pendingClaimsCount() { return this.claimsHistory.filter(c => c.status && c.status.includes('Pending')).length; },
-        totalApprovedClaimsAmount() { return this.claimsHistory.filter(c => c.status === 'Approved').reduce((s, c) => s + (Number(c.amount) || 0), 0); },
-        financePendingClaims() { return this.claimsHistory.filter(c => c.status === 'Pending Account'); },
+        pendingClaimsCount() { return [...this.claimsHistory, ...this.paymentVouchers].filter(c => c.status && c.status.includes('Pending')).length; },
+        totalApprovedClaimsAmount() { return [...this.claimsHistory, ...this.paymentVouchers].filter(c => c.status === 'Approved').reduce((s, c) => s + (Number(c.amount) || 0), 0); },
+        financePendingClaims() { return [...this.claimsHistory, ...this.paymentVouchers].filter(c => c.status === 'Pending Account'); },
 
         clientPortalDocs() {
             if (this.userProfile.role === 'Client' || this.userProfile.role === 'Staff') {
@@ -450,11 +500,43 @@ createApp({
             return this.filteredSortedClaims.slice(start, start + this.claimsItemsPerPage);
         },
 
+        // PAGINATION & SORTING UNTUK PAYMENT VOUCHER MODULE
+        filteredSortedVouchers() {
+            let list = [...this.paymentVouchers];
+
+            list.sort((a, b) => {
+                if (this.vouchersSortOption === 'latest') return new Date(b.paymentDate || b.expenseDate) - new Date(a.paymentDate || a.expenseDate);
+                if (this.vouchersSortOption === 'oldest') return new Date(a.paymentDate || a.expenseDate) - new Date(b.paymentDate || b.expenseDate);
+                if (this.vouchersSortOption === 'category') return (a.category || '').localeCompare(b.category || '');
+                if (this.vouchersSortOption === 'amount_high') return (Number(b.amount) || 0) - (Number(a.amount) || 0);
+                if (this.vouchersSortOption === 'amount_low') return (Number(a.amount) || 0) - (Number(b.amount) || 0);
+                return new Date(b.paymentDate || b.expenseDate) - new Date(a.paymentDate || a.expenseDate);
+            });
+
+            if (this.searchQuery) {
+                const q = this.searchQuery.toLowerCase();
+                list = list.filter(v =>
+                    (v.voucherNo && v.voucherNo.toLowerCase().includes(q)) ||
+                    (v.payeeName && v.payeeName.toLowerCase().includes(q)) ||
+                    (v.name && v.name.toLowerCase().includes(q)) ||
+                    (v.empNo && v.empNo.toLowerCase().includes(q)) ||
+                    (v.category && v.category.toLowerCase().includes(q))
+                );
+            }
+            return list;
+        },
+        vouchersTotalPages() { return Math.ceil(this.filteredSortedVouchers.length / this.vouchersItemsPerPage) || 1; },
+        paginatedVouchers() {
+            const start = (this.vouchersCurrentPage - 1) * this.vouchersItemsPerPage;
+            return this.filteredSortedVouchers.slice(start, start + this.vouchersItemsPerPage);
+        },
+
         filteredRecentActivities() {
             const combined = [
                 ...this.docHistory.map(d => ({ ...d, tagClass: d.type === 'Invoice' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200', isDoc: true })),
                 ...this.payslipHistory.map(p => ({ ...p, tagClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200', isPay: true })),
-                ...this.claimsHistory.map(c => ({ ...c, tagClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200', isClaim: true, docNo: c.receiptNo, amount: c.amount, date: c.expenseDate, name: c.documentType === 'Payment Voucher' ? (c.payeeName || c.name) : c.name }))
+                ...this.claimsHistory.map(c => ({ ...c, tagClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200', isClaim: true, docNo: c.receiptNo, amount: c.amount, date: c.expenseDate, name: c.name })),
+                ...this.paymentVouchers.map(v => ({ ...v, tagClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200', isVoucher: true, type: 'Payment Voucher', docNo: v.voucherNo, amount: v.amount, date: v.paymentDate, name: v.payeeName || v.name }))
             ];
             const typePriority = { 'Payslip': 1, 'Quotation': 2, 'Invoice': 3, 'Claim': 4, 'Payment Voucher': 5 };
             let list = combined.sort((a, b) => {
@@ -474,7 +556,7 @@ createApp({
                 list = list.filter(c => (c.documentType || c.type) === this.recentActivityFilter);
             }
             if (this.recentActivityAttentionOnly) {
-                list = list.filter(c => (c.type === 'Invoice' && c.status !== 'Paid') || (c.isClaim && String(c.status || '').startsWith('Pending')));
+                list = list.filter(c => (c.type === 'Invoice' && c.status !== 'Paid') || ((c.isClaim || c.isVoucher) && String(c.status || '').startsWith('Pending')));
             }
             if (this.searchQuery) {
                 const q = this.searchQuery.toLowerCase();
@@ -1125,6 +1207,7 @@ createApp({
         resetAllForms() {
             this.selectedPayEmployeeId = '';
             this.selectedClaimEmployeeId = '';
+            this.selectedVoucherEmployeeId = '';
             this.docForm = {
                 type: 'Invoice', docNo: '', status: 'Unpaid', paymentMethod: 'Bank Transfer (EFT)', paymentBank: '', paymentReceiver: '', paymentRefNo: '', paymentAttachment: '',
                 date: new Date().toISOString().substr(0, 10), dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
@@ -1142,8 +1225,14 @@ createApp({
                 amount: 0, receiptNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', receiptAttachmentOriginalBytes: 0, status: 'Pending HR',
                 assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
             };
+            this.voucherForm = {
+                documentType: 'Payment Voucher', name: '', empNo: '', empEmail: '', position: '', dept: '', paymentDate: new Date().toISOString().substr(0, 10), category: 'Vendor and Supplier', subCategory: 'Supplier Invoice Payment',
+                payeeName: '', payeeType: 'Vendor / Supplier', payeeReference: '', paymentPurpose: '',
+                amount: 0, voucherNo: '', description: '', receiptAttachment: '', receiptAttachmentName: '', receiptAttachmentOriginalBytes: 0, status: 'Pending HR',
+                assignedToUid: '', assignedToName: '', assignedToEmail: '', assignedToRole: 'HR'
+            };
             this.clientSavedForDocument = false;
-            this.editingDocId = null; this.editingPayId = null; this.editingClaimId = null;
+            this.editingDocId = null; this.editingPayId = null; this.editingClaimId = null; this.editingVoucherId = null;
             this.autoCalculatePayroll();
             this.generateDocNo();
         },
@@ -1271,6 +1360,24 @@ createApp({
                 e.target.value = '';
             } finally { this.attachmentUploadState.receipt = false; e.target.value = ''; }
         },
+        async handleVoucherAttachmentUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            this.attachmentUploadState.receipt = true;
+            try {
+                this.voucherForm.receiptAttachment = await this.prepareImageAttachment(file);
+                this.voucherForm.receiptAttachmentName = file.name;
+                this.voucherForm.receiptAttachmentOriginalBytes = file.size;
+                this.showNotify('Supporting document is ready to be saved.');
+            } catch (error) {
+                console.error('Voucher attachment upload failed:', error);
+                this.voucherForm.receiptAttachment = '';
+                this.voucherForm.receiptAttachmentName = '';
+                this.voucherForm.receiptAttachmentOriginalBytes = 0;
+                this.showNotify(this.getUploadErrorMessage(error));
+                e.target.value = '';
+            } finally { this.attachmentUploadState.receipt = false; e.target.value = ''; }
+        },
         async handleDirectorApprovalAttachmentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -1306,6 +1413,9 @@ createApp({
         },
         resetClaimForm() {
             this.editingClaimId = null; this.resetAllForms();
+        },
+        resetVoucherForm() {
+            this.editingVoucherId = null; this.resetAllForms();
         },
 
         maskSensitive(val) {
@@ -1850,7 +1960,7 @@ createApp({
 
         backupDatabase() {
             if (!this.canBackupDatabase) { this.showNotify('Only Superadmin and Director can export a database backup.'); return; }
-            const data = { company: this.company, employees: this.employees, customers: this.customers, docHistory: this.docHistory, payslipHistory: this.payslipHistory, claimsHistory: this.claimsHistory, projects: this.projects, projectActivities: this.projectActivities, projectClientUpdates: this.projectClientUpdates, users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })), exportDate: new Date().toISOString() };
+            const data = { company: this.company, employees: this.employees, customers: this.customers, docHistory: this.docHistory, payslipHistory: this.payslipHistory, claimsHistory: this.claimsHistory, paymentVouchers: this.paymentVouchers, projects: this.projects, projectActivities: this.projectActivities, projectClientUpdates: this.projectClientUpdates, users: this.users.map(u => ({ name: u.name, email: u.email, role: u.role })), exportDate: new Date().toISOString() };
             const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", jsonStr); dlAnchorElem.setAttribute("download", `zenqor_backup_${new Date().toISOString().substr(0,10)}.json`); dlAnchorElem.click();
             this.logAudit('BACKUP', 'Exported JSON backup'); this.showNotify("Database JSON backup downloaded!");
@@ -2003,13 +2113,23 @@ createApp({
             const employeeId = String(employee.empNo || '').trim();
             if (!employeeId) throw new Error('Employee ID is required to synchronize linked records.');
 
-            const [claimsSnapshot, payslipsSnapshot, projectsSnapshot] = await Promise.all([
+            const [claimsSnapshot, vouchersSnapshot, payslipsSnapshot, projectsSnapshot] = await Promise.all([
                 getDocs(query(collection(db, 'claims'), where('empNo', '==', employeeId))),
+                getDocs(query(collection(db, 'payment_vouchers'), where('empNo', '==', employeeId))),
                 getDocs(query(collection(db, 'payslips'), where('raw.empNo', '==', employeeId))),
                 getDocs(query(collection(db, 'projects'), where('ownerEmpNo', '==', employeeId)))
             ]);
             const writes = [];
             claimsSnapshot.forEach(record => writes.push({
+                ref: record.ref,
+                data: {
+                    name: employee.name || '',
+                    position: employee.position || '',
+                    dept: employee.dept || '',
+                    empEmail: employee.email || ''
+                }
+            }));
+            vouchersSnapshot.forEach(record => writes.push({
                 ref: record.ref,
                 data: {
                     name: employee.name || '',
@@ -2042,6 +2162,32 @@ createApp({
                 const batch = writeBatch(db);
                 writes.slice(start, start + 450).forEach(item => batch.update(item.ref, item.data));
                 await batch.commit();
+            }
+        },
+        // ONE-TIME ADMIN MIGRATION: move legacy Payment Voucher records that still live inside the
+        // shared 'claims' collection into their own dedicated 'payment_vouchers' collection. Each
+        // record is copied to its new home and only then deleted from 'claims' inside a single atomic
+        // batch, so a mid-way failure (e.g. rules not deployed yet) leaves the original data untouched.
+        async migrateLegacyPaymentVouchers() {
+            if (!['Superadmin', 'Director'].includes(this.userProfile.role)) { this.showNotify('Only Superadmin and Director can run this migration.'); return; }
+            const legacyVouchers = this.claimsHistory.filter(c => (c.documentType || c.type) === 'Payment Voucher');
+            if (!legacyVouchers.length) { this.showNotify('No legacy Payment Voucher records found inside the Claims collection.'); return; }
+            if (!confirm(`Move ${legacyVouchers.length} Payment Voucher record(s) out of the Claims collection into the new dedicated Payment Vouchers collection?\n\nThis requires the updated firestore.rules to already be deployed. Each record is copied first, then removed from Claims — if anything fails, no data is lost.`)) return;
+            try {
+                for (let start = 0; start < legacyVouchers.length; start += 400) {
+                    const batch = writeBatch(db);
+                    legacyVouchers.slice(start, start + 400).forEach(record => {
+                        const { id, ...rest } = record;
+                        batch.set(doc(db, 'payment_vouchers', id), { ...rest, id, documentType: 'Payment Voucher', type: 'Payment Voucher' }, { merge: true });
+                        batch.delete(doc(db, 'claims', id));
+                    });
+                    await batch.commit();
+                }
+                this.logAudit('UPDATE', `Migrated ${legacyVouchers.length} legacy Payment Voucher record(s) into the dedicated payment_vouchers collection.`);
+                this.showNotify(`${legacyVouchers.length} Payment Voucher record(s) migrated successfully.`);
+            } catch (error) {
+                console.error('Payment Voucher migration failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'migrate legacy payment vouchers'));
             }
         },
         openEmployeeView(emp) {
@@ -2110,13 +2256,12 @@ createApp({
         },
         selectEmployeeForPayslip(e) { const emp = this.employees.find(x => x.empNo === e.target.value); if (emp) this.selectEmployeeFromTable(emp); },
         selectEmployeeForClaim(e) { const emp = this.employees.find(x => x.empNo === e.target.value); if (emp) { this.claimForm.name = emp.name||''; this.claimForm.empNo = emp.empNo||''; this.claimForm.empEmail = emp.email||''; this.claimForm.position = emp.position||''; this.claimForm.dept = emp.dept||''; this.showNotify(`Applicant loaded.`); } },
-        setClaimDocumentType(type) {
-            this.claimForm.documentType = type;
-            if (type === 'Payment Voucher' && !this.claimForm.receiptNo) this.claimForm.receiptNo = `PV-${this.currentYear}-${String(Date.now()).slice(-6)}`;
-            if (type === 'Claim' && /^PV-\d{4}-\d{6}$/.test(this.claimForm.receiptNo || '')) this.claimForm.receiptNo = '';
-        },
+        selectEmployeeForVoucher(e) { const emp = this.employees.find(x => x.empNo === e.target.value); if (emp) { this.voucherForm.name = emp.name||''; this.voucherForm.empNo = emp.empNo||''; this.voucherForm.empEmail = emp.email||''; this.voucherForm.position = emp.position||''; this.voucherForm.dept = emp.dept||''; this.showNotify(`Requested-by staff loaded.`); } },
 
+        // ================================================================
+        // EXPENSE CLAIM FLOW — dedicated end-to-end pipeline for 'claims' collection
         // WORKFLOW: Staff/Client -> HR -> Account -> Director (final approval)
+        // ================================================================
         canApproveClaim(clm) {
             const role = this.userProfile.role;
             if (role === 'Director') return typeof clm.status === 'string' && clm.status.startsWith('Pending');
@@ -2126,9 +2271,9 @@ createApp({
         canEditClaim(clm) {
             return (clm.createdByUid === this.userProfile.uid || clm.empEmail === this.userProfile.email) && clm.status === 'Pending HR';
         },
-        claimStageStamp(claim, role) {
-            if (!Array.isArray(claim?.approvalHistory)) return null;
-            return [...claim.approvalHistory].reverse().find(entry => entry.role === role) || null;
+        claimStageStamp(record, role) {
+            if (!Array.isArray(record?.approvalHistory)) return null;
+            return [...record.approvalHistory].reverse().find(entry => entry.role === role) || null;
         },
         async approveClaim(clm) {
             if (!this.canApproveClaim(clm)) { this.showNotify('You do not have permission to approve this record at its current workflow stage.'); return false; }
@@ -2138,7 +2283,6 @@ createApp({
             const roleNames = { HR: 'Human Resource Management', Account: 'Finance Account Management', Director: 'Director' };
             if (isDirectorDecision && !this.claimPreview.directorApprovalAttachment) { alert('Director approval requires a supporting document attachment.'); return; }
             const bypassedReviews = clm.status === 'Pending HR' ? ['HR', 'Account'] : clm.status === 'Pending Account' ? ['Account'] : [];
-            const isPaymentVoucher = (clm.documentType || clm.type) === 'Payment Voucher';
             const nowIso = new Date().toISOString();
             const existingHistory = Array.isArray(clm.approvalHistory) ? clm.approvalHistory : [];
             const bypassEntries = bypassedReviews.map(role => ({ role, roleName: roleNames[role] || role, bypassed: true, note: 'Bypassed by Director direct approval', recordedAt: nowIso }));
@@ -2149,11 +2293,11 @@ createApp({
             ];
             const update = nextRole
                 ? { status: `Pending ${nextRole}`, assignedToUid: '', assignedToName: roleNames[nextRole], assignedToEmail: '', assignedToRole: nextRole, approvalHistory }
-                : { status: 'Approved', finalDecision: true, settlementStatus: isPaymentVoucher ? 'Paid' : 'Approved', statusDetail: isPaymentVoucher ? 'Payment fully paid' : 'Claim fully approved', approvalPath: 'Director Direct Approval', approvalPreviousStatus: clm.status, bypassedReviews, assignedToUid: this.userProfile.uid, assignedToName: this.userProfile.name, assignedToEmail: this.userProfile.email, assignedToRole: 'Director', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByEmail: this.userProfile.email, approvedByRole: 'Director', approvedAt: nowIso, directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName, directorApprovalOriginalBytes: Number(this.claimPreview.directorApprovalOriginalBytes || 0), approvalHistory };
+                : { status: 'Approved', finalDecision: true, settlementStatus: 'Approved', statusDetail: 'Claim fully approved', approvalPath: 'Director Direct Approval', approvalPreviousStatus: clm.status, bypassedReviews, assignedToUid: this.userProfile.uid, assignedToName: this.userProfile.name, assignedToEmail: this.userProfile.email, assignedToRole: 'Director', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByEmail: this.userProfile.email, approvedByRole: 'Director', approvedAt: nowIso, directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName, directorApprovalOriginalBytes: Number(this.claimPreview.directorApprovalOriginalBytes || 0), approvalHistory };
             try {
                 if (!nextRole && this.getSerializedSize({ ...clm, ...update }) > 800 * 1024) throw Object.assign(new Error('The combined claim record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
                 await updateDoc(doc(db, "claims", clm.id), update);
-                this.logAudit('UPDATE', `${clm.documentType || 'Claim'} ${clm.receiptNo} ${nextRole ? `forwarded to ${roleNames[nextRole]}` : `directly and finally approved by Director${bypassedReviews.length ? ` (bypassed ${bypassedReviews.join(' and ')})` : ''}`}`);
+                this.logAudit('UPDATE', `Claim ${clm.receiptNo} ${nextRole ? `forwarded to ${roleNames[nextRole]}` : `directly and finally approved by Director${bypassedReviews.length ? ` (bypassed ${bypassedReviews.join(' and ')})` : ''}`}`);
                 this.showNotify(nextRole ? `Claim assigned to ${roleNames[nextRole]}.` : 'Director approval completed immediately. No further HR or Finance review is required.');
                 return true;
             } catch (error) {
@@ -2170,13 +2314,12 @@ createApp({
             if (!this.canApproveClaim(clm)) { this.showNotify('You do not have permission to reject this record at its current workflow stage.'); return; }
             if (confirm("REJECT this claim application?")) { try { await updateDoc(doc(db, "claims", clm.id), { status: 'Rejected', rejectedByUid: this.userProfile.uid, rejectedByName: this.userProfile.name, rejectedByRole: this.userProfile.role, rejectedAt: new Date().toISOString() }); this.showNotify("Claim rejected."); } catch (error) { this.showNotify('Unable to reject claim.'); } }
         },
-        async saveClaimRecord() {
-                if (!['Superadmin', 'Director', 'HR', 'Account', 'Staff'].includes(this.userProfile.role)) { this.showNotify('Your role cannot submit claims or payment vouchers.'); return; }
-                if (this.attachmentUploadState.receipt) return alert('Wait for the receipt upload to finish.');
-                Object.assign(this.claimForm, this.normalizeOfficialRecord(this.claimForm));
-                this.claimForm.empEmail = String(this.claimForm.empEmail || '').trim().toLowerCase();
-                if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo || !this.claimForm.description.trim() || !this.claimForm.receiptAttachment) return alert("Complete all required claim fields, including Expense Description and Receipt Attachment.");
-                if (this.claimForm.documentType === 'Payment Voucher' && (!this.claimForm.payeeName.trim() || !this.claimForm.paymentPurpose.trim())) return alert('Complete the Payee Name and Payment Purpose for this Payment Voucher.');
+        async saveExpenseClaim() {
+            if (!['Superadmin', 'Director', 'HR', 'Account', 'Staff'].includes(this.userProfile.role)) { this.showNotify('Your role cannot submit expense claims.'); return; }
+            if (this.attachmentUploadState.receipt) return alert('Wait for the receipt upload to finish.');
+            Object.assign(this.claimForm, this.normalizeOfficialRecord(this.claimForm));
+            this.claimForm.empEmail = String(this.claimForm.empEmail || '').trim().toLowerCase();
+            if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo || !this.claimForm.description.trim() || !this.claimForm.receiptAttachment) return alert("Complete all required claim fields, including Expense Description and Receipt Attachment.");
             try {
                 const initialStatus = 'Pending HR';
                 const assignee = { id: '', name: 'Human Resource Management', email: '', role: 'HR' };
@@ -2186,18 +2329,14 @@ createApp({
                 if (!auth.currentUser?.uid || !claimOwnerEmail) throw Object.assign(new Error('Your login identity is incomplete. Sign out and sign in again.'), { code: 'permission-denied' });
 
                 const claimId = String(this.editingClaimId || Date.now());
-                const documentType = this.claimForm.documentType === 'Payment Voucher' ? 'Payment Voucher' : 'Claim';
-                const payload = { id: claimId, type: documentType, documentType, date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: claimOwnerEmail, position: this.claimForm.position || '', dept: this.claimForm.dept, payeeName: this.claimForm.payeeName || '', payeeType: this.claimForm.payeeType || '', payeeReference: this.claimForm.payeeReference || '', paymentPurpose: this.claimForm.paymentPurpose || '', category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', receiptAttachmentOriginalBytes: Number(this.claimForm.receiptAttachmentOriginalBytes || 0), createdByUid: this.editingClaimId ? (this.claimForm.createdByUid || auth.currentUser.uid) : auth.currentUser.uid, createdByEmail: this.editingClaimId ? (this.claimForm.createdByEmail || signedInEmail) : signedInEmail, createdAt: this.editingClaimId ? (this.claimForm.createdAt || new Date().toISOString()) : new Date().toISOString(), status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
+                const payload = { id: claimId, type: 'Claim', documentType: 'Claim', date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: claimOwnerEmail, position: this.claimForm.position || '', dept: this.claimForm.dept, category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', receiptAttachmentOriginalBytes: Number(this.claimForm.receiptAttachmentOriginalBytes || 0), createdByUid: this.editingClaimId ? (this.claimForm.createdByUid || auth.currentUser.uid) : auth.currentUser.uid, createdByEmail: this.editingClaimId ? (this.claimForm.createdByEmail || signedInEmail) : signedInEmail, createdAt: this.editingClaimId ? (this.claimForm.createdAt || new Date().toISOString()) : new Date().toISOString(), status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
                 if (this.getSerializedSize(payload) > 800 * 1024) throw Object.assign(new Error('The claim record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
                 await setDoc(doc(db, "claims", claimId), payload, { merge: true });
-                this.editingClaimId = null; this.showNotify(`${documentType} submitted.`); this.resetClaimForm();
+                this.editingClaimId = null; this.showNotify(`Expense claim submitted.`); this.resetClaimForm();
             } catch (error) { console.error('Claim save failed:', error); this.showNotify(this.getFirestoreWriteError(error, 'submit the claim')); }
         },
-        editClaimRecord(clm) { this.editingClaimId = clm.id; this.selectedClaimEmployeeId = clm.empNo || ''; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; this.mobileMenuOpen = false; window.scrollTo({ top:0, behavior:'smooth' }); },
+        editClaimRecord(clm) { this.claimFormMode = 'Claim'; this.editingClaimId = clm.id; this.selectedClaimEmployeeId = clm.empNo || ''; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; this.mobileMenuOpen = false; window.scrollTo({ top:0, behavior:'smooth' }); },
         cancelEditClaim() { this.editingClaimId = null; this.resetClaimForm(); },
-
-        setPrintOrientation(orientation, margin) { const styleEl = document.getElementById('dynamic-print-orientation'); if (styleEl) styleEl.innerHTML = `@media print { @page { size: A4 ${orientation}; margin: ${margin} !important; } }`; },
-        async printDocumentModule() { if (!this.clientSavedForDocument) return alert('Save Client information before previewing or printing this document.'); this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE'; this.setPrintOrientation('portrait', '15mm'); setTimeout(() => { window.print(); }, 250); },
         async printApprovedClaim(claim) {
             if (!claim || claim.status !== 'Approved') { alert('Only approved claims can be printed.'); return; }
             this.claimPrint = JSON.parse(JSON.stringify(claim));
@@ -2206,6 +2345,95 @@ createApp({
             await this.$nextTick();
             window.print();
         },
+
+        // ================================================================
+        // PAYMENT VOUCHER FLOW — dedicated end-to-end pipeline for 'payment_vouchers' collection
+        // WORKFLOW: Staff/Client -> HR -> Account -> Director (final approval), independent of Expense Claims
+        // ================================================================
+        canApprovePaymentVoucher(pv) {
+            const role = this.userProfile.role;
+            if (role === 'Director') return typeof pv.status === 'string' && pv.status.startsWith('Pending');
+            const expectedStatus = { HR: 'Pending HR', Account: 'Pending Account', Director: 'Pending Director' }[role];
+            return !!expectedStatus && pv.status === expectedStatus && (!pv.assignedToEmail || pv.assignedToEmail === this.userProfile.email);
+        },
+        canEditPaymentVoucher(pv) {
+            return (pv.createdByUid === this.userProfile.uid || pv.empEmail === this.userProfile.email) && pv.status === 'Pending HR';
+        },
+        async approvePaymentVoucher(pv) {
+            if (!this.canApprovePaymentVoucher(pv)) { this.showNotify('You do not have permission to approve this record at its current workflow stage.'); return false; }
+            if (this.attachmentUploadState.director) { this.showNotify('Wait for the Director approval document upload to finish.'); return false; }
+            const isDirectorDecision = this.userProfile.role === 'Director';
+            const nextRole = isDirectorDecision ? null : { 'Pending HR': 'Account', 'Pending Account': 'Director' }[pv.status];
+            const roleNames = { HR: 'Human Resource Management', Account: 'Finance Account Management', Director: 'Director' };
+            if (isDirectorDecision && !this.claimPreview.directorApprovalAttachment) { alert('Director approval requires a supporting document attachment.'); return; }
+            const bypassedReviews = pv.status === 'Pending HR' ? ['HR', 'Account'] : pv.status === 'Pending Account' ? ['Account'] : [];
+            const nowIso = new Date().toISOString();
+            const existingHistory = Array.isArray(pv.approvalHistory) ? pv.approvalHistory : [];
+            const bypassEntries = bypassedReviews.map(role => ({ role, roleName: roleNames[role] || role, bypassed: true, note: 'Bypassed by Director direct approval', recordedAt: nowIso }));
+            const approvalHistory = [
+                ...existingHistory,
+                ...bypassEntries,
+                { role: this.userProfile.role, roleName: roleNames[this.userProfile.role] || this.userProfile.role, approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByEmail: this.userProfile.email, approvedAt: nowIso }
+            ];
+            const update = nextRole
+                ? { status: `Pending ${nextRole}`, assignedToUid: '', assignedToName: roleNames[nextRole], assignedToEmail: '', assignedToRole: nextRole, approvalHistory }
+                : { status: 'Approved', finalDecision: true, settlementStatus: 'Paid', statusDetail: 'Payment fully paid', approvalPath: 'Director Direct Approval', approvalPreviousStatus: pv.status, bypassedReviews, assignedToUid: this.userProfile.uid, assignedToName: this.userProfile.name, assignedToEmail: this.userProfile.email, assignedToRole: 'Director', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByEmail: this.userProfile.email, approvedByRole: 'Director', approvedAt: nowIso, directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName, directorApprovalOriginalBytes: Number(this.claimPreview.directorApprovalOriginalBytes || 0), approvalHistory };
+            try {
+                if (!nextRole && this.getSerializedSize({ ...pv, ...update }) > 800 * 1024) throw Object.assign(new Error('The combined voucher record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
+                await updateDoc(doc(db, "payment_vouchers", pv.id), update);
+                this.logAudit('UPDATE', `Payment Voucher ${pv.voucherNo} ${nextRole ? `forwarded to ${roleNames[nextRole]}` : `directly and finally approved by Director${bypassedReviews.length ? ` (bypassed ${bypassedReviews.join(' and ')})` : ''}`}`);
+                this.showNotify(nextRole ? `Voucher assigned to ${roleNames[nextRole]}.` : 'Director approval completed immediately. No further HR or Finance review is required.');
+                return true;
+            } catch (error) {
+                console.error('Voucher approval failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'update the voucher status'));
+                return false;
+            }
+        },
+        async approvePaymentVoucherFromPreview() {
+            const approved = await this.approvePaymentVoucher(this.claimPreview.claim);
+            if (approved) this.claimPreview.show = false;
+        },
+        async rejectPaymentVoucher(pv) {
+            if (!this.canApprovePaymentVoucher(pv)) { this.showNotify('You do not have permission to reject this record at its current workflow stage.'); return; }
+            if (confirm("REJECT this payment voucher?")) { try { await updateDoc(doc(db, "payment_vouchers", pv.id), { status: 'Rejected', rejectedByUid: this.userProfile.uid, rejectedByName: this.userProfile.name, rejectedByRole: this.userProfile.role, rejectedAt: new Date().toISOString() }); this.showNotify("Payment voucher rejected."); } catch (error) { this.showNotify('Unable to reject voucher.'); } }
+        },
+        async savePaymentVoucher() {
+            if (!['Superadmin', 'Director', 'HR', 'Account', 'Staff'].includes(this.userProfile.role)) { this.showNotify('Your role cannot submit payment vouchers.'); return; }
+            if (this.attachmentUploadState.receipt) return alert('Wait for the supporting document upload to finish.');
+            Object.assign(this.voucherForm, this.normalizeOfficialRecord(this.voucherForm));
+            this.voucherForm.empEmail = String(this.voucherForm.empEmail || '').trim().toLowerCase();
+            if (!this.voucherForm.name || !this.voucherForm.empNo || !this.voucherForm.amount || !this.voucherForm.description.trim() || !this.voucherForm.receiptAttachment) return alert("Complete all required voucher fields, including Payment Description and Supporting Document.");
+            if (!this.voucherForm.payeeName.trim() || !this.voucherForm.paymentPurpose.trim()) return alert('Complete the Payee Name and Payment Purpose for this Payment Voucher.');
+            try {
+                const initialStatus = 'Pending HR';
+                const assignee = { id: '', name: 'Human Resource Management', email: '', role: 'HR' };
+                const signedInEmail = String(auth.currentUser?.email || this.userProfile.email || '').trim().toLowerCase();
+                const canSubmitForOthers = ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role);
+                const voucherOwnerEmail = canSubmitForOthers ? String(this.voucherForm.empEmail || signedInEmail).trim().toLowerCase() : signedInEmail;
+                if (!auth.currentUser?.uid || !voucherOwnerEmail) throw Object.assign(new Error('Your login identity is incomplete. Sign out and sign in again.'), { code: 'permission-denied' });
+
+                const voucherId = String(this.editingVoucherId || Date.now());
+                if (!this.voucherForm.voucherNo) this.voucherForm.voucherNo = `PV-${this.currentYear}-${String(Date.now()).slice(-6)}`;
+                const payload = { id: voucherId, type: 'Payment Voucher', documentType: 'Payment Voucher', date: this.voucherForm.paymentDate, paymentDate: this.voucherForm.paymentDate, name: this.voucherForm.name, empNo: this.voucherForm.empNo, empEmail: voucherOwnerEmail, position: this.voucherForm.position || '', dept: this.voucherForm.dept, payeeName: this.voucherForm.payeeName, payeeType: this.voucherForm.payeeType || '', payeeReference: this.voucherForm.payeeReference || '', paymentPurpose: this.voucherForm.paymentPurpose, category: this.voucherForm.category, subCategory: this.voucherForm.subCategory, amount: Number(this.voucherForm.amount), voucherNo: this.voucherForm.voucherNo, description: this.voucherForm.description, receiptAttachment: this.voucherForm.receiptAttachment, receiptAttachmentName: this.voucherForm.receiptAttachmentName || '', receiptAttachmentOriginalBytes: Number(this.voucherForm.receiptAttachmentOriginalBytes || 0), createdByUid: this.editingVoucherId ? (this.voucherForm.createdByUid || auth.currentUser.uid) : auth.currentUser.uid, createdByEmail: this.editingVoucherId ? (this.voucherForm.createdByEmail || signedInEmail) : signedInEmail, createdAt: this.editingVoucherId ? (this.voucherForm.createdAt || new Date().toISOString()) : new Date().toISOString(), status: this.editingVoucherId ? (this.voucherForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
+                if (this.getSerializedSize(payload) > 800 * 1024) throw Object.assign(new Error('The voucher record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
+                await setDoc(doc(db, "payment_vouchers", voucherId), payload, { merge: true });
+                this.editingVoucherId = null; this.showNotify(`Payment voucher submitted.`); this.resetVoucherForm();
+            } catch (error) { console.error('Voucher save failed:', error); this.showNotify(this.getFirestoreWriteError(error, 'submit the payment voucher')); }
+        },
+        editPaymentVoucher(pv) { this.claimFormMode = 'Payment Voucher'; this.editingVoucherId = pv.id; this.selectedVoucherEmployeeId = pv.empNo || ''; this.voucherForm = JSON.parse(JSON.stringify(pv)); this.currentTab = 'claims'; this.mobileMenuOpen = false; window.scrollTo({ top:0, behavior:'smooth' }); },
+        cancelEditVoucher() { this.editingVoucherId = null; this.resetVoucherForm(); },
+        async printApprovedVoucher(voucher) {
+            if (!voucher || voucher.status !== 'Approved') { alert('Only approved payment vouchers can be printed.'); return; }
+            this.claimPrint = JSON.parse(JSON.stringify(voucher));
+            this.activePrintModule = 'CLAIM';
+            this.setPrintOrientation('portrait', '15mm');
+            await this.$nextTick();
+            window.print();
+        },
+
+        setPrintOrientation(orientation, margin) { const styleEl = document.getElementById('dynamic-print-orientation'); if (styleEl) styleEl.innerHTML = `@media print { @page { size: A4 ${orientation}; margin: ${margin} !important; } }`; },
+        async printDocumentModule() { if (!this.clientSavedForDocument) return alert('Save Client information before previewing or printing this document.'); this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE'; this.setPrintOrientation('portrait', '15mm'); setTimeout(() => { window.print(); }, 250); },
         async printPayslipModule() { if (!this.payForm.name || !this.payForm.empNo) return alert('Enter Name and Emp ID.'); this.autoCalculatePayroll(); this.activePrintModule = 'PAYSLIP'; this.setPrintOrientation('landscape', '0mm'); setTimeout(() => { window.print(); }, 250); },
         
         async saveDocRecord() {
@@ -2295,12 +2523,13 @@ createApp({
             this.mobileMenuOpen = false;
             if (item.isDoc) { this.editingDocId = item.id; if (item.raw) { this.docForm = JSON.parse(JSON.stringify(item.raw)); this.docForm.status = item.raw.status || item.status || (item.type === 'Invoice' ? 'Unpaid' : 'Open'); } this.currentTab = 'doc-generator'; }
             else if (item.isPay) { this.editingPayId = item.id; if (item.raw) { this.payForm = JSON.parse(JSON.stringify(item.raw)); this.selectedPayEmployeeId = this.payForm.empNo || ''; } this.autoCalculatePayroll(); this.currentTab = 'payslip-generator'; }
+            else if (item.isVoucher) this.editPaymentVoucher(item);
             else if (item.isClaim) this.editClaimRecord(item);
         },
         async confirmDeleteRecord(item) {
             if (!this.canDelete) { this.showNotify('Only Superadmin and Director can delete records.'); return; }
             if (confirm(`WARNING: Delete record?`)) {
-                try { if (item.isDoc) await deleteDoc(doc(db, "docs", item.id)); else if (item.isPay) await deleteDoc(doc(db, "payslips", item.id)); else if (item.isClaim) await deleteDoc(doc(db, "claims", item.id)); this.showNotify('Record deleted.'); } catch (error) { console.error('Record deletion failed:', error); this.showNotify('Unable to delete record.'); }
+                try { if (item.isDoc) await deleteDoc(doc(db, "docs", item.id)); else if (item.isPay) await deleteDoc(doc(db, "payslips", item.id)); else if (item.isVoucher) await deleteDoc(doc(db, "payment_vouchers", item.id)); else if (item.isClaim) await deleteDoc(doc(db, "claims", item.id)); this.showNotify('Record deleted.'); } catch (error) { console.error('Record deletion failed:', error); this.showNotify('Unable to delete record.'); }
             }
         },
 
@@ -2426,6 +2655,11 @@ createApp({
                 : role === 'Staff'
                     ? query(collection(db, 'claims'), where('empEmail', '==', this.userProfile.email))
                     : null;
+            const vouchersSource = canReadAllClaims
+                ? collection(db, 'payment_vouchers')
+                : role === 'Staff'
+                    ? query(collection(db, 'payment_vouchers'), where('empEmail', '==', this.userProfile.email))
+                    : null;
             const employeesSource = canReadAllEmployees
                 ? collection(db, 'employees')
                 : ['Staff', 'IT'].includes(role)
@@ -2479,6 +2713,11 @@ createApp({
                         this.claimsHistory = snapshot.docs.map(d => this.normalizeClaimRecord({ id: d.id, ...d.data() }));
                         this.synchronizeLegacyApprovedClaims(snapshot.docs);
                     }, 'claims')
+                    : Promise.resolve(),
+                vouchersSource
+                    ? subscribeWithReadySignal(vouchersSource, (snapshot) => {
+                        this.paymentVouchers = snapshot.docs.map(d => ({ id: d.id, documentType: 'Payment Voucher', type: 'Payment Voucher', ...d.data() }));
+                    }, 'payment vouchers')
                     : Promise.resolve(),
                 subscribeWithReadySignal(projectsSource, (snapshot) => { this.projects = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'project activities'),
                 projectActivitiesSource ? subscribeWithReadySignal(projectActivitiesSource, (snapshot) => {
@@ -2593,6 +2832,7 @@ createApp({
                 this.docHistory = [];
                 this.payslipHistory = [];
                 this.claimsHistory = [];
+                this.paymentVouchers = [];
                 this.users = [];
                 this.auditLogs = [];
                 this.notificationsLog = [];

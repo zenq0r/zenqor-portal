@@ -229,6 +229,60 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Payment Vouchers — dedicated collection, independent from Claims (same approval workflow/roles).
+    match /payment_vouchers/{voucherId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || isHR() || isAccount() ||
+        (isStaff() && resource.data.empEmail == request.auth.token.email)
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (request.resource.data.createdByUid == request.auth.uid && (
+          (isStaff() && request.resource.data.empEmail == request.auth.token.email) ||
+          isHR() || isAccount()
+        ))
+      );
+      allow update: if (
+        (isAdmin() || isHR()) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'position', 'dept', 'empEmail'
+        ])
+      ) || (
+        isAdmin() &&
+        resource.data.status == 'Approved' &&
+        request.resource.data.status == 'Approved' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'documentType', 'type', 'finalDecision', 'settlementStatus', 'statusDetail',
+          'assignedToUid', 'assignedToName', 'assignedToEmail', 'assignedToRole',
+          'approvalPath'
+        ])
+      ) || (
+        isAuthenticated() &&
+        resource.data.status == 'Pending HR' &&
+        request.resource.data.status == 'Pending HR' &&
+        request.resource.data.empNo == resource.data.empNo &&
+        ((isStaff() && resource.data.empEmail == request.auth.token.email) ||
+          ((isAdmin() || isHR() || isAccount()) && 'createdByUid' in resource.data && resource.data.createdByUid == request.auth.uid)) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'type', 'documentType', 'date', 'paymentDate', 'name', 'position', 'dept',
+          'payeeName', 'payeeType', 'payeeReference', 'paymentPurpose', 'category',
+          'subCategory', 'amount', 'voucherNo', 'description', 'receiptAttachment',
+          'receiptAttachmentName', 'receiptAttachmentOriginalBytes', 'createdByUid',
+          'createdByEmail', 'createdAt'
+        ])
+      ) || (
+        isHR() && resource.data.status == 'Pending HR' &&
+        request.resource.data.status in ['Pending Account', 'Rejected']
+      ) || (
+        isAccount() && resource.data.status == 'Pending Account' &&
+        request.resource.data.status in ['Pending Director', 'Rejected']
+      ) || (
+        isDirector() && resource.data.status in ['Pending HR', 'Pending Account', 'Pending Director'] &&
+        request.resource.data.status in ['Approved', 'Rejected']
+      );
+      allow delete: if isAdmin();
+    }
+
     match /projects/{projectId} {
       allow read: if isAuthenticated() && (
         !isClient() || (

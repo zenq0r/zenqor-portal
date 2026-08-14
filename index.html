@@ -637,28 +637,37 @@
                                 <span class="hidden sm:inline">Dashboard</span>
                             </button>
                             <div>
-                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Claims &amp; Expense Management</h2>
-                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage employee expense claims categorized by type and supported by receipts.</p>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Claims &amp; Payment Voucher Management</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Two independent record types, each with its own form, approval trail and storage.</p>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <button v-if="editingClaimId" type="button" @click="cancelEditClaim" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
-                                Cancel Edit
-                            </button>
-                            <button type="button" @click="saveClaimRecord" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5">
-                                <i class="fa-solid fa-floppy-disk"></i><span>Submit {{ claimForm.documentType }}</span>
-                            </button>
-                            <button type="button" @click="resetClaimForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Clear Form">
-                                <i class="fa-solid fa-rotate-left"></i>
-                            </button>
+                            <button v-if="claimFormMode === 'Claim' && editingClaimId" type="button" @click="cancelEditClaim" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Cancel Edit</button>
+                            <button v-if="claimFormMode === 'Payment Voucher' && editingVoucherId" type="button" @click="cancelEditVoucher" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Cancel Edit</button>
+                            <button v-if="claimFormMode === 'Claim'" type="button" @click="saveExpenseClaim" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-floppy-disk"></i><span>Submit Expense Claim</span></button>
+                            <button v-else type="button" @click="savePaymentVoucher" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-floppy-disk"></i><span>Submit Payment Voucher</span></button>
+                            <button v-if="claimFormMode === 'Claim'" type="button" @click="resetClaimForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Clear Form"><i class="fa-solid fa-rotate-left"></i></button>
+                            <button v-else type="button" @click="resetVoucherForm" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition" title="Clear Form"><i class="fa-solid fa-rotate-left"></i></button>
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
+                    <!-- MODULE TOGGLE — selects which independent flow is active: Expense Claim or Payment Voucher -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <button type="button" @click="claimFormMode = 'Claim'" :class="claimFormMode === 'Claim' ? 'bg-brand-dark text-white shadow' : 'bg-white text-slate-600 border border-slate-200'" class="rounded-xl px-4 py-3 text-left transition"><span class="block text-xs font-extrabold uppercase"><i class="fa-solid fa-receipt mr-2"></i>Expense Claim</span><span class="mt-1 block text-[10px] opacity-75">Employee reimbursement for expenses already incurred.</span></button>
+                        <button type="button" @click="claimFormMode = 'Payment Voucher'" :class="claimFormMode === 'Payment Voucher' ? 'bg-brand-dark text-white shadow' : 'bg-white text-slate-600 border border-slate-200'" class="rounded-xl px-4 py-3 text-left transition"><span class="block text-xs font-extrabold uppercase"><i class="fa-solid fa-money-check-dollar mr-2"></i>Payment Voucher</span><span class="mt-1 block text-[10px] opacity-75">Company payment to an individual or vendor for wages and services.</span></button>
+                    </div>
+
+                    <div v-if="['Superadmin','Director'].includes(userProfile.role) && legacyPaymentVouchersCount" class="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 sm:flex-row sm:items-center sm:justify-between">
+                        <span><i class="fa-solid fa-triangle-exclamation mr-2"></i><strong>{{ legacyPaymentVouchersCount }} legacy Payment Voucher record(s)</strong> are still stored inside the Claims collection. Migrate them into the dedicated Payment Vouchers collection (requires firestore.rules to already be deployed).</span>
+                        <button type="button" @click="migrateLegacyPaymentVouchers" class="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-[10px] font-bold text-white hover:bg-amber-700">Migrate Now</button>
+                    </div>
+
+                    <!-- ===================== EXPENSE CLAIM FORM ===================== -->
+                    <div v-if="claimFormMode === 'Claim'" class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
                             <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
                                 <i class="fa-solid fa-file-circle-plus text-brand-gold mr-2 text-base"></i>
-                                NEW {{ claimForm.documentType === 'Payment Voucher' ? 'PAYMENT VOUCHER' : 'EXPENSE CLAIM' }} APPLICATION
+                                NEW EXPENSE CLAIM APPLICATION
                             </h3>
                             <div>
                                 <label for="claim-emp-select" class="sr-only">Select Employee</label>
@@ -669,23 +678,11 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                            <button type="button" @click="setClaimDocumentType('Claim')" :class="claimForm.documentType === 'Claim' ? 'bg-brand-dark text-white shadow' : 'bg-white text-slate-600 border border-slate-200'" class="rounded-xl px-4 py-3 text-left transition"><span class="block text-xs font-extrabold uppercase"><i class="fa-solid fa-receipt mr-2"></i>Expense Claim</span><span class="mt-1 block text-[10px] opacity-75">Employee reimbursement for expenses already incurred.</span></button>
-                            <button type="button" @click="setClaimDocumentType('Payment Voucher')" :class="claimForm.documentType === 'Payment Voucher' ? 'bg-brand-dark text-white shadow' : 'bg-white text-slate-600 border border-slate-200'" class="rounded-xl px-4 py-3 text-left transition"><span class="block text-xs font-extrabold uppercase"><i class="fa-solid fa-money-check-dollar mr-2"></i>Payment Voucher</span><span class="mt-1 block text-[10px] opacity-75">Company payment to an individual or vendor for wages and services.</span></button>
-                        </div>
-
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             <div><label for="claim-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Applicant Name *</label><input id="claim-name" name="claimName" type="text" v-model="claimForm.name" required placeholder="Employee Name" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
                             <div><label for="claim-emp-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input id="claim-emp-no" name="claimEmpNo" type="text" v-model="claimForm.empNo" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
                             <div><label for="claim-dept" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input id="claim-dept" name="claimDept" type="text" v-model="claimForm.dept" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label for="claim-date" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">{{ claimForm.documentType === 'Payment Voucher' ? 'Payment Date' : 'Expense Date' }} *</label><input id="claim-date" name="claimDate" type="date" v-model="claimForm.expenseDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
-                        </div>
-
-                        <div v-if="claimForm.documentType === 'Payment Voucher'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-                            <div><label for="voucher-payee" class="block text-xs font-bold text-slate-700 mb-1">PAYEE NAME *</label><input id="voucher-payee" v-model="claimForm.payeeName" type="text" placeholder="Individual / vendor name" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"></div>
-                            <div><label for="voucher-payee-type" class="block text-xs font-bold text-slate-700 mb-1">PAYEE TYPE *</label><select id="voucher-payee-type" v-model="claimForm.payeeType" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"><option>Individual</option><option>Employee</option><option>Freelancer</option><option>Vendor / Supplier</option><option>Contractor</option></select></div>
-                            <div><label for="voucher-payee-ref" class="block text-xs font-bold text-slate-700 mb-1">PAYEE REFERENCE</label><input id="voucher-payee-ref" v-model="claimForm.payeeReference" type="text" placeholder="ID / invoice / contract ref" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"></div>
-                            <div><label for="voucher-purpose" class="block text-xs font-bold text-slate-700 mb-1">PAYMENT PURPOSE *</label><input id="voucher-purpose" v-model="claimForm.paymentPurpose" type="text" placeholder="Wages / services / allowance" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"></div>
+                            <div><label for="claim-date" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Expense Date *</label><input id="claim-date" name="claimDate" type="date" v-model="claimForm.expenseDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4">
@@ -702,11 +699,11 @@
                                 </select>
                             </div>
                             <div>
-                                <label for="claim-amount" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">{{ claimForm.documentType === 'Payment Voucher' ? 'PAYMENT AMOUNT' : 'CLAIM AMOUNT' }} (RM) *</label>
+                                <label for="claim-amount" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">CLAIM AMOUNT (RM) *</label>
                                 <input id="claim-amount" name="claimAmount" type="number" v-model="claimForm.amount" step="0.01" min="1" placeholder="0.00" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-extrabold text-brand-dark">
                             </div>
                             <div>
-                                <label for="claim-receipt-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">{{ claimForm.documentType === 'Payment Voucher' ? 'VOUCHER / REF NO.' : 'RECEIPT / REF NO.' }} *</label>
+                                <label for="claim-receipt-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">RECEIPT / REF NO. *</label>
                                 <input id="claim-receipt-no" name="claimReceiptNo" type="text" v-model="claimForm.receiptNo" placeholder="REC-8823901" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold">
                             </div>
                         </div>
@@ -721,13 +718,13 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4 items-center">
                             <div class="md:col-span-2">
-                                <label for="claim-description" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">{{ claimForm.documentType === 'Payment Voucher' ? 'PAYMENT DESCRIPTION' : 'EXPENSE DESCRIPTION' }} <span class="text-red-500">*</span></label>
+                                <label for="claim-description" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">EXPENSE DESCRIPTION <span class="text-red-500">*</span></label>
                                 <input id="claim-description" name="claimDescription" type="text" v-model="claimForm.description" required placeholder="Example: Client lunch meeting with XYZ Company" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-medium">
                             </div>
 
                             <div class="p-2.5 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500 rounded-xl flex items-center justify-between gap-2">
                                 <div class="overflow-hidden">
-                                    <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight truncate">{{ claimForm.documentType === 'Payment Voucher' ? 'SUPPORTING DOCUMENT' : 'RECEIPT ATTACHMENT' }} (MAX 2MB) <span class="text-red-500">*</span></p>
+                                    <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight truncate">RECEIPT ATTACHMENT (MAX 2MB) <span class="text-red-500">*</span></p>
                                     <p class="text-[10px] text-slate-400 truncate">{{ claimForm.receiptAttachment ? `${claimForm.receiptAttachmentName || 'Receipt Attached'} · stored ${formatFileSize(getDataUrlSize(claimForm.receiptAttachment))}` : 'PNG, JPG or JPEG · total application files max 2MB' }}</p>
                                 </div>
                                 <div class="flex items-center space-x-1 shrink-0">
@@ -743,10 +740,96 @@
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+                    <!-- ===================== PAYMENT VOUCHER FORM ===================== -->
+                    <div v-else class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
+                            <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
+                                <i class="fa-solid fa-file-circle-plus text-brand-gold mr-2 text-base"></i>
+                                NEW PAYMENT VOUCHER APPLICATION
+                            </h3>
+                            <div>
+                                <label for="voucher-emp-select" class="sr-only">Select Requesting Staff</label>
+                                <select id="voucher-emp-select" name="voucherEmpSelect" v-model="selectedVoucherEmployeeId" @change="selectEmployeeForVoucher($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-64 focus:ring-2 focus:ring-brand-gold">
+                                    <option value="">-- Auto-Fill HR Employee --</option>
+                                    <option v-for="emp in employees" :key="`voucher-emp-${emp.empNo}`" :value="emp.empNo">{{ emp.empNo }} - {{ emp.name }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                            <div><label for="voucher-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Requested By *</label><input id="voucher-name" name="voucherName" type="text" v-model="voucherForm.name" required placeholder="Staff preparing this voucher" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
+                            <div><label for="voucher-emp-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input id="voucher-emp-no" name="voucherEmpNo" type="text" v-model="voucherForm.empNo" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
+                            <div><label for="voucher-dept" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input id="voucher-dept" name="voucherDept" type="text" v-model="voucherForm.dept" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                            <div><label for="voucher-date" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Payment Date *</label><input id="voucher-date" name="voucherDate" type="date" v-model="voucherForm.paymentDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                            <div><label for="voucher-payee" class="block text-xs font-bold text-slate-700 mb-1">PAYEE NAME *</label><input id="voucher-payee" v-model="voucherForm.payeeName" type="text" placeholder="Individual / vendor name" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"></div>
+                            <div><label for="voucher-payee-type" class="block text-xs font-bold text-slate-700 mb-1">PAYEE TYPE *</label><select id="voucher-payee-type" v-model="voucherForm.payeeType" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"><option>Individual</option><option>Employee</option><option>Freelancer</option><option>Vendor / Supplier</option><option>Contractor</option></select></div>
+                            <div><label for="voucher-payee-ref" class="block text-xs font-bold text-slate-700 mb-1">PAYEE REFERENCE</label><input id="voucher-payee-ref" v-model="voucherForm.payeeReference" type="text" placeholder="ID / invoice / contract ref" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"></div>
+                            <div><label for="voucher-purpose" class="block text-xs font-bold text-slate-700 mb-1">PAYMENT PURPOSE *</label><input id="voucher-purpose" v-model="voucherForm.paymentPurpose" type="text" placeholder="Wages / services / allowance" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4">
+                            <div>
+                                <label for="voucher-category" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">VOUCHER CATEGORY *</label>
+                                <select id="voucher-category" name="voucherCategory" v-model="voucherForm.category" @change="voucherForm.subCategory = voucherSubCategories[voucherForm.category][0]" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-xs">
+                                    <option v-for="(subList, catName) in voucherSubCategories" :key="catName" :value="catName">{{ catName }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="voucher-sub-category" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">SUB-CATEGORY *</label>
+                                <select id="voucher-sub-category" name="voucherSubCategory" v-model="voucherForm.subCategory" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl font-bold text-xs">
+                                    <option v-for="(sub, sIdx) in voucherSubCategories[voucherForm.category]" :key="sIdx" :value="sub">{{ sub }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="voucher-amount" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PAYMENT AMOUNT (RM) *</label>
+                                <input id="voucher-amount" name="voucherAmount" type="number" v-model="voucherForm.amount" step="0.01" min="1" placeholder="0.00" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-extrabold text-brand-dark">
+                            </div>
+                            <div>
+                                <label for="voucher-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">VOUCHER / REF NO.</label>
+                                <input id="voucher-no" name="voucherNo" type="text" v-model="voucherForm.voucherNo" placeholder="Auto-generated if left blank" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold">
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 dark:border-slate-700 pt-4">
+                            <p class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">ASSIGN TO HR APPROVER *</p>
+                            <div class="w-full sm:w-96 p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-700/60">
+                                Human Resource Management
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">The voucher is assigned to the HR role group. All registered HR users can review it; it then moves to Account and Director for final approval.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4 items-center">
+                            <div class="md:col-span-2">
+                                <label for="voucher-description" class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">PAYMENT DESCRIPTION <span class="text-red-500">*</span></label>
+                                <input id="voucher-description" name="voucherDescription" type="text" v-model="voucherForm.description" required placeholder="Example: Monthly vendor invoice settlement" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-medium">
+                            </div>
+
+                            <div class="p-2.5 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500 rounded-xl flex items-center justify-between gap-2">
+                                <div class="overflow-hidden">
+                                    <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight truncate">SUPPORTING DOCUMENT (MAX 2MB) <span class="text-red-500">*</span></p>
+                                    <p class="text-[10px] text-slate-400 truncate">{{ voucherForm.receiptAttachment ? `${voucherForm.receiptAttachmentName || 'Document Attached'} · stored ${formatFileSize(getDataUrlSize(voucherForm.receiptAttachment))}` : 'PNG, JPG or JPEG · total application files max 2MB' }}</p>
+                                </div>
+                                <div class="flex items-center space-x-1 shrink-0">
+                                    <label for="voucher-attachment" :class="attachmentUploadState.receipt ? 'opacity-60 pointer-events-none' : ''" class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
+                                        <span>{{ attachmentUploadState.receipt ? 'Uploading...' : 'Select' }}</span>
+                                    <input id="voucher-attachment" name="voucherAttachment" type="file" @change="handleVoucherAttachmentUpload" :disabled="attachmentUploadState.receipt" accept=".png,.jpeg,.jpg,image/png,image/jpeg" class="hidden">
+                                    </label>
+                                    <button v-if="voucherForm.receiptAttachment" type="button" @click="openAttachment(voucherForm.receiptAttachment, 'Supporting document')" class="bg-emerald-600 text-white px-2 py-1.5 rounded-lg text-[11px] font-bold" title="View attachment">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===================== EXPENSE CLAIM RECORDS TABLE ===================== -->
+                    <div v-if="claimFormMode === 'Claim'" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                             <h3 class="text-sm font-extrabold text-brand-dark dark:text-white tracking-wide flex items-center"><i class="fa-solid fa-list-check text-brand-blue mr-2"></i>CLAIM RECORDS &amp; APPROVAL STATUS</h3>
-                            
+
                             <div class="flex items-center space-x-3">
                                 <div class="flex items-center space-x-1.5">
                                     <label for="claims-sort" class="text-xs font-semibold text-slate-400">Sort By:</label>
@@ -761,7 +844,7 @@
                                 <span class="text-xs text-slate-400 hidden sm:inline">Showing: {{ filteredSortedClaims.length }} records</span>
                             </div>
                         </div>
-                        
+
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
@@ -779,7 +862,7 @@
                                     <tr v-for="clm in paginatedClaims" :key="clm.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                         <td class="py-3 px-3">
                                             <span class="font-bold text-slate-800 dark:text-slate-200 block">{{ clm.expenseDate }}</span>
-                                            <span class="inline-block mt-1 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-slate-600">{{ clm.documentType || clm.type || 'Claim' }}</span>
+                                            <span class="inline-block mt-1 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-slate-600">Claim</span>
                                             <span class="text-slate-400 font-mono text-[10px] block">REF: {{ clm.receiptNo }}</span>
                                         </td>
                                         <td class="py-3 px-3">
@@ -837,6 +920,107 @@
                                     {{ page }}
                                 </button>
                                 <button type="button" @click="claimsCurrentPage < claimsTotalPages && claimsCurrentPage++" :disabled="claimsCurrentPage === claimsTotalPages" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===================== PAYMENT VOUCHER RECORDS TABLE ===================== -->
+                    <div v-else class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                            <h3 class="text-sm font-extrabold text-brand-dark dark:text-white tracking-wide flex items-center"><i class="fa-solid fa-list-check text-brand-blue mr-2"></i>PAYMENT VOUCHER RECORDS &amp; APPROVAL STATUS</h3>
+
+                            <div class="flex items-center space-x-3">
+                                <div class="flex items-center space-x-1.5">
+                                    <label for="vouchers-sort" class="text-xs font-semibold text-slate-400">Sort By:</label>
+                                    <select id="vouchers-sort" name="vouchersSort" v-model="vouchersSortOption" class="p-1.5 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white rounded-lg text-xs font-bold focus:ring-2 focus:ring-brand-gold">
+                                        <option value="latest">Latest Date (Default)</option>
+                                        <option value="oldest">Oldest Date</option>
+                                        <option value="category">Category</option>
+                                        <option value="amount_high">Highest Amount</option>
+                                        <option value="amount_low">Lowest Amount</option>
+                                    </select>
+                                </div>
+                                <span class="text-xs text-slate-400 hidden sm:inline">Showing: {{ filteredSortedVouchers.length }} records</span>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-100 dark:border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-400">
+                                        <th class="py-3 px-3">Date &amp; Voucher No.</th>
+                                        <th class="py-3 px-3">Payee</th>
+                                        <th class="py-3 px-3">Category &amp; Sub-Category</th>
+                                         <th class="py-3 px-3 text-right">Amount (RM)</th>
+                                         <th class="py-3 px-3 text-center">Status</th>
+                                         <th class="py-3 px-3">Assigned To</th>
+                                         <th class="py-3 px-3 text-center w-36">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
+                                    <tr v-for="pv in paginatedVouchers" :key="pv.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                        <td class="py-3 px-3">
+                                            <span class="font-bold text-slate-800 dark:text-slate-200 block">{{ pv.paymentDate }}</span>
+                                            <span class="inline-block mt-1 rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">Voucher</span>
+                                            <span class="text-slate-400 font-mono text-[10px] block">REF: {{ pv.voucherNo }}</span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <span class="font-bold text-brand-dark dark:text-white block">{{ pv.payeeName }}</span>
+                                            <span class="text-slate-400 text-[10px] block">{{ pv.payeeType }} · Requested by {{ pv.name }}</span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <span class="font-bold text-brand-blue dark:text-blue-400 block">{{ pv.category }}</span>
+                                            <span class="text-slate-500 dark:text-slate-300 block">{{ pv.subCategory }}</span>
+                                        </td>
+                                        <td class="py-3 px-3 text-right font-extrabold text-sm text-brand-dark dark:text-slate-100">
+                                            {{ formatCurrency(pv.amount) }}
+                                        </td>
+                                         <td class="py-3 px-3 text-center">
+                                            <span :class="{
+                                                'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300': pv.status && pv.status.startsWith('Pending'),
+                                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300': pv.status === 'Approved',
+                                                'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': pv.status === 'Rejected'
+                                            }" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase">{{ pv.status }}</span>
+                                            <p v-if="pv.approvedByName" class="mt-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">Approved by {{ pv.approvedByName }} ({{ pv.approvedByRole }})</p>
+                                            <p v-if="pv.approvedAt" class="text-[10px] text-slate-400">{{ formatDateTime(pv.approvedAt) }}</p>
+                                         </td>
+                                         <td class="py-3 px-3">
+                                             <span class="font-bold text-slate-700 dark:text-slate-200 block">{{ pv.assignedToName || '-' }}</span>
+                                             <span class="text-slate-400 text-[10px] block">{{ pv.assignedToRole || '-' }}</span>
+                                         </td>
+                                         <td class="py-2.5 px-3 text-center">
+                                             <div class="flex items-center justify-center gap-1">
+                                             <button type="button" @click="viewClaimRecord(pv)" class="h-8 w-8 rounded-lg bg-blue-50 text-brand-blue hover:bg-blue-100 transition" title="View Voucher Record">
+                                                 <i class="fa-solid fa-eye"></i>
+                                             </button>
+                                             <button v-if="canEditPaymentVoucher(pv)" type="button" @click="editPaymentVoucher(pv)" class="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition" title="Edit Voucher Record">
+                                                 <i class="fa-solid fa-pen"></i>
+                                             </button>
+                                             </div>
+                                         </td>
+                                    </tr>
+                                    <tr v-if="filteredSortedVouchers.length === 0">
+                                        <td colspan="7" class="py-8 text-center text-slate-400">No payment voucher records found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- PAGINATION CONTROLS UNTUK PAYMENT VOUCHERS -->
+                        <div v-if="vouchersTotalPages > 1" class="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-4 mt-4">
+                            <span class="text-xs font-semibold text-slate-400">
+                                Page {{ vouchersCurrentPage }} of {{ vouchersTotalPages }}
+                            </span>
+                            <div class="flex items-center space-x-1">
+                                <button type="button" @click="vouchersCurrentPage > 1 && vouchersCurrentPage--" :disabled="vouchersCurrentPage === 1" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <button v-for="page in vouchersTotalPages" :key="page" type="button" @click="vouchersCurrentPage = page" :class="vouchersCurrentPage === page ? 'bg-brand-dark text-white dark:bg-brand-gold dark:text-brand-dark font-extrabold shadow' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'" class="px-3 py-1 rounded-lg text-xs font-bold transition">
+                                    {{ page }}
+                                </button>
+                                <button type="button" @click="vouchersCurrentPage < vouchersTotalPages && vouchersCurrentPage++" :disabled="vouchersCurrentPage === vouchersTotalPages" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition">
                                     <i class="fa-solid fa-chevron-right"></i>
                                 </button>
                             </div>
@@ -918,6 +1102,13 @@
                                             <td class="py-3 px-4 font-bold">{{ c.category }} - {{ c.receiptNo }}</td>
                                             <td class="py-3 px-4 text-right font-extrabold">{{ formatCurrency(c.amount) }}</td>
                                             <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded font-bold uppercase" :class="{'bg-amber-100 text-amber-800': c.status==='Pending', 'bg-emerald-100 text-emerald-800': c.status==='Approved', 'bg-red-100 text-red-800': c.status==='Rejected'}">{{ c.status }}</span></td>
+                                        </tr>
+                                        <tr v-for="v in myPaymentVouchers" :key="v.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                            <td class="py-3 px-4">{{ v.paymentDate }}</td>
+                                            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded font-bold bg-amber-100 text-amber-800">Voucher</span></td>
+                                            <td class="py-3 px-4 font-bold">{{ v.category }} - {{ v.voucherNo }}</td>
+                                            <td class="py-3 px-4 text-right font-extrabold">{{ formatCurrency(v.amount) }}</td>
+                                            <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded font-bold uppercase" :class="{'bg-amber-100 text-amber-800': v.status && v.status.startsWith('Pending'), 'bg-emerald-100 text-emerald-800': v.status==='Approved', 'bg-red-100 text-red-800': v.status==='Rejected'}">{{ v.status }}</span></td>
                                         </tr>
                                         <tr v-for="p in myPayslips" :key="p.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                             <td class="py-3 px-4">{{ p.date }}</td>
@@ -1100,7 +1291,7 @@
                                 <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
                                     <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span><i class="fa-solid fa-receipt text-[10px] text-slate-300 dark:text-slate-500"></i></div>
                                     <h3 class="mt-2 text-lg font-black leading-none text-rose-600 dark:text-rose-400 truncate">{{ formatCurrency(totalApprovedClaimsAmount) }}</h3>
-                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Claims (Approved)</p>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Claims &amp; Vouchers (Approved)</p>
                                     <p class="mt-1 text-[9px] font-bold text-amber-500 truncate">{{ pendingClaimsCount }} Pending Approval</p>
                                 </div>
                             </div>
@@ -1174,7 +1365,7 @@
 
                         <!-- RECENT ACTIVITIES TABLE WITH SORT OPTIONS -->
                         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
-                            <div v-if="userProfile.role === 'Account' && financePendingClaims.length" class="mb-4 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200"><i class="fa-solid fa-bell text-base"></i><span><strong>Finance notification:</strong> {{ financePendingClaims.length }} claim(s) are pending Finance approval.</span></div>
+                            <div v-if="userProfile.role === 'Account' && financePendingClaims.length" class="mb-4 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200"><i class="fa-solid fa-bell text-base"></i><span><strong>Finance notification:</strong> {{ financePendingClaims.length }} claim(s) and/or payment voucher(s) are pending Finance approval.</span></div>
                             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                                 <h3 class="text-sm font-extrabold text-brand-dark dark:text-white">Recent Activities &amp; Document List</h3>
 
@@ -1998,7 +2189,7 @@
                 </div>
                 <div class="p-5 md:p-7 space-y-6 text-xs">
                     <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700">
-                        <div><p class="text-slate-400 font-bold uppercase tracking-wide">Receipt / Reference No.</p><p class="text-lg font-extrabold text-brand-dark dark:text-white mt-1">{{ claimPreview.claim.receiptNo }}</p><p class="text-slate-500 mt-1">Expense Date: {{ claimPreview.claim.expenseDate }}</p></div>
+                        <div><p class="text-slate-400 font-bold uppercase tracking-wide">{{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Voucher / Reference No.' : 'Receipt / Reference No.' }}</p><p class="text-lg font-extrabold text-brand-dark dark:text-white mt-1">{{ claimPreview.claim.documentType === 'Payment Voucher' ? claimPreview.claim.voucherNo : claimPreview.claim.receiptNo }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Payment Date' : 'Expense Date' }}: {{ claimPreview.claim.documentType === 'Payment Voucher' ? claimPreview.claim.paymentDate : claimPreview.claim.expenseDate }}</p></div>
                         <span :class="{
                             'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300': claimPreview.claim.status && claimPreview.claim.status.startsWith('Pending'),
                             'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300': claimPreview.claim.status === 'Approved',
@@ -2007,12 +2198,12 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-3"><i class="fa-solid fa-user mr-2 text-brand-blue"></i>Applicant</h4><p class="font-bold text-slate-800 dark:text-slate-100">{{ claimPreview.claim.name }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.empNo }} · {{ claimPreview.claim.dept || '-' }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.empEmail }}</p></section>
-                        <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-3"><i class="fa-solid fa-money-bill-wave mr-2 text-emerald-600"></i>Expense Details</h4><p class="font-bold text-slate-800 dark:text-slate-100">{{ claimPreview.claim.category }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.subCategory }}</p><p class="text-xl font-extrabold text-brand-dark dark:text-white mt-3">{{ formatCurrency(claimPreview.claim.amount) }}</p></section>
+                        <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-3"><i class="fa-solid fa-user mr-2 text-brand-blue"></i>{{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Requested By' : 'Applicant' }}</h4><p class="font-bold text-slate-800 dark:text-slate-100">{{ claimPreview.claim.name }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.empNo }} · {{ claimPreview.claim.dept || '-' }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.empEmail }}</p></section>
+                        <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-3"><i class="fa-solid fa-money-bill-wave mr-2 text-emerald-600"></i>{{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Payment Details' : 'Expense Details' }}</h4><p class="font-bold text-slate-800 dark:text-slate-100">{{ claimPreview.claim.category }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.subCategory }}</p><p class="text-xl font-extrabold text-brand-dark dark:text-white mt-3">{{ formatCurrency(claimPreview.claim.amount) }}</p></section>
                     </div>
 
                     <section v-if="claimPreview.claim.documentType === 'Payment Voucher'" class="bg-amber-50 p-5 rounded-xl border border-amber-200"><h4 class="font-extrabold text-brand-dark uppercase tracking-wide mb-3"><i class="fa-solid fa-money-check-dollar mr-2 text-brand-gold"></i>Payment Recipient</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><p><strong>Payee:</strong> {{ claimPreview.claim.payeeName }}</p><p><strong>Payee type:</strong> {{ claimPreview.claim.payeeType }}</p><p><strong>Reference:</strong> {{ claimPreview.claim.payeeReference || '-' }}</p><p><strong>Purpose:</strong> {{ claimPreview.claim.paymentPurpose }}</p></div></section>
-                    <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-2"><i class="fa-solid fa-align-left mr-2 text-brand-gold"></i>Expense Description</h4><p class="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{{ claimPreview.claim.description }}</p></section>
+                    <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-2"><i class="fa-solid fa-align-left mr-2 text-brand-gold"></i>{{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Payment Description' : 'Expense Description' }}</h4><p class="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{{ claimPreview.claim.description }}</p></section>
 
                     <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700">
                         <h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-4"><i class="fa-solid fa-route mr-2 text-brand-blue"></i>Approval Workflow</h4>
@@ -2043,13 +2234,13 @@
                         <p v-if="claimPreview.claim.rejectedByName" class="mt-4 text-red-600 dark:text-red-300 font-bold">Rejected by {{ claimPreview.claim.rejectedByName }} ({{ claimPreview.claim.rejectedByRole }}) on {{ formatDateTime(claimPreview.claim.rejectedAt) }}.</p>
                     </section>
 
-                    <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><div class="flex items-center justify-between gap-3"><div><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-paperclip mr-2 text-brand-gold"></i>Receipt Attachment</h4><p class="text-slate-400 mt-1">{{ claimPreview.claim.receiptAttachmentName || 'Attached receipt' }}</p></div><button v-if="claimPreview.claim.receiptAttachment" type="button" @click="openAttachment(claimPreview.claim.receiptAttachment, 'Receipt attachment')" class="bg-brand-dark hover:bg-brand-blue text-white px-3 py-2 rounded-lg font-bold text-xs"><i class="fa-solid fa-eye mr-1"></i>View Attachment</button></div><img v-if="isSupportedImageAttachment(claimPreview.claim.receiptAttachment)" :src="claimPreview.claim.receiptAttachment" alt="Claim receipt preview" class="mt-4 max-h-72 rounded-lg border border-slate-200 mx-auto"></section>
+                    <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><div class="flex items-center justify-between gap-3"><div><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-paperclip mr-2 text-brand-gold"></i>{{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Supporting Document' : 'Receipt Attachment' }}</h4><p class="text-slate-400 mt-1">{{ claimPreview.claim.receiptAttachmentName || 'Attached receipt' }}</p></div><button v-if="claimPreview.claim.receiptAttachment" type="button" @click="openAttachment(claimPreview.claim.receiptAttachment, 'Receipt attachment')" class="bg-brand-dark hover:bg-brand-blue text-white px-3 py-2 rounded-lg font-bold text-xs"><i class="fa-solid fa-eye mr-1"></i>View Attachment</button></div><img v-if="isSupportedImageAttachment(claimPreview.claim.receiptAttachment)" :src="claimPreview.claim.receiptAttachment" alt="Claim receipt preview" class="mt-4 max-h-72 rounded-lg border border-slate-200 mx-auto"></section>
                     <section v-if="claimPreview.claim.directorApprovalAttachment" class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><div class="flex items-center justify-between gap-3"><div><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-file-signature mr-2 text-brand-gold"></i>Director Approval Document</h4><p class="text-slate-400 mt-1">{{ claimPreview.claim.directorApprovalAttachmentName || 'Supporting document attached' }}</p></div><button type="button" @click="openAttachment(claimPreview.claim.directorApprovalAttachment, 'Director approval document')" class="bg-brand-dark hover:bg-brand-blue text-white px-3 py-2 rounded-lg font-bold text-xs"><i class="fa-solid fa-eye mr-1"></i>View Attachment</button></div><img v-if="isSupportedImageAttachment(claimPreview.claim.directorApprovalAttachment)" :src="claimPreview.claim.directorApprovalAttachment" alt="Director approval document preview" class="mt-4 max-h-72 rounded-lg border border-slate-200 mx-auto"></section>
-                    <div v-if="claimPreview.claim.status === 'Approved'" class="flex justify-end"><button type="button" @click="printApprovedClaim(claimPreview.claim)" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2.5 rounded-xl text-xs"><i class="fa-solid fa-print mr-1"></i>Print Approved {{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Voucher' : 'Claim' }} PDF</button></div>
-                    <section v-if="userProfile.role === 'Director' && canApproveClaim(claimPreview.claim)" class="bg-amber-50 dark:bg-amber-950/20 p-5 rounded-xl border border-amber-200 dark:border-amber-800"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-file-signature mr-2 text-brand-gold"></i>Director Approval Document <span class="text-red-500">*</span></h4><p class="text-slate-600 dark:text-slate-300 mt-1">A supporting document is required before final approval. PNG, JPG or JPEG only; maximum 2MB.</p><div class="flex flex-wrap items-center gap-2 mt-4"><label for="director-approval-attachment" :class="attachmentUploadState.director ? 'opacity-60 pointer-events-none' : ''" class="bg-brand-dark hover:bg-brand-blue text-white px-3 py-2 rounded-lg font-bold text-xs cursor-pointer"><i class="fa-solid fa-upload mr-1"></i>{{ attachmentUploadState.director ? 'Uploading...' : 'Select Document' }}<input id="director-approval-attachment" type="file" @change="handleDirectorApprovalAttachmentUpload" :disabled="attachmentUploadState.director" accept=".png,.jpeg,.jpg,image/png,image/jpeg" class="hidden"></label><span class="text-xs font-semibold text-slate-500 dark:text-slate-300">{{ claimPreview.directorApprovalAttachmentName || 'No document selected' }}</span><button v-if="claimPreview.directorApprovalAttachment" type="button" @click="openAttachment(claimPreview.directorApprovalAttachment, 'Director approval document')" class="text-brand-blue font-bold text-xs">View selected document</button></div></section>
-                    <div v-if="canApproveClaim(claimPreview.claim)" class="flex flex-col sm:flex-row justify-end gap-3 border-t border-slate-200 dark:border-slate-700 pt-5">
-                        <button type="button" @click="rejectClaim(claimPreview.claim); claimPreview.show = false" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-4 py-2.5 rounded-xl text-xs"><i class="fa-solid fa-xmark mr-1"></i>Reject Claim</button>
-                        <button type="button" @click="approveClaimFromPreview" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs"><i class="fa-solid fa-check mr-1"></i>{{ userProfile.role === 'Director' ? 'Final Approve' : 'Approve & Forward' }}</button>
+                    <div v-if="claimPreview.claim.status === 'Approved'" class="flex justify-end"><button type="button" @click="claimPreview.claim.documentType === 'Payment Voucher' ? printApprovedVoucher(claimPreview.claim) : printApprovedClaim(claimPreview.claim)" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2.5 rounded-xl text-xs"><i class="fa-solid fa-print mr-1"></i>Print Approved {{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Voucher' : 'Claim' }} PDF</button></div>
+                    <section v-if="userProfile.role === 'Director' && (claimPreview.claim.documentType === 'Payment Voucher' ? canApprovePaymentVoucher(claimPreview.claim) : canApproveClaim(claimPreview.claim))" class="bg-amber-50 dark:bg-amber-950/20 p-5 rounded-xl border border-amber-200 dark:border-amber-800"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-file-signature mr-2 text-brand-gold"></i>Director Approval Document <span class="text-red-500">*</span></h4><p class="text-slate-600 dark:text-slate-300 mt-1">A supporting document is required before final approval. PNG, JPG or JPEG only; maximum 2MB.</p><div class="flex flex-wrap items-center gap-2 mt-4"><label for="director-approval-attachment" :class="attachmentUploadState.director ? 'opacity-60 pointer-events-none' : ''" class="bg-brand-dark hover:bg-brand-blue text-white px-3 py-2 rounded-lg font-bold text-xs cursor-pointer"><i class="fa-solid fa-upload mr-1"></i>{{ attachmentUploadState.director ? 'Uploading...' : 'Select Document' }}<input id="director-approval-attachment" type="file" @change="handleDirectorApprovalAttachmentUpload" :disabled="attachmentUploadState.director" accept=".png,.jpeg,.jpg,image/png,image/jpeg" class="hidden"></label><span class="text-xs font-semibold text-slate-500 dark:text-slate-300">{{ claimPreview.directorApprovalAttachmentName || 'No document selected' }}</span><button v-if="claimPreview.directorApprovalAttachment" type="button" @click="openAttachment(claimPreview.directorApprovalAttachment, 'Director approval document')" class="text-brand-blue font-bold text-xs">View selected document</button></div></section>
+                    <div v-if="claimPreview.claim.documentType === 'Payment Voucher' ? canApprovePaymentVoucher(claimPreview.claim) : canApproveClaim(claimPreview.claim)" class="flex flex-col sm:flex-row justify-end gap-3 border-t border-slate-200 dark:border-slate-700 pt-5">
+                        <button type="button" @click="(claimPreview.claim.documentType === 'Payment Voucher' ? rejectPaymentVoucher(claimPreview.claim) : rejectClaim(claimPreview.claim)); claimPreview.show = false" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-4 py-2.5 rounded-xl text-xs"><i class="fa-solid fa-xmark mr-1"></i>Reject {{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Voucher' : 'Claim' }}</button>
+                        <button type="button" @click="claimPreview.claim.documentType === 'Payment Voucher' ? approvePaymentVoucherFromPreview() : approveClaimFromPreview()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs"><i class="fa-solid fa-check mr-1"></i>{{ userProfile.role === 'Director' ? 'Final Approve' : 'Approve & Forward' }}</button>
                     </div>
                 </div>
             </div>
@@ -2594,11 +2785,11 @@
         <div v-if="activePrintModule === 'CLAIM' && claimPrint" id="print-template-claim" class="print-only claim-print p-8 text-sm print-container">
             <div class="flex justify-between items-start print-header-border pb-4 mb-6">
                 <div class="claim-print-brand flex items-center space-x-4"><img src="./logo.png" onerror="this.style.display='none'" class="claim-print-logo"><div><h1 class="text-2xl font-extrabold text-brand-dark">ZENQOR TECHNOLOGIES</h1><p class="text-xs text-slate-600">Approved {{ claimPrint.documentType === 'Payment Voucher' ? 'Payment Voucher' : 'Expense Claim' }} Record</p></div></div>
-                <div class="text-right"><span class="inline-block bg-emerald-600 text-white font-extrabold px-3 py-1 rounded text-xs uppercase">Approved</span><p class="font-bold mt-2">{{ claimPrint.documentType === 'Payment Voucher' ? 'Voucher' : 'Receipt' }} Ref: {{ claimPrint.receiptNo }}</p><p class="text-xs text-slate-600">Printed: {{ formatDateTime(new Date().toISOString()) }}</p></div>
+                <div class="text-right"><span class="inline-block bg-emerald-600 text-white font-extrabold px-3 py-1 rounded text-xs uppercase">Approved</span><p class="font-bold mt-2">{{ claimPrint.documentType === 'Payment Voucher' ? 'Voucher' : 'Receipt' }} Ref: {{ claimPrint.documentType === 'Payment Voucher' ? claimPrint.voucherNo : claimPrint.receiptNo }}</p><p class="text-xs text-slate-600">Printed: {{ formatDateTime(new Date().toISOString()) }}</p></div>
             </div>
-            <div class="grid grid-cols-2 gap-5 border-b border-slate-200 pb-5 mb-5"><div><h3 class="font-bold text-brand-dark mb-2">Applicant</h3><p class="font-extrabold">{{ claimPrint.name }}</p><p>{{ claimPrint.empNo }} · {{ claimPrint.dept }}</p><p class="text-xs text-slate-600">{{ claimPrint.empEmail }}</p></div><div><h3 class="font-bold text-brand-dark mb-2">Expense Details</h3><p><strong>Category:</strong> {{ claimPrint.category }}</p><p><strong>Sub-category:</strong> {{ claimPrint.subCategory }}</p><p><strong>Expense date:</strong> {{ claimPrint.expenseDate }}</p><p class="text-lg font-extrabold mt-2">{{ formatCurrency(claimPrint.amount) }}</p></div></div>
+            <div class="grid grid-cols-2 gap-5 border-b border-slate-200 pb-5 mb-5"><div><h3 class="font-bold text-brand-dark mb-2">{{ claimPrint.documentType === 'Payment Voucher' ? 'Requested By' : 'Applicant' }}</h3><p class="font-extrabold">{{ claimPrint.name }}</p><p>{{ claimPrint.empNo }} · {{ claimPrint.dept }}</p><p class="text-xs text-slate-600">{{ claimPrint.empEmail }}</p></div><div><h3 class="font-bold text-brand-dark mb-2">{{ claimPrint.documentType === 'Payment Voucher' ? 'Payment Details' : 'Expense Details' }}</h3><p><strong>Category:</strong> {{ claimPrint.category }}</p><p><strong>Sub-category:</strong> {{ claimPrint.subCategory }}</p><p><strong>{{ claimPrint.documentType === 'Payment Voucher' ? 'Payment date' : 'Expense date' }}:</strong> {{ claimPrint.documentType === 'Payment Voucher' ? claimPrint.paymentDate : claimPrint.expenseDate }}</p><p class="text-lg font-extrabold mt-2">{{ formatCurrency(claimPrint.amount) }}</p></div></div>
             <div v-if="claimPrint.documentType === 'Payment Voucher'" class="border border-amber-300 bg-amber-50 rounded p-4 mb-5"><h3 class="font-bold text-brand-dark mb-2">Payment Recipient</h3><div class="grid grid-cols-2 gap-2"><p><strong>Payee:</strong> {{ claimPrint.payeeName }}</p><p><strong>Type:</strong> {{ claimPrint.payeeType }}</p><p><strong>Reference:</strong> {{ claimPrint.payeeReference || '-' }}</p><p><strong>Purpose:</strong> {{ claimPrint.paymentPurpose }}</p></div></div>
-            <div class="border border-slate-200 rounded p-4 mb-5"><h3 class="font-bold text-brand-dark mb-2">Expense Description</h3><p class="whitespace-pre-wrap">{{ claimPrint.description }}</p></div>
+            <div class="border border-slate-200 rounded p-4 mb-5"><h3 class="font-bold text-brand-dark mb-2">{{ claimPrint.documentType === 'Payment Voucher' ? 'Payment Description' : 'Expense Description' }}</h3><p class="whitespace-pre-wrap">{{ claimPrint.description }}</p></div>
             <div class="border border-slate-200 rounded p-4 mb-5"><h3 class="font-bold text-brand-dark mb-2">Approval Details</h3><p><strong>Approved by:</strong> {{ claimPrint.approvedByName }} ({{ claimPrint.approvedByRole }})</p><p><strong>Approval path:</strong> {{ claimPrint.approvalPath || 'Director Final Approval' }}</p><p v-if="claimPrint.bypassedReviews && claimPrint.bypassedReviews.length"><strong>Bypassed review:</strong> {{ claimPrint.bypassedReviews.join(', ') }}</p><p><strong>Approval date &amp; time:</strong> {{ formatDateTime(claimPrint.approvedAt) }}</p></div>
             <div class="grid grid-cols-2 gap-5"><div class="border border-slate-200 rounded p-4"><h3 class="font-bold text-brand-dark mb-2">Receipt Attachment</h3><p class="text-xs mb-2">{{ claimPrint.receiptAttachmentName || 'Attachment included' }}</p><img v-if="isSupportedImageAttachment(claimPrint.receiptAttachment)" :src="claimPrint.receiptAttachment" class="max-h-56 mx-auto border"><p v-else class="text-xs text-slate-500">No supported image attachment is available.</p></div><div class="border border-slate-200 rounded p-4"><h3 class="font-bold text-brand-dark mb-2">Director Approval Document</h3><p class="text-xs mb-2">{{ claimPrint.directorApprovalAttachmentName || 'Attachment included' }}</p><img v-if="isSupportedImageAttachment(claimPrint.directorApprovalAttachment)" :src="claimPrint.directorApprovalAttachment" class="max-h-56 mx-auto border"><p v-else class="text-xs text-slate-500">No supported image attachment is available.</p></div></div>
             <p class="mt-8 text-center text-xs text-slate-500">This is a computer-generated approved {{ claimPrint.documentType === 'Payment Voucher' ? 'payment voucher' : 'claim' }} record.</p>
