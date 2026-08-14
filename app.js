@@ -122,6 +122,7 @@ createApp({
             portalDataReadyPromise: null,
             revenueChartInstance: null,
             statusChartInstance: null,
+            claimsChartInstance: null,
             chartRenderTimer: null,
             chartRenderFrameOne: null,
             chartRenderFrameTwo: null,
@@ -1554,7 +1555,8 @@ createApp({
                         if (!this.isLoggedIn || !this.portalDataReady || this.currentTab !== 'dashboard') return;
                         const revenueCanvas = document.getElementById('revenueChart');
                         const statusCanvas = document.getElementById('statusChart');
-                        if (typeof Chart === 'undefined' || !revenueCanvas?.isConnected || !statusCanvas?.isConnected) {
+                        const claimsCanvas = document.getElementById('claimsChart');
+                        if (typeof Chart === 'undefined' || !revenueCanvas?.isConnected || !statusCanvas?.isConnected || !claimsCanvas?.isConnected) {
                             if (attempt < 150) this.chartRenderTimer = setTimeout(() => this.refreshDashboardCharts(attempt + 1), 200);
                             return;
                         }
@@ -1574,8 +1576,10 @@ createApp({
             this.chartRenderAttempts = 0;
             if (this.revenueChartInstance) { try { this.revenueChartInstance.destroy(); } catch (error) { console.warn('Revenue chart cleanup skipped:', error); } }
             if (this.statusChartInstance) { try { this.statusChartInstance.destroy(); } catch (error) { console.warn('Status chart cleanup skipped:', error); } }
+            if (this.claimsChartInstance) { try { this.claimsChartInstance.destroy(); } catch (error) { console.warn('Claims chart cleanup skipped:', error); } }
             this.revenueChartInstance = null;
             this.statusChartInstance = null;
+            this.claimsChartInstance = null;
         },
         requestLogout() {
             this.logoutConfirm = true;
@@ -2107,6 +2111,10 @@ createApp({
         canEditClaim(clm) {
             return (clm.createdByUid === this.userProfile.uid || clm.empEmail === this.userProfile.email) && clm.status === 'Pending HR';
         },
+        claimStageStamp(claim, role) {
+            if (!Array.isArray(claim?.approvalHistory)) return null;
+            return [...claim.approvalHistory].reverse().find(entry => entry.role === role) || null;
+        },
         async approveClaim(clm) {
             if (!this.canApproveClaim(clm)) { this.showNotify('You do not have permission to approve this record at its current workflow stage.'); return false; }
             if (this.attachmentUploadState.director) { this.showNotify('Wait for the Director approval document upload to finish.'); return false; }
@@ -2116,9 +2124,17 @@ createApp({
             if (isDirectorDecision && !this.claimPreview.directorApprovalAttachment) { alert('Director approval requires a supporting document attachment.'); return; }
             const bypassedReviews = clm.status === 'Pending HR' ? ['HR', 'Account'] : clm.status === 'Pending Account' ? ['Account'] : [];
             const isPaymentVoucher = (clm.documentType || clm.type) === 'Payment Voucher';
+            const nowIso = new Date().toISOString();
+            const existingHistory = Array.isArray(clm.approvalHistory) ? clm.approvalHistory : [];
+            const bypassEntries = bypassedReviews.map(role => ({ role, roleName: roleNames[role] || role, bypassed: true, note: 'Bypassed by Director direct approval', recordedAt: nowIso }));
+            const approvalHistory = [
+                ...existingHistory,
+                ...bypassEntries,
+                { role: this.userProfile.role, roleName: roleNames[this.userProfile.role] || this.userProfile.role, approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByEmail: this.userProfile.email, approvedAt: nowIso }
+            ];
             const update = nextRole
-                ? { status: `Pending ${nextRole}`, assignedToUid: '', assignedToName: roleNames[nextRole], assignedToEmail: '', assignedToRole: nextRole }
-                : { status: 'Approved', finalDecision: true, settlementStatus: isPaymentVoucher ? 'Paid' : 'Approved', statusDetail: isPaymentVoucher ? 'Payment fully paid' : 'Claim fully approved', approvalPath: 'Director Direct Approval', approvalPreviousStatus: clm.status, bypassedReviews, assignedToUid: this.userProfile.uid, assignedToName: this.userProfile.name, assignedToEmail: this.userProfile.email, assignedToRole: 'Director', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByEmail: this.userProfile.email, approvedByRole: 'Director', approvedAt: new Date().toISOString(), directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName, directorApprovalOriginalBytes: Number(this.claimPreview.directorApprovalOriginalBytes || 0) };
+                ? { status: `Pending ${nextRole}`, assignedToUid: '', assignedToName: roleNames[nextRole], assignedToEmail: '', assignedToRole: nextRole, approvalHistory }
+                : { status: 'Approved', finalDecision: true, settlementStatus: isPaymentVoucher ? 'Paid' : 'Approved', statusDetail: isPaymentVoucher ? 'Payment fully paid' : 'Claim fully approved', approvalPath: 'Director Direct Approval', approvalPreviousStatus: clm.status, bypassedReviews, assignedToUid: this.userProfile.uid, assignedToName: this.userProfile.name, assignedToEmail: this.userProfile.email, assignedToRole: 'Director', approvedByUid: this.userProfile.uid, approvedByName: this.userProfile.name, approvedByEmail: this.userProfile.email, approvedByRole: 'Director', approvedAt: nowIso, directorApprovalAttachment: this.claimPreview.directorApprovalAttachment, directorApprovalAttachmentName: this.claimPreview.directorApprovalAttachmentName, directorApprovalOriginalBytes: Number(this.claimPreview.directorApprovalOriginalBytes || 0), approvalHistory };
             try {
                 if (!nextRole && this.getSerializedSize({ ...clm, ...update }) > 800 * 1024) throw Object.assign(new Error('The combined claim record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
                 await updateDoc(doc(db, "claims", clm.id), update);
@@ -2277,18 +2293,22 @@ createApp({
             if (typeof Chart === 'undefined' || !this.portalDataReady || this.currentTab !== 'dashboard' || ['Staff', 'Client'].includes(this.userProfile.role)) return;
             const revCanvas = document.getElementById('revenueChart');
             const statusCanvas = document.getElementById('statusChart');
-            if (!revCanvas?.isConnected || !statusCanvas?.isConnected) { this.refreshDashboardCharts(this.chartRenderAttempts + 1); return; }
+            const claimsCanvas = document.getElementById('claimsChart');
+            if (!revCanvas?.isConnected || !statusCanvas?.isConnected || !claimsCanvas?.isConnected) { this.refreshDashboardCharts(this.chartRenderAttempts + 1); return; }
             const ctxRev = revCanvas.getContext('2d');
             const ctxStatus = statusCanvas.getContext('2d');
-            if (!ctxRev || !ctxStatus) return;
+            const ctxClaims = claimsCanvas.getContext('2d');
+            if (!ctxRev || !ctxStatus || !ctxClaims) return;
 
             try {
                 const gridColor = 'rgba(0,0,0,0.06)';
                 const textColor = '#475569';
                 const oldRevenueChart = Chart.getChart ? Chart.getChart(revCanvas) : this.revenueChartInstance;
                 const oldStatusChart = Chart.getChart ? Chart.getChart(statusCanvas) : this.statusChartInstance;
+                const oldClaimsChart = Chart.getChart ? Chart.getChart(claimsCanvas) : this.claimsChartInstance;
                 if (oldRevenueChart) oldRevenueChart.destroy();
                 if (oldStatusChart) oldStatusChart.destroy();
+                if (oldClaimsChart) oldClaimsChart.destroy();
 
                 const revData = this.getFilteredRevenueData();
                 const revenueChart = new Chart(ctxRev, {
@@ -2302,8 +2322,20 @@ createApp({
                     type: 'doughnut', data: { labels: hasStatusData ? ['Paid Invoices', 'Unpaid Invoices', 'Quotations'] : ['No document data yet'], datasets: [{ data: hasStatusData ? statusValues : [1], backgroundColor: hasStatusData ? ['#0F766E', '#E76F51', '#F4A261'] : ['#CBD5E1'], borderWidth: 2 }] },
                     options: { responsive: true, maintainAspectRatio: false, animation: { duration: 350 }, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
                 });
+
+                const claimsStageLabels = ['Pending HR', 'Pending Account', 'Pending Director', 'Approved', 'Rejected'];
+                const claimsStageColors = ['#F59E0B', '#3B82F6', '#8B5CF6', '#10B981', '#EF4444'];
+                const claimsStageCounts = claimsStageLabels.map(stage => this.claimsHistory.filter(c => c.status === stage).length);
+                const hasClaimsData = claimsStageCounts.some(value => value > 0);
+                const claimsChart = new Chart(ctxClaims, {
+                    type: 'bar',
+                    data: { labels: hasClaimsData ? claimsStageLabels : ['No claims data yet'], datasets: [{ label: 'Claims & Vouchers', data: hasClaimsData ? claimsStageCounts : [0], backgroundColor: hasClaimsData ? claimsStageColors : ['#CBD5E1'], borderRadius: 6, maxBarThickness: 48 }] },
+                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 350 }, scales: { x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } }, y: { beginAtZero: true, ticks: { color: textColor, precision: 0 }, grid: { color: gridColor } } }, plugins: { legend: { display: false } } }
+                });
+
                 this.revenueChartInstance = Vue.markRaw ? Vue.markRaw(revenueChart) : revenueChart;
                 this.statusChartInstance = Vue.markRaw ? Vue.markRaw(statusChart) : statusChart;
+                this.claimsChartInstance = Vue.markRaw ? Vue.markRaw(claimsChart) : claimsChart;
             } catch (error) {
                 console.error('Dashboard chart rendering failed:', error);
                 if (this.chartRenderAttempts < 150) this.chartRenderTimer = setTimeout(() => this.refreshDashboardCharts(this.chartRenderAttempts + 1), 200);
