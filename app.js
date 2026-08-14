@@ -347,6 +347,21 @@ createApp({
         latestChangelog() { return APP_CHANGELOG[0] || null; },
         appChangelog() { return APP_CHANGELOG; },
         priorityClients() { return this.customers.filter(c => c.clientTier === 'Priority'); },
+        claimsPipelineStats() {
+            const stages = [
+                { key: 'Pending HR', label: 'Pending HR', color: '#F59E0B' },
+                { key: 'Pending Account', label: 'Pending Account', color: '#3B82F6' },
+                { key: 'Pending Director', label: 'Pending Director', color: '#8B5CF6' },
+                { key: 'Approved', label: 'Approved', color: '#10B981' },
+                { key: 'Rejected', label: 'Rejected', color: '#EF4444' }
+            ];
+            const total = this.claimsHistory.length;
+            return stages.map(stage => {
+                const count = this.claimsHistory.filter(c => c.status === stage.key).length;
+                return { ...stage, count, pct: total ? Math.round((count / total) * 100) : 0 };
+            });
+        },
+        claimsPipelineTotal() { return this.claimsHistory.length; },
         currentYear() { return new Date().getFullYear(); },
         payslipYtdMultiplier() {
             const month = Number(String(this.payForm.month || '').split('-')[1]);
@@ -2323,49 +2338,29 @@ createApp({
                     options: { responsive: true, maintainAspectRatio: false, animation: { duration: 350 }, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
                 });
 
-                const claimsStageLabels = ['Pending HR', 'Pending Account', 'Pending Director', 'Approved', 'Rejected'];
-                const claimsStageColors = ['#F59E0B', '#3B82F6', '#8B5CF6', '#10B981', '#EF4444'];
-                const claimsStageCounts = claimsStageLabels.map(stage => this.claimsHistory.filter(c => c.status === stage).length);
-                const hasClaimsData = claimsStageCounts.some(value => value > 0);
-                const claimsMaxValue = Math.max(1, ...claimsStageCounts);
-                const claimsValueLabelPlugin = {
-                    id: 'claimsValueLabel',
-                    afterDatasetsDraw(chart) {
-                        if (!hasClaimsData) return;
-                        const { ctx, scales: { x } } = chart;
-                        const meta = chart.getDatasetMeta(0);
-                        ctx.save();
-                        ctx.font = '700 11px Inter, sans-serif';
-                        ctx.fillStyle = textColor;
-                        ctx.textBaseline = 'middle';
-                        meta.data.forEach((bar, i) => {
-                            const value = claimsStageCounts[i];
-                            ctx.textAlign = 'left';
-                            ctx.fillText(String(value), Math.min(bar.x + 8, x.right - 4), bar.y);
-                        });
-                        ctx.restore();
-                    }
-                };
+                const claimsStages = this.claimsPipelineStats;
+                const hasClaimsData = claimsStages.some(stage => stage.count > 0);
                 const claimsChart = new Chart(ctxClaims, {
                     type: 'bar',
                     data: {
-                        labels: hasClaimsData ? claimsStageLabels : ['No claims data yet'],
-                        datasets: [
-                            { label: 'Track', data: hasClaimsData ? claimsStageLabels.map(() => claimsMaxValue) : [1], backgroundColor: 'rgba(148, 163, 184, 0.12)', borderRadius: 8, barThickness: 20, order: 2, grouped: false },
-                            { label: 'Claims & Vouchers', data: hasClaimsData ? claimsStageCounts : [0], backgroundColor: hasClaimsData ? claimsStageColors : ['#CBD5E1'], borderRadius: 8, barThickness: 20, order: 1, grouped: false }
-                        ]
+                        labels: ['Pipeline'],
+                        datasets: hasClaimsData
+                            ? claimsStages.filter(stage => stage.count > 0).map(stage => ({ label: stage.label, data: [stage.count], backgroundColor: stage.color, stack: 'total', barThickness: 26, borderRadius: 5, borderSkipped: false, borderWidth: 2, borderColor: '#ffffff' }))
+                            : [{ label: 'No claims data yet', data: [1], backgroundColor: '#E2E8F0', stack: 'total', barThickness: 26, borderRadius: 5 }]
                     },
                     options: {
                         indexAxis: 'y',
                         responsive: true, maintainAspectRatio: false, animation: { duration: 350 },
-                        layout: { padding: { right: 24 } },
+                        layout: { padding: 0 },
                         scales: {
-                            x: { beginAtZero: true, max: claimsMaxValue, stacked: false, grid: { color: gridColor }, ticks: { color: textColor, precision: 0, display: false }, border: { display: false } },
-                            y: { grid: { display: false }, ticks: { color: textColor, font: { size: 11, weight: '700' } }, border: { display: false } }
+                            x: { display: false, stacked: true, grid: { display: false } },
+                            y: { display: false, stacked: true, grid: { display: false } }
                         },
-                        plugins: { legend: { display: false }, tooltip: { filter: item => item.datasetIndex === 1, callbacks: { label: item => ` ${item.raw} record(s)` } } }
-                    },
-                    plugins: [claimsValueLabelPlugin]
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: hasClaimsData, callbacks: { label: item => ` ${item.dataset.label}: ${item.raw} record(s)` } }
+                        }
+                    }
                 });
 
                 this.revenueChartInstance = Vue.markRaw ? Vue.markRaw(revenueChart) : revenueChart;
