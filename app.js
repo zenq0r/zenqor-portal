@@ -296,13 +296,11 @@ createApp({
         };
     },
     computed: {
-        canCreateEdit() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
         canManageSensitiveData() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
         canManageEmployees() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
         canManageClients() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
         canManageDocuments() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
         canManagePayroll() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
-        canEditDocs() { return this.canManageDocuments; },
         canDelete() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageRBAC() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageCompanySettings() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
@@ -348,10 +346,8 @@ createApp({
         activeEmployeesCount() { return this.employees.filter(e => e.status === 'Aktif').length; },
         totalPayrollNet() { return this.payslipHistory.reduce((s, p) => s + (Number(p.amount) || 0), 0); },
 
-        approvedClaimsCount() { return this.claimsHistory.filter(c => c.status === 'Approved').length; },
         pendingClaimsCount() { return this.claimsHistory.filter(c => c.status && c.status.includes('Pending')).length; },
         totalApprovedClaimsAmount() { return this.claimsHistory.filter(c => c.status === 'Approved').reduce((s, c) => s + (Number(c.amount) || 0), 0); },
-        totalPendingClaimsAmount() { return this.claimsHistory.filter(c => c.status && c.status.includes('Pending')).reduce((s, c) => s + (Number(c.amount) || 0), 0); },
         financePendingClaims() { return this.claimsHistory.filter(c => c.status === 'Pending Account'); },
 
         clientPortalDocs() {
@@ -1407,15 +1403,6 @@ createApp({
             const newLog = { id: String(Date.now()), timestamp: new Date().toLocaleString('en-US'), user: this.userProfile.email, action: action, details: details, browser: navigator.userAgent.substring(0, 80) };
             setDoc(doc(db, "audit_logs", newLog.id), newLog).catch(e => console.error(e));
         },
-        downloadPDFDirect(elementId, filename) {
-            const element = document.getElementById(elementId);
-            if (!element) { alert("Target element not found for PDF generation."); return; }
-            this.showNotify("Direct PDF generation in progress...");
-            const opt = { margin: 5, filename: filename + '.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: elementId === 'print-template-payslip' ? 'landscape' : 'portrait' } };
-            if (typeof html2pdf !== 'undefined') html2pdf().set(opt).from(element).save().then(() => this.showNotify("PDF file downloaded successfully!")).catch(err => window.print());
-            else window.print();
-        },
-
         async handleForgotPassword() {
             if (!this.loginForm.email) { alert("Please enter your official sign-in email address first."); return; }
             try {
@@ -1472,16 +1459,20 @@ createApp({
         },
 
         async handleLogout() {
+            this.logoutConfirm = false;
+            try { this.logAudit('LOGOUT', 'User logged out'); } catch (error) { console.error('Audit log failed during logout:', error); }
+            try { await this.setCurrentEmployeePresence(false); } catch (error) { console.error('Presence update failed during logout:', error); }
+            this.stopPresenceTracking();
             try {
-                this.logoutConfirm = false;
-                this.logAudit('LOGOUT', 'User logged out');
-                await this.setCurrentEmployeePresence(false);
-                this.stopPresenceTracking();
                 await signOut(auth);
+            } catch (error) {
+                console.error('Firebase sign-out failed:', error);
+                this.showNotify('Sign-out ran into an issue, but your local session has been cleared. Close this tab if you are on a shared device.');
+            } finally {
                 this.destroyDashboardCharts();
                 this.isLoggedIn = false; this.loginLoading = false; this.portalDataReady = false; this.portalDataReadyPromise = null; this.userProfile = { name: '', email: '', role: '', photo: '' };
                 this.resetAllForms(); this.currentTab = 'dashboard'; this.loginForm = { email: '', password: '' }; this.searchQuery = '';
-            } catch (error) { console.error("Logout error:", error); }
+            }
         },
 
         async handleChangePassword() {
@@ -1975,7 +1966,6 @@ createApp({
         },
         editClaimRecord(clm) { this.editingClaimId = clm.id; this.selectedClaimEmployeeId = clm.empNo || ''; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; window.scrollTo({ top:0, behavior:'smooth' }); },
         cancelEditClaim() { this.editingClaimId = null; this.resetClaimForm(); },
-        async deleteClaimRecord(claimId) { if (!this.canDelete) { this.showNotify('Only Superadmin and Director can delete claim records.'); return; } if (confirm("Delete this claim record?")) { try { await deleteDoc(doc(db, "claims", claimId)); this.showNotify("Claim deleted."); } catch (error) { console.error('Claim deletion failed:', error); this.showNotify('Unable to delete claim.'); } } },
 
         setPrintOrientation(orientation, margin) { const styleEl = document.getElementById('dynamic-print-orientation'); if (styleEl) styleEl.innerHTML = `@media print { @page { size: A4 ${orientation}; margin: ${margin} !important; } }`; },
         async printDocumentModule() { if (!this.clientSavedForDocument) return alert('Save Client information before previewing or printing this document.'); this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE'; this.setPrintOrientation('portrait', '15mm'); setTimeout(() => { window.print(); }, 250); },
@@ -2024,7 +2014,6 @@ createApp({
             relevantDocs.forEach(d => { if (d.docNo) { const num = parseInt(d.docNo.split('-').pop(), 10); if (!isNaN(num) && num > maxNum) maxNum = num; } });
             this.docForm.docNo = `${prefix}-${this.currentYear}-${String(maxNum + 1).padStart(5, '0')}`;
         },
-        cancelEditDoc() { this.editingDocId = null; this.generateDocNo(); },
 
         autoCalculatePayroll() {
             const rates = this.payForm.isSenior ? STATUTORY_RATES.senior : STATUTORY_RATES.regular;
@@ -2044,7 +2033,6 @@ createApp({
             let net = gross - deduct;
             this.payCalc = { gross, deduct, net, epfEmpr, socsoEmpr, eisEmpr };
         },
-        cancelEditPay() { this.editingPayId = null; },
         async viewRecord(item) {
             const previewItem = JSON.parse(JSON.stringify(item));
             if (!previewItem.isDoc && !previewItem.isPay) previewItem.isPay = previewItem.type === 'Payslip';
