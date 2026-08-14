@@ -90,6 +90,8 @@ createApp({
             desktopSidebarOpen: false,
             chartTimeFilter: 'monthly',
             sortOption: 'latest',
+            recentActivityFilter: 'all',
+            recentActivityAttentionOnly: false,
             searchQuery: '',
             currentPage: 1,
             itemsPerPage: 5,
@@ -452,6 +454,12 @@ createApp({
                 if (this.sortOption === 'amount_low') return (Number(a.amount) || 0) - (Number(b.amount) || 0);
                 return new Date(b.date) - new Date(a.date);
             });
+            if (this.recentActivityFilter !== 'all') {
+                list = list.filter(c => (c.documentType || c.type) === this.recentActivityFilter);
+            }
+            if (this.recentActivityAttentionOnly) {
+                list = list.filter(c => (c.type === 'Invoice' && c.status !== 'Paid') || (c.isClaim && String(c.status || '').startsWith('Pending')));
+            }
             if (this.searchQuery) {
                 const q = this.searchQuery.toLowerCase();
                 list = list.filter(c => (c.docNo && c.docNo.toLowerCase().includes(q)) || (c.name && c.name.toLowerCase().includes(q)) || (c.type && c.type.toLowerCase().includes(q)) || (c.raw && c.raw.clientSSM && c.raw.clientSSM.toLowerCase().includes(q)) || (c.raw && c.raw.ic && c.raw.ic.toLowerCase().includes(q)));
@@ -488,7 +496,11 @@ createApp({
         currentTab(nextTab, previousTab) {
             if (previousTab === 'dashboard' && nextTab !== 'dashboard') this.destroyDashboardCharts();
             if (nextTab === 'dashboard' && previousTab !== 'dashboard') this.refreshDashboardCharts();
-        }
+        },
+        recentActivityFilter() { this.currentPage = 1; },
+        recentActivityAttentionOnly() { this.currentPage = 1; },
+        sortOption() { this.currentPage = 1; },
+        searchQuery() { this.currentPage = 1; }
     },
     methods: {
         toOfficialUppercase(value) {
@@ -1013,7 +1025,7 @@ createApp({
         },
         normalizeClaimRecord(record) {
             const documentType = record.documentType || (record.type === 'Payment Voucher' || /^PV-/i.test(record.receiptNo || '') ? 'Payment Voucher' : 'Claim');
-            if (record.status !== 'Approved') return { ...record, documentType };
+            if (record.status !== 'Approved') return { ...record, documentType, type: documentType };
             const isPaymentVoucher = documentType === 'Payment Voucher';
             return {
                 ...record,

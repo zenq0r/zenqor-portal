@@ -1137,10 +1137,10 @@
                         <!-- RECENT ACTIVITIES TABLE WITH SORT OPTIONS -->
                         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
                             <div v-if="userProfile.role === 'Account' && financePendingClaims.length" class="mb-4 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200"><i class="fa-solid fa-bell text-base"></i><span><strong>Finance notification:</strong> {{ financePendingClaims.length }} claim(s) are pending Finance approval.</span></div>
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                                 <h3 class="text-sm font-extrabold text-brand-dark dark:text-white">Recent Activities &amp; Document List</h3>
-                                
-                                <div class="flex items-center space-x-3">
+
+                                <div class="flex flex-wrap items-center gap-3">
                                     <!-- DROPDOWN POKOK PILIHAN SORT -->
                                     <div class="flex items-center space-x-1.5">
                                         <label for="table-sort" class="text-xs font-semibold text-slate-400">Sort By:</label>
@@ -1154,6 +1154,18 @@
                                     </div>
                                     <span class="text-xs text-slate-400 hidden sm:inline">Showing: {{ filteredRecentActivities.length }} records</span>
                                 </div>
+                            </div>
+
+                            <div class="mb-4 flex flex-wrap items-center gap-2">
+                                <div class="flex flex-wrap items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 p-1 text-[11px] font-bold">
+                                    <button type="button" @click="recentActivityFilter = 'all'" :class="recentActivityFilter === 'all' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">All</button>
+                                    <button type="button" @click="recentActivityFilter = 'Invoice'" :class="recentActivityFilter === 'Invoice' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">Invoices</button>
+                                    <button type="button" @click="recentActivityFilter = 'Quotation'" :class="recentActivityFilter === 'Quotation' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">Quotations</button>
+                                    <button type="button" @click="recentActivityFilter = 'Payslip'" :class="recentActivityFilter === 'Payslip' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">Payslips</button>
+                                    <button type="button" @click="recentActivityFilter = 'Claim'" :class="recentActivityFilter === 'Claim' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">Claims</button>
+                                    <button type="button" @click="recentActivityFilter = 'Payment Voucher'" :class="recentActivityFilter === 'Payment Voucher' ? 'bg-brand-dark text-white shadow' : 'text-slate-600 dark:text-slate-300'" class="px-2.5 py-1.5 rounded-lg transition">Vouchers</button>
+                                </div>
+                                <button type="button" @click="recentActivityAttentionOnly = !recentActivityAttentionOnly" :class="recentActivityAttentionOnly ? 'bg-amber-500 text-white border-amber-500' : 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'" class="rounded-xl border px-3 py-1.5 text-[11px] font-bold transition flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i>Needs Attention Only</button>
                             </div>
 
                             <div class="overflow-x-auto">
@@ -1188,7 +1200,11 @@
                                             </td>
                                         </tr>
                                         <tr v-if="filteredRecentActivities.length === 0">
-                                            <td colspan="7" class="py-8 text-center text-slate-400">No records found.</td>
+                                            <td colspan="7" class="py-10 text-center text-slate-400">
+                                                <i class="fa-regular fa-folder-open text-xl text-slate-300"></i>
+                                                <p class="mt-2 text-xs font-bold">{{ (recentActivityFilter !== 'all' || recentActivityAttentionOnly || searchQuery) ? 'No records match your current filter.' : 'No records found.' }}</p>
+                                                <button v-if="recentActivityFilter !== 'all' || recentActivityAttentionOnly" type="button" @click="recentActivityFilter = 'all'; recentActivityAttentionOnly = false" class="mt-2 text-[10px] font-bold text-brand-blue hover:underline">Clear filters</button>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
