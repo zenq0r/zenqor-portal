@@ -982,11 +982,27 @@
                                 <div><h3 class="text-sm font-extrabold text-brand-dark">Project Progress</h3><p class="mt-1 text-[10px] text-slate-500">Live workflow status for projects assigned to your Client Portal account.</p></div>
                                 <button type="button" @click="switchTab('project-activities')" class="rounded-lg bg-brand-dark px-3 py-2 text-[10px] font-bold text-white hover:bg-brand-blue">View All Projects <i class="fa-solid fa-arrow-right ml-1"></i></button>
                             </div>
-                            <div class="project-summary-grid">
-                                <button v-for="(stage, stageIndex) in projectStages" :key="`client-dashboard-${stage}`" type="button" @click="switchTab('project-activities')" class="project-summary-card rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
-                                    <div class="flex items-center justify-between gap-3"><span :class="['bg-blue-500','bg-amber-500','bg-orange-500','bg-violet-500','bg-emerald-500'][stageIndex]" class="h-2.5 w-2.5 rounded-full"></span><span class="text-2xl font-black leading-none text-brand-dark">{{ getProjectsByStage(stage).length }}</span></div>
-                                    <p class="mt-3 text-[10px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">{{ stage }}</p><p class="mt-2 text-[9px] font-bold uppercase tracking-widest text-slate-300">Step {{ stageIndex + 1 }} of 5</p>
+                            <div class="space-y-3">
+                                <button v-for="project in projects.slice(0, 3)" :key="`client-dashboard-track-${project.id}`" type="button" @click="openProjectDetails(project)" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <span class="rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold text-brand-blue border border-blue-100">{{ project.projectRef }}</span>
+                                            <p class="mt-1 truncate text-xs font-extrabold text-brand-dark">{{ project.title }}</p>
+                                        </div>
+                                        <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-extrabold uppercase text-slate-600">{{ project.status }}</span>
+                                    </div>
+                                    <div class="mt-3 flex items-center gap-1">
+                                        <template v-for="(stage, stageIndex) in projectStages" :key="stage">
+                                            <span class="h-1.5 flex-1 rounded-full" :class="stageIndex <= projectStages.indexOf(project.status) ? ['bg-blue-500','bg-amber-500','bg-orange-500','bg-violet-500','bg-emerald-500'][projectStages.indexOf(project.status)] : 'bg-slate-100'"></span>
+                                        </template>
+                                    </div>
+                                    <p class="mt-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-300">Step {{ projectStages.indexOf(project.status) + 1 }} of {{ projectStages.length }}</p>
                                 </button>
+                                <p v-if="projects.length > 3" class="text-center text-[10px] font-bold text-slate-400">+{{ projects.length - 3 }} more project(s) — view all for full tracker</p>
+                                <div v-if="!projects.length" class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                                    <i class="fa-regular fa-folder-open text-xl text-slate-300"></i>
+                                    <p class="mt-2 text-[10px] font-bold text-slate-400">No project has been assigned to your account yet.</p>
+                                </div>
                             </div>
                         </section>
 
