@@ -146,6 +146,7 @@ createApp({
             editingReplyId: '',
             editingReplyMessage: '',
             projectViewMode: 'board',
+            expandedClientGroups: new Set(),
             projectPreview: { show: false, project: null },
             projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
             projectModal: {
@@ -469,6 +470,26 @@ createApp({
         },
         getProjectsByStage(stage) {
             return this.filteredProjects.filter(project => project.status === stage);
+        },
+        getClientGroupsByStage(stage) {
+            const groups = [];
+            const indexByKey = new Map();
+            this.getProjectsByStage(stage).forEach(project => {
+                const key = project.clientDirectoryId || `unlinked-${project.clientName || 'unknown'}`;
+                if (!indexByKey.has(key)) {
+                    indexByKey.set(key, groups.length);
+                    groups.push({ key, clientDirectoryId: project.clientDirectoryId || '', clientName: project.clientName || 'Unknown Client', projects: [] });
+                }
+                groups[indexByKey.get(key)].projects.push(project);
+            });
+            return groups;
+        },
+        toggleClientGroup(groupKey) {
+            if (this.expandedClientGroups.has(groupKey)) this.expandedClientGroups.delete(groupKey);
+            else this.expandedClientGroups.add(groupKey);
+        },
+        isClientGroupExpanded(groupKey) {
+            return this.expandedClientGroups.has(groupKey);
         },
         openProjectDetails(project) {
             this.projectPreview = { show: true, project: JSON.parse(JSON.stringify(project)) };
