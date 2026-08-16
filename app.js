@@ -22,6 +22,9 @@ import {
     updatePassword,
     EmailAuthProvider,
     reauthenticateWithCredential,
+    sendPasswordResetEmail,
+    verifyPasswordResetCode,
+    confirmPasswordReset,
     storageRef,
     uploadBytes,
     getDownloadURL,
@@ -77,6 +80,7 @@ createApp({
             loginLoading: false,
             logoutConfirm: false,
             postLogoutChoice: false,
+            passwordResetFlow: { active: false, oobCode: '', email: '', verifying: true, valid: false, error: '', newPassword: '', confirmPassword: '', loading: false, success: false },
             browserBackHandler: null,
             appUpdateCheckInterval: null,
             appVisibilityHandler: null,
@@ -2035,18 +2039,63 @@ createApp({
         async handleForgotPassword() {
             if (!this.loginForm.email) { alert("Please enter your official sign-in email address first."); return; }
             try {
-                const { sendPasswordResetEmail } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-                await sendPasswordResetEmail(auth, this.loginForm.email);
+                await sendPasswordResetEmail(auth, this.loginForm.email, { url: window.location.origin + '/' });
                 this.showNotify(`Password reset link sent to: ${this.loginForm.email}`);
             } catch (error) {
                 console.error('Password reset failed:', error?.code, error?.message);
                 const code = String(error?.code || '');
                 if (code.includes('too-many-requests')) alert("Too many reset attempts in a short time. Please wait a while before trying again.");
                 else if (code.includes('invalid-email')) alert("That email address is not a valid format.");
-                else if (code.includes('unauthorized-domain')) alert("This domain is not authorized to send reset emails. Contact your system administrator.");
+                else if (code.includes('unauthorized-domain') || code.includes('unauthorized-continue-uri')) alert("This domain is not authorized to send reset emails. Contact your system administrator.");
                 else if (code.includes('user-not-found')) this.showNotify(`If ${this.loginForm.email} has an account, a reset link has been sent.`);
                 else alert(`Failed to send password reset email (${code || 'unknown error'}). Please try again shortly.`);
             }
+        },
+        async checkPasswordResetLink() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('mode') !== 'resetPassword' || !params.get('oobCode')) return;
+            this.passwordResetFlow.active = true;
+            this.passwordResetFlow.oobCode = params.get('oobCode');
+            window.history.replaceState({}, '', window.location.pathname);
+            try {
+                const email = await verifyPasswordResetCode(auth, this.passwordResetFlow.oobCode);
+                this.passwordResetFlow.email = email;
+                this.passwordResetFlow.valid = true;
+            } catch (error) {
+                console.error('Password reset link verification failed:', error?.code, error?.message);
+                this.passwordResetFlow.valid = false;
+                const code = String(error?.code || '');
+                this.passwordResetFlow.error = code.includes('expired')
+                    ? 'This reset link has expired. Please request a new one.'
+                    : code.includes('invalid-action-code')
+                    ? 'This reset link has already been used or is invalid. Please request a new one.'
+                    : 'Unable to verify this reset link. Please request a new one.';
+            } finally {
+                this.passwordResetFlow.verifying = false;
+            }
+        },
+        async submitPasswordReset() {
+            this.passwordResetFlow.error = '';
+            if (this.passwordResetFlow.newPassword.length < 8) { this.passwordResetFlow.error = 'New password must be at least 8 characters long.'; return; }
+            if (this.passwordResetFlow.newPassword !== this.passwordResetFlow.confirmPassword) { this.passwordResetFlow.error = 'Passwords do not match.'; return; }
+            this.passwordResetFlow.loading = true;
+            try {
+                await confirmPasswordReset(auth, this.passwordResetFlow.oobCode, this.passwordResetFlow.newPassword);
+                this.passwordResetFlow.success = true;
+            } catch (error) {
+                console.error('Password reset confirmation failed:', error?.code, error?.message);
+                const code = String(error?.code || '');
+                this.passwordResetFlow.error = (code.includes('expired') || code.includes('invalid-action-code'))
+                    ? 'This reset link has expired or already been used. Please request a new one.'
+                    : code.includes('weak-password')
+                    ? 'Please choose a stronger password.'
+                    : 'Unable to reset your password. Please try again.';
+            } finally {
+                this.passwordResetFlow.loading = false;
+            }
+        },
+        exitPasswordResetFlow() {
+            this.passwordResetFlow = { active: false, oobCode: '', email: '', verifying: true, valid: false, error: '', newPassword: '', confirmPassword: '', loading: false, success: false };
         },
 
         async handleLogin() {
@@ -3151,6 +3200,7 @@ createApp({
         }
     },
     mounted() {
+        this.checkPasswordResetLink();
         this.autoCalculatePayroll();
         this.generateDocNo();
         window.history.replaceState({ zenqorPortal: true }, '', window.location.href);
