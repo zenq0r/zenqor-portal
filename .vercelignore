@@ -1,0 +1,8 @@
+# Never ship these to the live static deployment.
+*-key.json
+*serviceAccount*.json
+*service-account*.json
+.env
+.env.local
+.gitignore
+.vercelignore

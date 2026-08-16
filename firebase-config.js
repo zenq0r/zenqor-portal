@@ -34,13 +34,13 @@ const getEnvValue = (key, fallback) => {
 };
 
 const firebaseConfig = {
-    apiKey: getEnvValue('FIREBASE_API_KEY', "AIzaSyCJyjvlm8jG-mT_1mDYsyF562L6XuskFxU"),
-    authDomain: getEnvValue('FIREBASE_AUTH_DOMAIN', "zenqor-web.firebaseapp.com"),
-    projectId: getEnvValue('FIREBASE_PROJECT_ID', "zenqor-web"),
-    storageBucket: getEnvValue('FIREBASE_STORAGE_BUCKET', "zenqor-web.firebasestorage.app"),
-    messagingSenderId: getEnvValue('FIREBASE_MESSAGING_ID', "785478368719"),
-    appId: getEnvValue('FIREBASE_APP_ID', "1:785478368719:web:c20d5c3ecc891c692566ba"),
-    measurementId: getEnvValue('FIREBASE_MEASUREMENT_ID', "G-NLFPW2ECR9")
+    apiKey: getEnvValue('FIREBASE_API_KEY', "AIzaSyDgoE8ckbVWqc1j6bHq1u1685_xJp0y09Y"),
+    authDomain: getEnvValue('FIREBASE_AUTH_DOMAIN', "zenqor-portal-a3b2d.firebaseapp.com"),
+    projectId: getEnvValue('FIREBASE_PROJECT_ID', "zenqor-portal-a3b2d"),
+    storageBucket: getEnvValue('FIREBASE_STORAGE_BUCKET', "zenqor-portal-a3b2d.firebasestorage.app"),
+    messagingSenderId: getEnvValue('FIREBASE_MESSAGING_ID', "1065187936514"),
+    appId: getEnvValue('FIREBASE_APP_ID', "1:1065187936514:web:d05089d6668c58bf3e9a1b"),
+    measurementId: getEnvValue('FIREBASE_MEASUREMENT_ID', "")
 };
 
 const app = initializeApp(firebaseConfig);

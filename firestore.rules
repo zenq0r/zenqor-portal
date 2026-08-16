@@ -440,5 +440,60 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update, delete: if false;
     }
+
+    // ============================================================
+    // ZENQOR-TECH (public corporate website) — shares this SAME Firebase
+    // project (zenqor-portal-a3b2d) as of the Firebase connection work.
+    // zenqor-tech has NO login/registration of its own (removed — visitors
+    // needing authenticated access are directed to zenqor-portal via the
+    // "Portal" button). isAdmin() below (Superadmin/Director) is kept only
+    // so zenqor-portal staff can manage the marketing site's public content
+    // (portfolio, services, messages) directly via Firebase Console
+    // — see zenqor-tech/firebase-config.js.
+    // ============================================================
+
+    // Public content collections — explicit list (not a wildcard) so a
+    // future collection never becomes accidentally public-readable just
+    // because its name matches a generic pattern.
+    match /portfolio_web/{document=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+    match /portfolio_gaming/{document=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+    match /services/{document=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+    match /navigation/{document=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+    match /config/{document=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+    match /content/{document=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+    match /testimonials/{document=**} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+
+    // Public CREATE-only submissions — visitors can send, only admins read.
+    match /contact_messages/{document=**} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Pageview analytics — anyone can log a visit, only admins read the log.
+    match /analytics_events/{document=**} {
+      allow create: if true;
+      allow read: if isAdmin();
+    }
   }
 }

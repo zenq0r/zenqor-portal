@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk 'NR==761' \"C:\\\\Users\\\\zenqo\\\\Documents\\\\Codex\\\\2026-08-08\\\\se\\\\zenqor-portal\\\\index.html\")",
+      "Bash(awk 'NR==755,NR==765' \"C:\\\\Users\\\\zenqo\\\\Documents\\\\Codex\\\\2026-08-08\\\\se\\\\zenqor-portal\\\\index.html\")",
+      "PowerShell(node --version)",
+      "PowerShell(node --check \"C:\\\\Users\\\\zenqo\\\\Documents\\\\Codex\\\\2026-08-08\\\\se\\\\zenqor-portal\\\\app.js\")",
+      "Bash(where npx *)",
+      "Bash(where node *)",
+      "Bash(python3 -c \"print\\('test'\\)\")",
+      "Bash(awk 'BEGIN{o=0;c=0} {o+=gsub\\(/\\\\{/,\"{\"\\); c+=gsub\\(/\\\\}/,\"}\"\\)} END{print \"open:\",o,\" close:\",c}' app.js)",
+      "Bash(awk 'BEGIN{o=0;c=0} {o+=gsub\\(/\\\\\\(/,\"\\(\"\\); c+=gsub\\(/\\\\\\)/,\"\\)\"\\)} END{print \"open:\",o,\" close:\",c}' app.js)",
+      "Bash(awk 'BEGIN{o=0;c=0} {o+=gsub\\(/\\\\{/,\"{\"\\); c+=gsub\\(/\\\\}/,\"}\"\\)} END{print \"app.js braces open:\",o,\" close:\",c}' app.js)",
+      "Bash(awk 'BEGIN{o=0;c=0} {o+=gsub\\(/\\\\{/,\"{\"\\); c+=gsub\\(/\\\\}/,\"}\"\\)} END{print \"braces open:\",o,\" close:\",c}' app.js)",
+      "Bash(awk 'BEGIN{o=0;c=0} {o+=gsub\\(/\\\\\\(/,\"\\(\"\\); c+=gsub\\(/\\\\\\)/,\"\\)\"\\)} END{print \"parens open:\",o,\" close:\",c}' app.js)",
+      "Bash(awk 'BEGIN{o=0;c=0} {o+=gsub\\(/\\\\{/,\"{\"\\); c+=gsub\\(/\\\\}/,\"}\"\\)} END{print \"braces open:\",o,\" close:\",c}' index.html)",
+      "Bash(awk 'BEGIN{o=0;c=0} {o+=gsub\\(/\\\\\\(/,\"\\(\"\\); c+=gsub\\(/\\\\\\)/,\"\\)\"\\)} END{print \"parens open:\",o,\" close:\",c}' index.html)",
+      "Bash(cd \"C:\\\\Users\\\\zenqo\\\\Documents\\\\Codex\\\\2026-08-08\\\\se\\\\zenqor-portal\" && grep -oE 'v-if=\"[^\"]*\"' index.html | grep -oE '[a-zA-Z_][a-zA-Z0-9_]*\\\\\\(' | sed 's/\\($//' | sort -u > /tmp/vif_funcs.txt *)",
+      "Bash(sed -i '482s/<option v-for=\"emp in employees\" :value=\"emp.empNo\">/<option v-for=\"emp in employees\" :key=\"`payslip-emp-${emp.empNo}`\" :value=\"emp.empNo\">/' index.html)",
+      "Bash(sed -i '582s/<option v-for=\"emp in employees\" :value=\"emp.empNo\">/<option v-for=\"emp in employees\" :key=\"`claim-emp-${emp.empNo}`\" :value=\"emp.empNo\">/' index.html)"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "ZENQOR HRMS/CDTS - Unified HR & Client Management System",
+  "short_name": "ZENQOR HRMS/CDTS",
+  "description": "Malaysia's first unified Human Resources Management System and Client Documents Tracking System, built on a single shared platform.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

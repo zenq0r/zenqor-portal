@@ -7,7 +7,12 @@
     
     <!-- FAVICON RASMI PORTAL -->
     <link rel="icon" type="image/png" href="./logo.png">
-    
+
+    <!-- PWA INSTALLABILITY -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="apple-touch-icon" href="./logo.png">
+
     <!-- GOOGLE FONTS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,7 +47,7 @@
     <link rel="stylesheet" href="./custom.css">
     <style id="dynamic-print-orientation"></style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased selection:bg-brand-gold selection:text-brand-dark transition-colors duration-200">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 antialiased selection:bg-brand-gold selection:text-brand-dark transition-colors duration-200">
     <div id="app" v-cloak class="min-h-screen flex flex-col">
 
         <!-- NOTIFICATION BAR -->
@@ -83,12 +88,12 @@
 
         <!-- IDLE TIMEOUT WARNING -->
         <div v-if="isLoggedIn && idleWarningVisible" class="fixed inset-0 z-[93] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 no-print">
-            <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
-                <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-600"><i class="fa-solid fa-hourglass-half"></i></div>
-                <h3 class="text-base font-extrabold text-brand-dark">Still there?</h3>
-                <p class="mt-2 text-xs leading-relaxed text-slate-500">You've been inactive for a while. For your security, this session will sign out automatically in about 1 minute unless you stay active.</p>
+            <div class="w-full max-w-sm rounded-xl bg-white dark:bg-slate-800 p-6 shadow-2xl">
+                <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300"><i class="fa-solid fa-hourglass-half"></i></div>
+                <h3 class="text-base font-extrabold text-brand-dark dark:text-white">Still there?</h3>
+                <p class="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">You've been inactive for a while. For your security, this session will sign out automatically in about 1 minute unless you stay active.</p>
                 <div class="mt-6 flex justify-end gap-2">
-                    <button type="button" @click="handleLogout" class="rounded-lg bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200">Sign Out Now</button>
+                    <button type="button" @click="handleLogout" class="rounded-lg bg-slate-100 dark:bg-slate-700 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600">Sign Out Now</button>
                     <button type="button" @click="staySignedIn" class="rounded-lg bg-brand-dark px-4 py-2 text-xs font-bold text-white hover:bg-brand-blue">I'm Still Here</button>
                 </div>
             </div>
@@ -96,34 +101,47 @@
 
         <!-- LOGOUT CONFIRMATION -->
         <div v-if="logoutConfirm" class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 no-print" @click.self="logoutConfirm = false">
-            <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
-                <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-50 text-red-600"><i class="fa-solid fa-right-from-bracket"></i></div>
-                <h3 class="text-base font-extrabold text-brand-dark">Sign out from the portal?</h3>
-                <p class="mt-2 text-xs leading-relaxed text-slate-500">Are you sure you want to end this session? Any unsaved changes may be lost.</p>
+            <div class="w-full max-w-sm rounded-xl bg-white dark:bg-slate-800 p-6 shadow-2xl">
+                <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-300"><i class="fa-solid fa-right-from-bracket"></i></div>
+                <h3 class="text-base font-extrabold text-brand-dark dark:text-white">Sign out from the portal?</h3>
+                <p class="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Are you sure you want to end this session? Any unsaved changes may be lost.</p>
                 <div class="mt-6 flex justify-end gap-2">
-                    <button type="button" @click="logoutConfirm = false" class="rounded-lg bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200">No</button>
+                    <button type="button" @click="logoutConfirm = false" class="rounded-lg bg-slate-100 dark:bg-slate-700 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600">No</button>
                     <button type="button" @click="handleLogout" class="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700">Yes, Sign Out</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- POST-LOGOUT DESTINATION CHOICE -->
+        <div v-if="postLogoutChoice" class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 no-print" @click.self="stayOnPortal">
+            <div class="w-full max-w-sm rounded-xl bg-white dark:bg-slate-800 p-6 shadow-2xl">
+                <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950/40 text-brand-blue dark:text-blue-300"><i class="fa-solid fa-circle-check"></i></div>
+                <h3 class="text-base font-extrabold text-brand-dark dark:text-white">You have been signed out</h3>
+                <p class="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Do you want to stay here to sign back in to the Portal, or return to the main Zenqor Technologies website?</p>
+                <div class="mt-6 flex flex-col gap-2">
+                    <button type="button" @click="stayOnPortal" class="w-full rounded-lg bg-brand-blue px-4 py-2 text-xs font-bold text-white hover:bg-blue-700">Stay on Portal</button>
+                    <button type="button" @click="goToMainSite" class="w-full rounded-lg bg-slate-100 dark:bg-slate-700 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600">Back to Main Website</button>
                 </div>
             </div>
         </div>
 
         <!-- ONBOARDING / WHAT'S NEW (version-driven, tracked per user in Firestore) -->
         <div v-if="isLoggedIn && showOnboarding" class="fixed inset-0 z-[92] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 no-print" @click.self="dismissOnboarding">
-            <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+            <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 shadow-2xl overflow-hidden">
                 <div class="bg-brand-dark px-6 py-5 text-white">
                     <p class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand-gold">{{ onboardingMode === 'whatsnew' ? `Updated · v${latestChangelog?.version}` : 'Welcome' }}</p>
                     <h3 class="mt-1 text-lg font-extrabold">{{ onboardingMode === 'whatsnew' ? (latestChangelog?.title || "What's New") : `Hi ${userProfile.name}, glad to have you here!` }}</h3>
                 </div>
                 <div class="p-6">
                     <template v-if="onboardingMode === 'whatsnew'">
-                        <p class="text-xs text-slate-500 mb-4">This portal was just updated. Here's what's new since your last visit:</p>
-                        <ul class="space-y-3 text-xs text-slate-700">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">This portal was just updated. Here's what's new since your last visit:</p>
+                        <ul class="space-y-3 text-xs text-slate-700 dark:text-slate-200">
                             <li v-for="(note, idx) in (latestChangelog?.notes || [])" :key="idx" class="flex items-start gap-2.5"><i class="fa-solid fa-sparkles mt-0.5 w-4 text-brand-gold"></i><span>{{ note }}</span></li>
                         </ul>
                     </template>
                     <template v-else>
-                        <p class="text-xs text-slate-500 mb-4">{{ userProfile.role === 'Client' ? 'Here\'s a quick look at your Client Portal:' : 'Here\'s a quick look at what you can do:' }}</p>
-                        <ul class="space-y-3 text-xs text-slate-700">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">{{ userProfile.role === 'Client' ? 'Here\'s a quick look at your Client Portal:' : 'Here\'s a quick look at what you can do:' }}</p>
+                        <ul class="space-y-3 text-xs text-slate-700 dark:text-slate-200">
                             <template v-if="userProfile.role === 'Client'">
                                 <li class="flex items-start gap-2.5"><i class="fa-solid fa-diagram-project mt-0.5 w-4 text-brand-blue"></i><span>Track your project progress and workflow stage in real time under <b>Project Activities</b>.</span></li>
                                 <li class="flex items-start gap-2.5"><i class="fa-solid fa-comments mt-0.5 w-4 text-brand-blue"></i><span>Reply directly to your project team in <b>Client Activity History</b> — it's a two-way conversation now.</span></li>
@@ -142,23 +160,63 @@
         </div>
 
         <!-- LOGIN SYSTEM & RBAC GUARD -->
-        <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center bg-brand-dark px-4 py-8">
-            <div class="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-100 dark:border-slate-700">
-                
+        <div v-if="!isLoggedIn" class="relative min-h-screen flex items-center justify-center bg-brand-dark px-4 py-8 overflow-hidden">
+
+            <!-- WORDMARK WATERMARK — proprietary in-house system, not a rented/subscribed SaaS -->
+            <div class="pointer-events-none select-none absolute inset-0 flex items-center justify-center opacity-[0.06]">
+                <img src="./logo.png" alt="" class="w-full max-w-3xl object-contain" style="filter: invert(1);">
+            </div>
+
+            <!-- LANDING PAGE: choose Company Staff or Client Portal -->
+            <div v-if="authView === 'landing'" class="relative z-10 max-w-3xl w-full">
+                <div class="text-center mb-10">
+                    <div class="inline-flex items-center justify-center p-3 bg-white rounded-2xl mb-4 shadow-lg border border-brand-gold/30">
+                        <img src="./logo.png" onerror="this.style.display='none'" alt="ZENQOR Logo" class="h-14 w-auto object-contain">
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">ZENQOR HRMS/CDTS</h1>
+                    <p class="text-xs sm:text-sm font-semibold text-slate-300 mt-2 leading-snug max-w-xl mx-auto">
+                        Dual System Human Resources Management System &amp; Client Documents Tracking System
+                    </p>
+                    <span class="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-brand-gold/10 border border-brand-gold/30 text-[10px] font-extrabold uppercase tracking-wider text-brand-gold"><i class="fa-solid fa-star text-[9px]"></i>Malaysia's First Unified HR &amp; Client Management System</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <button type="button" @click="selectAuthView('staff')" class="group text-left bg-white dark:bg-slate-800 rounded-2xl p-7 shadow-2xl border border-slate-100 dark:border-slate-700 transition hover:-translate-y-1 hover:shadow-brand-gold/10">
+                        <div class="w-14 h-14 rounded-2xl bg-brand-dark text-white flex items-center justify-center text-2xl mb-5 transition group-hover:bg-brand-blue"><i class="fa-solid fa-user-tie"></i></div>
+                        <h2 class="text-lg font-extrabold text-brand-dark dark:text-white">Company Staff</h2>
+                        <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Sign in to manage payroll, billing, claims, projects and employee records.</p>
+                        <span class="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-brand-blue">Staff Sign In <i class="fa-solid fa-arrow-right transition group-hover:translate-x-1"></i></span>
+                    </button>
+                    <button type="button" @click="selectAuthView('client')" class="group text-left bg-white dark:bg-slate-800 rounded-2xl p-7 shadow-2xl border border-slate-100 dark:border-slate-700 transition hover:-translate-y-1 hover:shadow-brand-gold/10">
+                        <div class="w-14 h-14 rounded-2xl bg-brand-gold text-brand-dark flex items-center justify-center text-2xl mb-5 transition group-hover:bg-amber-400"><i class="fa-solid fa-building-user"></i></div>
+                        <h2 class="text-lg font-extrabold text-brand-dark dark:text-white">Client Portal</h2>
+                        <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Access your quotations, invoices, payment status and live project progress.</p>
+                        <span class="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-brand-blue">Client Sign In <i class="fa-solid fa-arrow-right transition group-hover:translate-x-1"></i></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- LOGIN FORM: contextual to Staff or Client -->
+            <div v-else class="relative z-10 max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 border border-slate-100 dark:border-slate-700">
+
+                <button type="button" @click="selectAuthView('landing')" class="mb-5 inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-brand-dark dark:hover:text-white transition">
+                    <i class="fa-solid fa-arrow-left"></i><span>Back</span>
+                </button>
+
                 <div class="text-center mb-8">
                     <div class="inline-flex items-center justify-center p-3 bg-white rounded-2xl mb-4 shadow-lg border border-brand-gold/30">
                         <img src="./logo.png" onerror="this.style.display='none'" alt="ZENQOR Logo" class="h-12 w-auto object-contain">
                     </div>
-                    <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">ZENQOR HRMS/CDTS</h2>
-                    <p class="text-[11px] font-semibold text-slate-400 mt-1 leading-snug">
-                        Dual System Human Resources Management System &amp; Client Documents Tracking System
+                    <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ authView === 'client' ? 'Client Portal Sign In' : 'Staff & Management Sign In' }}</h2>
+                    <p class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mt-1 leading-snug">
+                        {{ authView === 'client' ? 'Access your official documents and live project tracker.' : 'Access payroll, billing, claims and HR modules.' }}
                     </p>
                 </div>
 
                 <form @submit.prevent="handleLogin" class="space-y-4">
                     <div>
-                        <label for="login-email" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">User Email</label>
-                        <input id="login-email" name="email" type="email" v-model="loginForm.email" required autocomplete="username" placeholder="Company email or registered client email" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue focus:outline-none text-xs font-medium">
+                        <label for="login-email" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">{{ authView === 'client' ? 'Client Email' : 'Company Email' }}</label>
+                        <input id="login-email" name="email" type="email" v-model="loginForm.email" required autocomplete="username" :placeholder="authView === 'client' ? 'Registered client email' : 'Company email'" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue focus:outline-none text-xs font-medium">
                     </div>
 
                     <div>
@@ -178,9 +236,9 @@
                     </div>
 
                     <div v-if="loginError" class="text-red-500 text-xs font-semibold text-center bg-red-50 dark:bg-red-900/30 p-2.5 rounded-lg">{{ loginError }}</div>
-                    
+
                     <button type="submit" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition duration-200 text-xs uppercase tracking-wider">
-                        System Sign In
+                        {{ authView === 'client' ? 'Client Sign In' : 'Staff Sign In' }}
                     </button>
                 </form>
             </div>
@@ -227,13 +285,13 @@
                         <i class="fa-solid fa-diagram-project w-5 text-center"></i><span>Project Activities</span>
                     </button>
                     <button v-if="hasAccess('doc-generator')" type="button" @click="switchTab('doc-generator')" :class="{'sidebar-item-active': currentTab === 'doc-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'doc-generator'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
-                        <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i><span>Document Generator</span>
+                        <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i><span>Billing &amp; Documents</span>
                     </button>
                     <button v-if="hasAccess('payslip-generator')" type="button" @click="switchTab('payslip-generator')" :class="{'sidebar-item-active': currentTab === 'payslip-generator', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'payslip-generator'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
-                        <i class="fa-solid fa-money-check-dollar w-5 text-center"></i><span>Payslip Generator</span>
+                        <i class="fa-solid fa-money-check-dollar w-5 text-center"></i><span>Payroll Management</span>
                     </button>
                     <button v-if="hasAccess('claims')" type="button" @click="switchTab('claims')" :class="{'sidebar-item-active': currentTab === 'claims', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'claims'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
-                        <i class="fa-solid fa-receipt w-5 text-center"></i><span>Claims Management</span>
+                        <i class="fa-solid fa-receipt w-5 text-center"></i><span>Claims &amp; Vouchers</span>
                     </button>
                     <button v-if="hasAccess('client-directory')" type="button" @click="switchTab('client-directory')" :class="{'sidebar-item-active': currentTab === 'client-directory', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-directory'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-address-book w-5 text-center"></i><span>Client Directory</span>
@@ -339,8 +397,8 @@
                                 <span class="hidden sm:inline">Dashboard</span>
                             </button>
                             <div>
-                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Document Generator</h2>
-                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Generate and manage Quotations (A4 Portrait) and Invoices (A4 Portrait) in standard corporate format.</p>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Billing &amp; Documents</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Create and manage client quotations and invoices in a standard corporate format.</p>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -373,14 +431,43 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            <div><label for="doc-client-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Client / Company Name *</label><input id="doc-client-name" name="clientName" type="text" v-model="docForm.clientName" @input="clientSavedForDocument = false" required placeholder="Company Name Sdn. Bhd." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label for="doc-client-phone" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Phone Number *</label><input id="doc-client-phone" name="clientPhone" type="text" v-model="docForm.clientPhone" @input="clientSavedForDocument = false" required placeholder="+60 13-XXXX XXX" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label for="doc-client-ssm" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Business Reg. / TIN</label><input id="doc-client-ssm" name="clientSSM" type="text" v-model="docForm.clientSSM" @input="clientSavedForDocument = false" placeholder="200901029271 (872376-W)" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label for="doc-client-email" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Email Address</label><input id="doc-client-email" name="clientEmail" type="email" v-model="docForm.clientEmail" @input="clientSavedForDocument = false" placeholder="email@company.com" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label for="doc-client-contact" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Contact Person</label><input id="doc-client-contact" name="clientContact" type="text" v-model="docForm.clientContactPerson" @input="clientSavedForDocument = false" placeholder="Officer Name" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50 font-semibold"></div>
-                            <div><label for="doc-client-position" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Position</label><input id="doc-client-position" name="clientPosition" type="text" v-model="docForm.clientPosition" @input="clientSavedForDocument = false" placeholder="EXECUTIVE / DIRECTOR" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div class="md:col-span-3"><label for="doc-client-address" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Full Client Address *</label><input id="doc-client-address" name="clientAddress" type="text" v-model="docForm.clientAddress" @input="clientSavedForDocument = false" required placeholder="Building No., Street, City, State..." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5">
+                            <div class="flex lg:flex-col items-center lg:items-stretch gap-4 lg:gap-3 bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 rounded-xl p-4">
+                                <div class="w-16 h-16 lg:w-20 lg:h-20 lg:mx-auto rounded-2xl bg-brand-dark dark:bg-brand-blue text-white flex items-center justify-center text-xl lg:text-2xl font-extrabold shrink-0">{{ getInitials(docForm.clientName) }}</div>
+                                <div class="min-w-0 lg:text-center">
+                                    <p class="font-extrabold text-sm text-brand-dark dark:text-white truncate">{{ docForm.clientName || 'Untitled Client' }}</p>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{{ docForm.clientSSM || 'No SSM / TIN set' }}</p>
+                                    <span class="inline-flex items-center gap-1 mt-2 px-2 py-1 rounded-full text-[10px] font-bold" :class="clientSavedForDocument ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'">
+                                        <i class="fa-solid" :class="clientSavedForDocument ? 'fa-circle-check' : 'fa-triangle-exclamation'"></i>
+                                        <span>{{ clientSavedForDocument ? 'Saved Client' : 'Unsaved Draft' }}</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center"><i class="fa-solid fa-id-card w-4 text-center text-brand-gold"></i><span class="ml-1.5">Company Identity</span></p>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div><label for="doc-client-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Client / Company Name *</label><input id="doc-client-name" name="clientName" type="text" v-model="docForm.clientName" @input="clientSavedForDocument = false" required placeholder="Company Name Sdn. Bhd." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
+                                        <div><label for="doc-client-ssm" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Business Reg. / TIN</label><input id="doc-client-ssm" name="clientSSM" type="text" v-model="docForm.clientSSM" @input="clientSavedForDocument = false" placeholder="200901029271 (872376-W)" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center"><i class="fa-solid fa-address-book w-4 text-center text-brand-gold"></i><span class="ml-1.5">Contact Details</span></p>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                        <div><label for="doc-client-phone" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Phone Number *</label><input id="doc-client-phone" name="clientPhone" type="text" v-model="docForm.clientPhone" @input="clientSavedForDocument = false" required placeholder="+60 13-XXXX XXX" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                        <div><label for="doc-client-email" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Email Address</label><input id="doc-client-email" name="clientEmail" type="email" v-model="docForm.clientEmail" @input="clientSavedForDocument = false" placeholder="email@company.com" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                        <div><label for="doc-client-contact" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Contact Person</label><input id="doc-client-contact" name="clientContact" type="text" v-model="docForm.clientContactPerson" @input="clientSavedForDocument = false" placeholder="Officer Name" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50 font-semibold"></div>
+                                        <div><label for="doc-client-position" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Position</label><input id="doc-client-position" name="clientPosition" type="text" v-model="docForm.clientPosition" @input="clientSavedForDocument = false" placeholder="EXECUTIVE / DIRECTOR" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center"><i class="fa-solid fa-location-dot w-4 text-center text-brand-gold"></i><span class="ml-1.5">Address</span></p>
+                                    <div><label for="doc-client-address" class="sr-only">Full Client Address</label><input id="doc-client-address" name="clientAddress" type="text" v-model="docForm.clientAddress" @input="clientSavedForDocument = false" required placeholder="Building No., Street, City, State..." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 border-t border-slate-100 dark:border-slate-700 pt-5">
@@ -459,7 +546,7 @@
                             <div class="p-2.5 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500 rounded-xl flex items-center justify-between gap-2">
                                 <div class="overflow-hidden">
                                     <p class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tight truncate">ATTACHMENT / RECEIPT (MAX 2MB)</p>
-                                    <p class="text-[10px] text-slate-400 truncate">{{ docForm.paymentAttachment ? 'Receipt Attached' : 'No file selected' }}</p>
+                                    <p class="text-[10px] text-slate-400 dark:text-slate-500 truncate">{{ docForm.paymentAttachment ? 'Receipt Attached' : 'No file selected' }}</p>
                                 </div>
                                 <div class="flex items-center space-x-1 shrink-0">
                                     <label for="doc-attachment" :class="attachmentUploadState.payment ? 'opacity-60 pointer-events-none' : ''" class="bg-brand-dark hover:bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition">
@@ -538,8 +625,8 @@
                                 <span class="hidden sm:inline">Dashboard</span>
                             </button>
                             <div>
-                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Payslip Generator (v1.0.0 Engine)</h2>
-                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Automated statutory contributions calculation engine (EPF, SOCSO, EIS, PCB) &amp; MTD/YTD.</p>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Payroll Management</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Automated statutory contribution engine for EPF, SOCSO, EIS and PCB, with MTD/YTD tracking.</p>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -569,15 +656,50 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div><label for="pay-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee Name *</label><input id="pay-name" name="payName" type="text" v-model="payForm.name" required placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label for="pay-ic" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">National ID / Passport *</label><input id="pay-ic" name="payIc" type="text" :value="maskSensitive(payForm.ic)" readonly aria-label="Masked national ID or passport" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-100 cursor-not-allowed"></div>
-                            <div><label for="pay-emp-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input id="pay-emp-no" name="payEmpNo" type="text" v-model="payForm.empNo" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
-                            <div><label for="pay-position" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Position</label><input id="pay-position" name="payPosition" type="text" v-model="payForm.position" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label for="pay-dept" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input id="pay-dept" name="payDept" type="text" v-model="payForm.dept" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label for="pay-join-date" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Join Date</label><input id="pay-join-date" name="payJoinDate" type="date" v-model="payForm.joinDate" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label for="pay-bank-acc" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Bank / Account No.</label><input id="pay-bank-acc" name="payBankAcc" type="text" :value="maskBank(payForm.bankAcc)" readonly aria-label="Masked bank account number" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-100 cursor-not-allowed"></div>
-                            <div><label for="pay-epf-socso" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">EPF / SOCSO No.</label><input id="pay-epf-socso" name="payEpfSocso" type="text" :value="maskEpfSocso(payForm.epfSocso)" readonly aria-label="Masked EPF and SOCSO numbers" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-100 cursor-not-allowed"></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5">
+                            <div class="flex lg:flex-col items-center lg:items-stretch gap-4 lg:gap-3 bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 rounded-xl p-4">
+                                <div class="w-16 h-16 lg:w-20 lg:h-20 lg:mx-auto rounded-2xl bg-brand-dark dark:bg-brand-blue text-white flex items-center justify-center text-xl lg:text-2xl font-extrabold shrink-0 overflow-hidden">
+                                    <img v-if="payEmployeePhoto()" :src="payEmployeePhoto()" alt="" class="w-full h-full object-cover">
+                                    <span v-else>{{ getInitials(payForm.name) }}</span>
+                                </div>
+                                <div class="min-w-0 lg:text-center">
+                                    <p class="font-extrabold text-sm text-brand-dark dark:text-white truncate">{{ payForm.name || 'Untitled Employee' }}</p>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{{ payForm.position || 'No position set' }}</p>
+                                    <p v-if="payForm.dept" class="text-[11px] text-slate-400 dark:text-slate-500 leading-snug">{{ payForm.dept }}</p>
+                                    <span class="inline-flex items-center gap-1 mt-2 px-2 py-1 rounded-full text-[10px] font-bold" :class="selectedPayEmployeeId ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'">
+                                        <i class="fa-solid" :class="selectedPayEmployeeId ? 'fa-circle-check' : 'fa-triangle-exclamation'"></i>
+                                        <span>{{ selectedPayEmployeeId ? 'From HR Directory' : 'Manual Entry' }}</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center"><i class="fa-solid fa-id-card w-4 text-center text-emerald-500"></i><span class="ml-1.5">Identity</span></p>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div><label for="pay-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee Name *</label><input id="pay-name" name="payName" type="text" v-model="payForm.name" required placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
+                                        <div><label for="pay-ic" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">National ID / Passport *</label><input id="pay-ic" name="payIc" type="text" :value="maskSensitive(payForm.ic)" readonly aria-label="Masked national ID or passport" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-100 cursor-not-allowed"></div>
+                                        <div><label for="pay-emp-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input id="pay-emp-no" name="payEmpNo" type="text" v-model="payForm.empNo" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center"><i class="fa-solid fa-briefcase w-4 text-center text-emerald-500"></i><span class="ml-1.5">Employment</span></p>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div><label for="pay-position" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Position</label><input id="pay-position" name="payPosition" type="text" v-model="payForm.position" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                        <div><label for="pay-dept" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input id="pay-dept" name="payDept" type="text" v-model="payForm.dept" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                        <div><label for="pay-join-date" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Join Date</label><input id="pay-join-date" name="payJoinDate" type="date" v-model="payForm.joinDate" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center"><i class="fa-solid fa-building-columns w-4 text-center text-emerald-500"></i><span class="ml-1.5">Banking &amp; Statutory</span></p>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div><label for="pay-bank-acc" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Bank / Account No.</label><input id="pay-bank-acc" name="payBankAcc" type="text" :value="maskBank(payForm.bankAcc)" readonly aria-label="Masked bank account number" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-100 cursor-not-allowed"></div>
+                                        <div><label for="pay-epf-socso" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">EPF / SOCSO No.</label><input id="pay-epf-socso" name="payEpfSocso" type="text" :value="maskEpfSocso(payForm.epfSocso)" readonly aria-label="Masked EPF and SOCSO numbers" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-100 cursor-not-allowed"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 border-t border-slate-100 dark:border-slate-700 pt-5">
@@ -637,8 +759,8 @@
                                 <span class="hidden sm:inline">Dashboard</span>
                             </button>
                             <div>
-                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Claims &amp; Payment Voucher Management</h2>
-                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Two independent record types, each with its own form, approval trail and storage.</p>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Claims &amp; Payment Vouchers</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Submit and track expense claims and payment vouchers through the approval workflow.</p>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -653,8 +775,8 @@
 
                     <!-- MODULE TOGGLE — selects which independent flow is active: Expense Claim or Payment Voucher -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <button type="button" @click="claimFormMode = 'Claim'" :class="claimFormMode === 'Claim' ? 'bg-brand-dark text-white shadow' : 'bg-white text-slate-600 border border-slate-200'" class="rounded-xl px-4 py-3 text-left transition"><span class="block text-xs font-extrabold uppercase"><i class="fa-solid fa-receipt mr-2"></i>Expense Claim</span><span class="mt-1 block text-[10px] opacity-75">Employee reimbursement for expenses already incurred.</span></button>
-                        <button type="button" @click="claimFormMode = 'Payment Voucher'" :class="claimFormMode === 'Payment Voucher' ? 'bg-brand-dark text-white shadow' : 'bg-white text-slate-600 border border-slate-200'" class="rounded-xl px-4 py-3 text-left transition"><span class="block text-xs font-extrabold uppercase"><i class="fa-solid fa-money-check-dollar mr-2"></i>Payment Voucher</span><span class="mt-1 block text-[10px] opacity-75">Company payment to an individual or vendor for wages and services.</span></button>
+                        <button type="button" @click="claimFormMode = 'Claim'" :class="claimFormMode === 'Claim' ? 'bg-brand-dark text-white shadow' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'" class="rounded-xl px-4 py-3 text-left transition"><span class="block text-xs font-extrabold uppercase"><i class="fa-solid fa-receipt mr-2"></i>Expense Claim</span><span class="mt-1 block text-[10px] opacity-75">Employee reimbursement for expenses already incurred.</span></button>
+                        <button type="button" @click="claimFormMode = 'Payment Voucher'" :class="claimFormMode === 'Payment Voucher' ? 'bg-brand-dark text-white shadow' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'" class="rounded-xl px-4 py-3 text-left transition"><span class="block text-xs font-extrabold uppercase"><i class="fa-solid fa-money-check-dollar mr-2"></i>Payment Voucher</span><span class="mt-1 block text-[10px] opacity-75">Company payment to an individual or vendor for wages and services.</span></button>
                     </div>
 
                     <div v-if="['Superadmin','Director'].includes(userProfile.role) && legacyPaymentVouchersCount" class="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 sm:flex-row sm:items-center sm:justify-between">
@@ -678,11 +800,30 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                            <div><label for="claim-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Applicant Name *</label><input id="claim-name" name="claimName" type="text" v-model="claimForm.name" required placeholder="Employee Name" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label for="claim-emp-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input id="claim-emp-no" name="claimEmpNo" type="text" v-model="claimForm.empNo" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
-                            <div><label for="claim-dept" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input id="claim-dept" name="claimDept" type="text" v-model="claimForm.dept" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label for="claim-date" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Expense Date *</label><input id="claim-date" name="claimDate" type="date" v-model="claimForm.expenseDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5">
+                            <div class="flex lg:flex-col items-center lg:items-stretch gap-4 lg:gap-3 bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 rounded-xl p-4">
+                                <div class="w-16 h-16 lg:w-20 lg:h-20 lg:mx-auto rounded-2xl bg-brand-dark dark:bg-brand-blue text-white flex items-center justify-center text-xl lg:text-2xl font-extrabold shrink-0 overflow-hidden">
+                                    <img v-if="claimEmployeePhoto()" :src="claimEmployeePhoto()" alt="" class="w-full h-full object-cover">
+                                    <span v-else>{{ getInitials(claimForm.name) }}</span>
+                                </div>
+                                <div class="min-w-0 lg:text-center">
+                                    <p class="font-extrabold text-sm text-brand-dark dark:text-white truncate">{{ claimForm.name || 'Untitled Applicant' }}</p>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{{ claimForm.dept || 'No department set' }}</p>
+                                    <span class="inline-flex items-center gap-1 mt-2 px-2 py-1 rounded-full text-[10px] font-bold" :class="selectedClaimEmployeeId ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'">
+                                        <i class="fa-solid" :class="selectedClaimEmployeeId ? 'fa-circle-check' : 'fa-triangle-exclamation'"></i>
+                                        <span>{{ selectedClaimEmployeeId ? 'From HR Directory' : 'Manual Entry' }}</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center"><i class="fa-solid fa-id-card w-4 text-center text-brand-gold"></i><span class="ml-1.5">Applicant Information</span></p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <div><label for="claim-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Applicant Name *</label><input id="claim-name" name="claimName" type="text" v-model="claimForm.name" required placeholder="Employee Name" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
+                                    <div><label for="claim-emp-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input id="claim-emp-no" name="claimEmpNo" type="text" v-model="claimForm.empNo" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
+                                    <div><label for="claim-dept" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input id="claim-dept" name="claimDept" type="text" v-model="claimForm.dept" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    <div><label for="claim-date" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Expense Date *</label><input id="claim-date" name="claimDate" type="date" v-model="claimForm.expenseDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4">
@@ -756,18 +897,37 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                            <div><label for="voucher-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Requested By *</label><input id="voucher-name" name="voucherName" type="text" v-model="voucherForm.name" required placeholder="Staff preparing this voucher" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label for="voucher-emp-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input id="voucher-emp-no" name="voucherEmpNo" type="text" v-model="voucherForm.empNo" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
-                            <div><label for="voucher-dept" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input id="voucher-dept" name="voucherDept" type="text" v-model="voucherForm.dept" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
-                            <div><label for="voucher-date" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Payment Date *</label><input id="voucher-date" name="voucherDate" type="date" v-model="voucherForm.paymentDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5">
+                            <div class="flex lg:flex-col items-center lg:items-stretch gap-4 lg:gap-3 bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 rounded-xl p-4">
+                                <div class="w-16 h-16 lg:w-20 lg:h-20 lg:mx-auto rounded-2xl bg-brand-dark dark:bg-brand-blue text-white flex items-center justify-center text-xl lg:text-2xl font-extrabold shrink-0 overflow-hidden">
+                                    <img v-if="voucherEmployeePhoto()" :src="voucherEmployeePhoto()" alt="" class="w-full h-full object-cover">
+                                    <span v-else>{{ getInitials(voucherForm.name) }}</span>
+                                </div>
+                                <div class="min-w-0 lg:text-center">
+                                    <p class="font-extrabold text-sm text-brand-dark dark:text-white truncate">{{ voucherForm.name || 'Untitled Requester' }}</p>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{{ voucherForm.dept || 'No department set' }}</p>
+                                    <span class="inline-flex items-center gap-1 mt-2 px-2 py-1 rounded-full text-[10px] font-bold" :class="selectedVoucherEmployeeId ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'">
+                                        <i class="fa-solid" :class="selectedVoucherEmployeeId ? 'fa-circle-check' : 'fa-triangle-exclamation'"></i>
+                                        <span>{{ selectedVoucherEmployeeId ? 'From HR Directory' : 'Manual Entry' }}</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center"><i class="fa-solid fa-id-card w-4 text-center text-brand-gold"></i><span class="ml-1.5">Requester Information</span></p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <div><label for="voucher-name" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Requested By *</label><input id="voucher-name" name="voucherName" type="text" v-model="voucherForm.name" required placeholder="Staff preparing this voucher" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-bold bg-slate-50"></div>
+                                    <div><label for="voucher-emp-no" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Employee ID *</label><input id="voucher-emp-no" name="voucherEmpNo" type="text" v-model="voucherForm.empNo" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs font-extrabold bg-slate-50"></div>
+                                    <div><label for="voucher-dept" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Department</label><input id="voucher-dept" name="voucherDept" type="text" v-model="voucherForm.dept" placeholder="" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    <div><label for="voucher-date" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Payment Date *</label><input id="voucher-date" name="voucherDate" type="date" v-model="voucherForm.paymentDate" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-                            <div><label for="voucher-payee" class="block text-xs font-bold text-slate-700 mb-1">PAYEE NAME *</label><input id="voucher-payee" v-model="voucherForm.payeeName" type="text" placeholder="Individual / vendor name" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"></div>
-                            <div><label for="voucher-payee-type" class="block text-xs font-bold text-slate-700 mb-1">PAYEE TYPE *</label><select id="voucher-payee-type" v-model="voucherForm.payeeType" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"><option>Individual</option><option>Employee</option><option>Freelancer</option><option>Vendor / Supplier</option><option>Contractor</option></select></div>
-                            <div><label for="voucher-payee-ref" class="block text-xs font-bold text-slate-700 mb-1">PAYEE REFERENCE</label><input id="voucher-payee-ref" v-model="voucherForm.payeeReference" type="text" placeholder="ID / invoice / contract ref" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"></div>
-                            <div><label for="voucher-purpose" class="block text-xs font-bold text-slate-700 mb-1">PAYMENT PURPOSE *</label><input id="voucher-purpose" v-model="voucherForm.paymentPurpose" type="text" placeholder="Wages / services / allowance" class="w-full p-2 border border-amber-300 rounded-xl text-xs bg-white"></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4">
+                            <div><label for="voucher-payee" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">PAYEE NAME *</label><input id="voucher-payee" v-model="voucherForm.payeeName" type="text" placeholder="Individual / vendor name" class="w-full p-2 border border-amber-300 dark:border-amber-700 rounded-xl text-xs bg-white dark:bg-slate-800 dark:text-white"></div>
+                            <div><label for="voucher-payee-type" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">PAYEE TYPE *</label><select id="voucher-payee-type" v-model="voucherForm.payeeType" class="w-full p-2 border border-amber-300 dark:border-amber-700 rounded-xl text-xs bg-white dark:bg-slate-800 dark:text-white"><option>Individual</option><option>Employee</option><option>Freelancer</option><option>Vendor / Supplier</option><option>Contractor</option></select></div>
+                            <div><label for="voucher-payee-ref" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">PAYEE REFERENCE</label><input id="voucher-payee-ref" v-model="voucherForm.payeeReference" type="text" placeholder="ID / invoice / contract ref" class="w-full p-2 border border-amber-300 dark:border-amber-700 rounded-xl text-xs bg-white dark:bg-slate-800 dark:text-white"></div>
+                            <div><label for="voucher-purpose" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">PAYMENT PURPOSE *</label><input id="voucher-purpose" v-model="voucherForm.paymentPurpose" type="text" placeholder="Wages / services / allowance" class="w-full p-2 border border-amber-300 dark:border-amber-700 rounded-xl text-xs bg-white dark:bg-slate-800 dark:text-white"></div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4">
@@ -1031,14 +1191,14 @@
                 <!-- DASHBOARD MODULE -->
                 <div v-show="currentTab === 'dashboard'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8">
 
-                    <section v-if="userProfile.role !== 'Client'" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h3 class="text-sm font-extrabold text-brand-dark">Project Progress</h3><p class="mt-1 text-[10px] text-slate-500">Live project workflow overview.</p></div><button type="button" @click="switchTab('project-activities')" class="rounded-lg bg-brand-dark px-3 py-2 text-[10px] font-bold text-white hover:bg-brand-blue">View All Projects <i class="fa-solid fa-arrow-right ml-1"></i></button></div>
-                        <div class="project-summary-grid"><button v-for="(stage, stageIndex) in projectStages" :key="`internal-dashboard-${stage}`" type="button" @click="switchTab('project-activities')" class="project-summary-card rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md"><div class="flex items-center justify-between gap-3"><span :class="['bg-blue-500','bg-amber-500','bg-orange-500','bg-violet-500','bg-emerald-500'][stageIndex]" class="h-2.5 w-2.5 rounded-full"></span><span class="text-2xl font-black leading-none text-brand-dark">{{ getProjectsByStage(stage).length }}</span></div><p class="mt-3 text-[10px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">{{ stage }}</p><p class="mt-2 text-[9px] font-bold uppercase tracking-widest text-slate-300">Step {{ stageIndex + 1 }} of 5</p></button></div>
+                    <section v-if="userProfile.role !== 'Client'" class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+                        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h3 class="text-sm font-extrabold text-brand-dark dark:text-white">Project Progress</h3><p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Live project workflow overview.</p></div><button type="button" @click="switchTab('project-activities')" class="rounded-lg bg-brand-dark px-3 py-2 text-[10px] font-bold text-white hover:bg-brand-blue">View All Projects <i class="fa-solid fa-arrow-right ml-1"></i></button></div>
+                        <div class="project-summary-grid"><button v-for="(stage, stageIndex) in projectStages" :key="`internal-dashboard-${stage}`" type="button" @click="switchTab('project-activities')" class="project-summary-card rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md"><div class="flex items-center justify-between gap-3"><span :class="['bg-blue-500','bg-amber-500','bg-orange-500','bg-violet-500','bg-emerald-500'][stageIndex]" class="h-2.5 w-2.5 rounded-full"></span><span class="text-2xl font-black leading-none text-brand-dark dark:text-white">{{ getProjectsByStage(stage).length }}</span></div><p class="mt-3 text-[10px] font-extrabold uppercase leading-snug tracking-wider text-slate-500 dark:text-slate-400">{{ stage }}</p><p class="mt-2 text-[9px] font-bold uppercase tracking-widest text-slate-300 dark:text-slate-600">Step {{ stageIndex + 1 }} of 5</p></button></div>
                     </section>
 
-                    <section v-if="myPendingProjectActivities.length" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h3 class="text-sm font-extrabold text-brand-dark"><i class="fa-solid fa-bell mr-2 text-amber-500"></i>My Assigned Project Activities</h3><p class="mt-1 text-[10px] text-slate-500">Activities requiring your action, ordered by due date.</p></div><div class="flex flex-wrap items-center gap-2 text-[9px] font-bold"><span class="rounded-full bg-red-100 px-2 py-1 text-red-700">Overdue</span><span class="rounded-full bg-amber-100 px-2 py-1 text-amber-700">Today</span><span class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700">Next 3 Days</span><span class="rounded-full bg-blue-100 px-2 py-1 text-blue-700">Scheduled</span><span class="rounded-full bg-slate-900 px-2.5 py-1 text-white">{{ myPendingProjectActivities.length }} Open</span></div></div>
-                        <div class="grid grid-cols-1 gap-3 md:grid-cols-2"><article v-for="activity in myPendingProjectActivities.slice(0, 6)" :key="`dashboard-activity-${activity.id}`" :class="projectActivityDueState(activity).borderClass" class="rounded-xl border-l-4 border border-slate-200 bg-white p-4 shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-[9px] font-extrabold uppercase tracking-wider text-brand-blue">{{ activity.projectRef }} · {{ activity.activityType }}</p><p class="mt-1 truncate text-xs font-extrabold text-brand-dark">{{ activity.summary }}</p><p class="mt-2 flex items-center gap-1.5 text-[10px] text-slate-500"><span :class="projectActivityDueState(activity).dotClass" class="h-2 w-2 rounded-full"></span>Due {{ activity.dueDate }}</p></div><span :class="projectActivityDueState(activity).className" class="shrink-0 rounded-full px-2 py-1 text-[9px] font-extrabold uppercase">{{ projectActivityDueState(activity).label }}</span></div><div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-3"><p class="truncate text-[9px] text-slate-400">{{ activity.projectTitle }}</p><button type="button" @click="markProjectActivityDone(activity)" class="shrink-0 rounded-lg bg-emerald-600 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-emerald-700"><i class="fa-solid fa-check mr-1"></i>Mark Done</button></div></article></div>
+                    <section v-if="myPendingProjectActivities.length" class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+                        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h3 class="text-sm font-extrabold text-brand-dark dark:text-white"><i class="fa-solid fa-bell mr-2 text-amber-500"></i>My Assigned Project Activities</h3><p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Activities requiring your action, ordered by due date.</p></div><div class="flex flex-wrap items-center gap-2 text-[9px] font-bold"><span class="rounded-full bg-red-100 dark:bg-red-950/40 px-2 py-1 text-red-700 dark:text-red-300">Overdue</span><span class="rounded-full bg-amber-100 dark:bg-amber-950/40 px-2 py-1 text-amber-700 dark:text-amber-300">Today</span><span class="rounded-full bg-emerald-100 dark:bg-emerald-950/40 px-2 py-1 text-emerald-700 dark:text-emerald-300">Next 3 Days</span><span class="rounded-full bg-blue-100 dark:bg-blue-950/40 px-2 py-1 text-blue-700 dark:text-blue-300">Scheduled</span><span class="rounded-full bg-slate-900 dark:bg-slate-700 px-2.5 py-1 text-white">{{ myPendingProjectActivities.length }} Open</span></div></div>
+                        <div class="grid grid-cols-1 gap-3 md:grid-cols-2"><article v-for="activity in myPendingProjectActivities.slice(0, 6)" :key="`dashboard-activity-${activity.id}`" :class="projectActivityDueState(activity).borderClass" class="rounded-xl border-l-4 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-[9px] font-extrabold uppercase tracking-wider text-brand-blue">{{ activity.projectRef }} · {{ activity.activityType }}</p><p class="mt-1 truncate text-xs font-extrabold text-brand-dark dark:text-white">{{ activity.summary }}</p><p class="mt-2 flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400"><span :class="projectActivityDueState(activity).dotClass" class="h-2 w-2 rounded-full"></span>Due {{ activity.dueDate }}</p></div><span :class="projectActivityDueState(activity).className" class="shrink-0 rounded-full px-2 py-1 text-[9px] font-extrabold uppercase">{{ projectActivityDueState(activity).label }}</span></div><div class="mt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-3"><p class="truncate text-[9px] text-slate-400 dark:text-slate-500">{{ activity.projectTitle }}</p><button type="button" @click="markProjectActivityDone(activity)" class="shrink-0 rounded-lg bg-emerald-600 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-emerald-700"><i class="fa-solid fa-check mr-1"></i>Mark Done</button></div></article></div>
                     </section>
                     
                     <!-- 1. VIEW PEKERJA (STAFF DASHBOARD) -->
@@ -1168,31 +1328,31 @@
                             </div>
                         </div>
 
-                        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <section class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
                             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div><h3 class="text-sm font-extrabold text-brand-dark">Project Progress</h3><p class="mt-1 text-[10px] text-slate-500">Live workflow status for projects assigned to your Client Portal account.</p></div>
+                                <div><h3 class="text-sm font-extrabold text-brand-dark dark:text-white">Project Progress</h3><p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Live workflow status for projects assigned to your Client Portal account.</p></div>
                                 <button type="button" @click="switchTab('project-activities')" class="rounded-lg bg-brand-dark px-3 py-2 text-[10px] font-bold text-white hover:bg-brand-blue">View All Projects <i class="fa-solid fa-arrow-right ml-1"></i></button>
                             </div>
                             <div class="space-y-3">
-                                <button v-for="project in projects.slice(0, 3)" :key="`client-dashboard-track-${project.id}`" type="button" @click="openProjectDetails(project)" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
+                                <button v-for="project in projects.slice(0, 3)" :key="`client-dashboard-track-${project.id}`" type="button" @click="openProjectDetails(project)" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 text-left transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
                                     <div class="flex flex-wrap items-center justify-between gap-2">
                                         <div class="min-w-0">
-                                            <span class="rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold text-brand-blue border border-blue-100">{{ project.projectRef }}</span>
-                                            <p class="mt-1 truncate text-xs font-extrabold text-brand-dark">{{ project.title }}</p>
+                                            <span class="rounded-md bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 text-[9px] font-extrabold text-brand-blue dark:text-blue-300 border border-blue-100 dark:border-blue-900">{{ project.projectRef }}</span>
+                                            <p class="mt-1 truncate text-xs font-extrabold text-brand-dark dark:text-white">{{ project.title }}</p>
                                         </div>
-                                        <span class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-extrabold uppercase text-slate-600">{{ project.status }}</span>
+                                        <span class="shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-1 text-[9px] font-extrabold uppercase text-slate-600 dark:text-slate-300">{{ project.status }}</span>
                                     </div>
                                     <div class="mt-3 flex items-center gap-1">
                                         <template v-for="(stage, stageIndex) in projectStages" :key="stage">
-                                            <span class="h-1.5 flex-1 rounded-full" :class="stageIndex <= projectStages.indexOf(project.status) ? ['bg-blue-500','bg-amber-500','bg-orange-500','bg-violet-500','bg-emerald-500'][projectStages.indexOf(project.status)] : 'bg-slate-100'"></span>
+                                            <span class="h-1.5 flex-1 rounded-full" :class="stageIndex <= projectStages.indexOf(project.status) ? ['bg-blue-500','bg-amber-500','bg-orange-500','bg-violet-500','bg-emerald-500'][projectStages.indexOf(project.status)] : 'bg-slate-100 dark:bg-slate-700'"></span>
                                         </template>
                                     </div>
-                                    <p class="mt-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-300">Step {{ projectStages.indexOf(project.status) + 1 }} of {{ projectStages.length }}</p>
+                                    <p class="mt-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-300 dark:text-slate-600">Step {{ projectStages.indexOf(project.status) + 1 }} of {{ projectStages.length }}</p>
                                 </button>
-                                <p v-if="projects.length > 3" class="text-center text-[10px] font-bold text-slate-400">+{{ projects.length - 3 }} more project(s) — view all for full tracker</p>
-                                <div v-if="!projects.length" class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-                                    <i class="fa-regular fa-folder-open text-xl text-slate-300"></i>
-                                    <p class="mt-2 text-[10px] font-bold text-slate-400">No project has been assigned to your account yet.</p>
+                                <p v-if="projects.length > 3" class="text-center text-[10px] font-bold text-slate-400 dark:text-slate-500">+{{ projects.length - 3 }} more project(s) — view all for full tracker</p>
+                                <div v-if="!projects.length" class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40 p-8 text-center">
+                                    <i class="fa-regular fa-folder-open text-xl text-slate-300 dark:text-slate-600"></i>
+                                    <p class="mt-2 text-[10px] font-bold text-slate-400 dark:text-slate-500">No project has been assigned to your account yet.</p>
                                 </div>
                             </div>
                         </section>
@@ -1233,7 +1393,7 @@
                             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <h2 class="text-sm font-extrabold text-brand-dark dark:text-white">Enterprise Executive Dashboard</h2>
-                                    <p class="mt-1 text-[10px] text-slate-500">Real-time monitoring of financial KPIs, HR, corporate documents, and system activities.</p>
+                                    <p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Real-time monitoring of financial KPIs, HR, corporate documents, and system activities.</p>
                                 </div>
                                 <span class="shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-1 text-[9px] font-bold text-slate-500 dark:text-slate-300"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i>Live data</span>
                             </div>
@@ -1242,56 +1402,56 @@
                                 <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
                                     <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span><i class="fa-solid fa-users text-[10px] text-slate-300 dark:text-slate-500"></i></div>
                                     <h3 class="mt-2 text-xl font-black leading-none text-brand-dark dark:text-white truncate">{{ employees.length }}</h3>
-                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Employees</p>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500 dark:text-slate-400">Total Employees</p>
                                     <p class="mt-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 truncate">{{ activeEmployeesCount }} Active</p>
                                 </div>
                                 <!-- 2. Total Clients -->
                                 <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
                                     <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span><i class="fa-solid fa-building text-[10px] text-slate-300 dark:text-slate-500"></i></div>
                                     <h3 class="mt-2 text-xl font-black leading-none text-brand-dark dark:text-white truncate">{{ customers.length }}</h3>
-                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Clients</p>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500 dark:text-slate-400">Total Clients</p>
                                     <p class="mt-1 text-[9px] font-bold text-brand-gold truncate">{{ priorityClients.length }} Priority</p>
                                 </div>
                                 <!-- 3. Total Quotations -->
                                 <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
                                     <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-yellow-500"></span><i class="fa-solid fa-file-pen text-[10px] text-slate-300 dark:text-slate-500"></i></div>
                                     <h3 class="mt-2 text-xl font-black leading-none text-brand-dark dark:text-white truncate">{{ totalQuotations }}</h3>
-                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Quotations</p>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500 dark:text-slate-400">Total Quotations</p>
                                     <p class="mt-1 text-[9px] font-bold text-indigo-600 dark:text-indigo-400 truncate">{{ formatCurrency(totalQuotationValue) }}</p>
                                 </div>
                                 <!-- 4. Total Invoices -->
                                 <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
                                     <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-indigo-500"></span><i class="fa-solid fa-file-invoice-dollar text-[10px] text-slate-300 dark:text-slate-500"></i></div>
                                     <h3 class="mt-2 text-xl font-black leading-none text-brand-dark dark:text-white truncate">{{ totalInvoices }}</h3>
-                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Invoices</p>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500 dark:text-slate-400">Total Invoices</p>
                                     <p class="mt-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 truncate">{{ paidInvoicesCount }} Paid / {{ unpaidInvoicesCount }} Unpaid</p>
                                 </div>
                                 <!-- 5. Revenue (Paid) -->
                                 <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
                                     <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span><i class="fa-solid fa-sack-dollar text-[10px] text-slate-300 dark:text-slate-500"></i></div>
                                     <h3 class="mt-2 text-lg font-black leading-none text-emerald-600 dark:text-emerald-400 truncate">{{ formatCurrency(totalRevenuePaid) }}</h3>
-                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Revenue (Paid)</p>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500 dark:text-slate-400">Revenue (Paid)</p>
                                     <p class="mt-1 text-[9px] font-bold text-slate-400 truncate">Collected Inflow</p>
                                 </div>
                                 <!-- 6. Pending Receivables -->
                                 <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
                                     <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-orange-500"></span><i class="fa-solid fa-hand-holding-dollar text-[10px] text-slate-300 dark:text-slate-500"></i></div>
                                     <h3 class="mt-2 text-lg font-black leading-none text-orange-500 dark:text-orange-400 truncate">{{ formatCurrency(totalRevenuePending) }}</h3>
-                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Pending Receivables</p>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500 dark:text-slate-400">Pending Receivables</p>
                                     <p class="mt-1 text-[9px] font-bold text-red-500 truncate">{{ unpaidInvoicesCount }} Invoices Unpaid</p>
                                 </div>
                                 <!-- 7. Total Payroll (Net) -->
                                 <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
                                     <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-purple-500"></span><i class="fa-solid fa-money-bill-transfer text-[10px] text-slate-300 dark:text-slate-500"></i></div>
                                     <h3 class="mt-2 text-lg font-black leading-none text-brand-dark dark:text-white truncate">{{ formatCurrency(totalPayrollNet) }}</h3>
-                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Total Payroll (Net)</p>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500 dark:text-slate-400">Total Payroll (Net)</p>
                                     <p class="mt-1 text-[9px] font-bold text-purple-600 dark:text-purple-400 truncate">{{ payslipHistory.length }} Payslips Generated</p>
                                 </div>
                                 <!-- 8. Total Claims (Approved) -->
                                 <div class="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
                                     <div class="flex items-center justify-between gap-2"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span><i class="fa-solid fa-receipt text-[10px] text-slate-300 dark:text-slate-500"></i></div>
                                     <h3 class="mt-2 text-lg font-black leading-none text-rose-600 dark:text-rose-400 truncate">{{ formatCurrency(totalApprovedClaimsAmount) }}</h3>
-                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500">Claims &amp; Vouchers (Approved)</p>
+                                    <p class="mt-2 text-[9px] font-extrabold uppercase leading-snug tracking-wider text-slate-500 dark:text-slate-400">Claims &amp; Vouchers (Approved)</p>
                                     <p class="mt-1 text-[9px] font-bold text-amber-500 truncate">{{ pendingClaimsCount }} Pending Approval</p>
                                 </div>
                             </div>
@@ -1307,6 +1467,28 @@
                                 <button type="button" v-for="cust in priorityClients" :key="cust.id" @click="openClientView(cust)" class="flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3 py-2.5 text-left transition hover:border-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/20">
                                     <span class="min-w-0 truncate text-xs font-extrabold text-brand-dark dark:text-white">{{ cust.clientName }}</span>
                                     <span class="shrink-0 rounded-full bg-slate-200 dark:bg-slate-600 px-1.5 py-0.5 text-[9px] font-bold text-slate-600 dark:text-slate-200">{{ clientProjectCount(cust.id) }} proj</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- EMPLOYEE WORKLOAD WIDGET — cross-system insight: HR staff load measured against live Client project/activity assignments -->
+                        <div v-if="employeeWorkload.length" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+                            <div class="mb-3 flex items-center justify-between gap-3">
+                                <h3 class="text-sm font-extrabold text-brand-dark dark:text-white flex items-center gap-2"><i class="fa-solid fa-gauge-high text-brand-blue"></i>Staff Workload Across Clients<span v-if="overloadedEmployeeCount" class="rounded-full bg-red-100 dark:bg-red-950/40 px-2 py-0.5 text-[10px] font-black text-red-700 dark:text-red-300">{{ overloadedEmployeeCount }} Overloaded</span></h3>
+                                <button type="button" @click="switchTab('hr-employees')" v-if="hasAccess('hr-employees')" class="text-[10px] font-bold text-brand-blue hover:underline">View Employee Management</button>
+                            </div>
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 mb-3">Active project and activity assignments per staff member — a view only possible because HR and Client records share one system.</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                <button type="button" v-for="w in employeeWorkload.slice(0, 6)" :key="`workload-${w.emp.empNo}`" @click="viewEmployeeProjectAssignments(w.emp)" class="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 px-3 py-2.5 text-left transition hover:border-brand-blue hover:bg-blue-50 dark:hover:bg-blue-950/20">
+                                    <div class="w-9 h-9 rounded-xl bg-brand-dark dark:bg-brand-blue text-white flex items-center justify-center text-[11px] font-extrabold shrink-0 overflow-hidden">
+                                        <img v-if="employeePhotoByEmail(w.emp.email)" :src="employeePhotoByEmail(w.emp.email)" alt="" class="w-full h-full object-cover">
+                                        <span v-else>{{ getInitials(w.emp.name) }}</span>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-xs font-extrabold text-brand-dark dark:text-white">{{ w.emp.name }}</p>
+                                        <p class="text-[10px] text-slate-500 dark:text-slate-400">{{ w.projectCount }} project{{ w.projectCount === 1 ? '' : 's' }} · {{ w.clientCount }} client{{ w.clientCount === 1 ? '' : 's' }}</p>
+                                    </div>
+                                    <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black" :class="w.total >= 4 ? 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300' : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-200'">{{ w.total }}</span>
                                 </button>
                             </div>
                         </div>
@@ -1358,9 +1540,9 @@
                             </div>
                         </div>
                         <div v-else-if="!portalDataReady" class="grid grid-cols-1 lg:grid-cols-2 gap-6" aria-live="polite">
-                            <div class="h-80 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div class="h-4 w-52 rounded bg-slate-200 animate-pulse"></div><div class="mt-6 h-52 rounded-xl bg-slate-100 animate-pulse"></div></div>
-                            <div class="h-80 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div class="h-4 w-64 rounded bg-slate-200 animate-pulse"></div><div class="mx-auto mt-6 h-48 w-48 rounded-full border-[24px] border-slate-100 animate-pulse"></div></div>
-                            <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div class="h-4 w-56 rounded bg-slate-200 animate-pulse"></div><div class="mt-4 h-8 rounded-lg bg-slate-100 animate-pulse"></div><div class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2"><div class="h-12 rounded-lg bg-slate-100 animate-pulse"></div><div class="h-12 rounded-lg bg-slate-100 animate-pulse"></div><div class="h-12 rounded-lg bg-slate-100 animate-pulse"></div><div class="h-12 rounded-lg bg-slate-100 animate-pulse"></div><div class="h-12 rounded-lg bg-slate-100 animate-pulse"></div></div></div>
+                            <div class="h-80 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm"><div class="h-4 w-52 rounded bg-slate-200 dark:bg-slate-700 animate-pulse"></div><div class="mt-6 h-52 rounded-xl bg-slate-100 dark:bg-slate-700/60 animate-pulse"></div></div>
+                            <div class="h-80 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm"><div class="h-4 w-64 rounded bg-slate-200 dark:bg-slate-700 animate-pulse"></div><div class="mx-auto mt-6 h-48 w-48 rounded-full border-[24px] border-slate-100 dark:border-slate-700 animate-pulse"></div></div>
+                            <div class="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm"><div class="h-4 w-56 rounded bg-slate-200 dark:bg-slate-700 animate-pulse"></div><div class="mt-4 h-8 rounded-lg bg-slate-100 dark:bg-slate-700/60 animate-pulse"></div><div class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2"><div class="h-12 rounded-lg bg-slate-100 dark:bg-slate-700/60 animate-pulse"></div><div class="h-12 rounded-lg bg-slate-100 dark:bg-slate-700/60 animate-pulse"></div><div class="h-12 rounded-lg bg-slate-100 dark:bg-slate-700/60 animate-pulse"></div><div class="h-12 rounded-lg bg-slate-100 dark:bg-slate-700/60 animate-pulse"></div><div class="h-12 rounded-lg bg-slate-100 dark:bg-slate-700/60 animate-pulse"></div></div></div>
                         </div>
 
                         <!-- RECENT ACTIVITIES TABLE WITH SORT OPTIONS -->
@@ -1470,7 +1652,7 @@
                             </button>
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Directory</h2>
-                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage client directory, auto-fill into Quotation/Invoice forms, update or delete records.</p>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Maintain client company records used across quotations and invoices.</p>
                             </div>
                         </div>
                         <button v-if="canManageClients && hasAccess('doc-generator')" type="button" @click="switchTab('doc-generator')" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
@@ -1498,11 +1680,17 @@
                                     <tr v-for="(cust, idx) in customers" :key="idx" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                         <td class="py-3 px-3 font-bold text-brand-dark dark:text-slate-200">{{ cust.clientSSM || '-' }}</td>
                                         <td class="py-3 px-3">
-                                            <span class="font-bold text-slate-900 dark:text-slate-100 block text-sm">{{ cust.clientName }}</span>
-                                            <span v-if="cust.clientPosition" class="text-xs text-slate-500 dark:text-slate-400">{{ cust.clientPosition }}</span>
-                                            <div class="mt-1.5 flex flex-wrap items-center gap-1">
-                                                <span v-if="isNewClient(cust.id)" class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-extrabold uppercase text-emerald-700">New</span>
-                                                <span :class="clientTierMeta(cust.clientTier).badgeClass" class="rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase">{{ clientTierMeta(cust.clientTier).label }}</span>
+                                            <div class="flex items-start gap-2.5">
+                                                <div class="w-9 h-9 rounded-xl bg-brand-dark dark:bg-brand-blue text-white flex items-center justify-center text-[11px] font-extrabold shrink-0">{{ getInitials(cust.clientName) }}</div>
+                                                <div class="min-w-0">
+                                                    <span class="font-bold text-slate-900 dark:text-slate-100 block text-sm truncate">{{ cust.clientName }}</span>
+                                                    <span v-if="cust.clientPosition" class="text-xs text-slate-500 dark:text-slate-400">{{ cust.clientPosition }}</span>
+                                                    <div class="mt-1.5 flex flex-wrap items-center gap-1">
+                                                        <span v-if="isNewClient(cust.id)" class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-extrabold uppercase text-emerald-700">New</span>
+                                                        <span :class="clientTierMeta(cust.clientTier).badgeClass" class="rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase">{{ clientTierMeta(cust.clientTier).label }}</span>
+                                                        <span :class="clientHealthScore(cust).className" class="rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase" :title="'Health Score: ' + clientHealthScore(cust).score + '/100'">{{ clientHealthScore(cust).label }}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </td>
                                         <td class="py-3 px-3">
@@ -1545,8 +1733,8 @@
                                 <span class="hidden sm:inline">Dashboard</span>
                             </button>
                             <div>
-                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">HR Employee Management</h2>
-                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage employee profiles, statutory contributions, and employment status.</p>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Employee Management</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Maintain employee profiles, statutory contributions, and employment records.</p>
                             </div>
                         </div>
                         <button v-if="canManageEmployees" type="button" @click="openEmployeeModal()" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
@@ -1584,10 +1772,18 @@
                                             <span v-if="emp.isSenior" class="inline-block ml-1 bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-[9px] font-bold">60+ Senior</span>
                                         </td>
                                         <td class="py-3 px-3">
-                                            <span class="font-bold text-slate-900 dark:text-slate-100 block text-sm">{{ emp.name }}</span>
-                                            <span class="font-semibold text-slate-600 dark:text-slate-400 block">{{ emp.position }}</span>
-                                            <span class="text-slate-400 block"><i class="fa-solid fa-building mr-1 text-[10px]"></i>{{ emp.dept }}</span>
-                                            <span v-if="emp.email" class="text-brand-blue dark:text-blue-400 block font-medium mt-0.5"><i class="fa-solid fa-envelope mr-1 text-[10px]"></i>{{ emp.email }}</span>
+                                            <div class="flex items-start gap-2.5">
+                                                <div class="w-9 h-9 rounded-xl bg-brand-dark dark:bg-brand-blue text-white flex items-center justify-center text-[11px] font-extrabold shrink-0 overflow-hidden">
+                                                    <img v-if="employeePhotoByEmail(emp.email)" :src="employeePhotoByEmail(emp.email)" alt="" class="w-full h-full object-cover">
+                                                    <span v-else>{{ getInitials(emp.name) }}</span>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <span class="font-bold text-slate-900 dark:text-slate-100 block text-sm truncate">{{ emp.name }}</span>
+                                                    <span class="font-semibold text-slate-600 dark:text-slate-400 block">{{ emp.position }}</span>
+                                                    <span class="text-slate-400 block"><i class="fa-solid fa-building mr-1 text-[10px]"></i>{{ emp.dept }}</span>
+                                                    <span v-if="emp.email" class="text-brand-blue dark:text-blue-400 block font-medium mt-0.5"><i class="fa-solid fa-envelope mr-1 text-[10px]"></i>{{ emp.email }}</span>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="py-3 px-3">
                                             <span class="font-bold text-slate-700 dark:text-slate-300 block"><i class="fa-solid fa-id-card text-[10px] mr-1"></i>{{ maskIC(emp.ic) }}</span>
@@ -1661,6 +1857,45 @@
                             <button type="button" @click="exportCSV('docs')" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center space-x-2">
                                 <i class="fa-solid fa-download"></i><span>Export CSV / Excel</span>
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- CROSS-DOMAIN INSIGHTS — reports only possible because HR and Client data share one system -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+                        <div class="mb-1 flex items-center gap-2"><i class="fa-solid fa-diagram-project text-brand-blue"></i><h3 class="text-sm font-extrabold text-brand-dark dark:text-white">Cross-Domain Insights</h3></div>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500 mb-4">Combined HR + Client analytics — unique to a unified HRMS/CDTS platform.</p>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                            <div>
+                                <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Top Clients by Revenue</p>
+                                <div class="space-y-1.5">
+                                    <div v-for="r in revenuePerClientTop" :key="`rev-${r.clientName}`" class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-700/40 px-2.5 py-1.5">
+                                        <span class="min-w-0 truncate text-xs font-bold text-slate-700 dark:text-slate-200">{{ r.clientName }}</span>
+                                        <span class="shrink-0 text-xs font-extrabold text-emerald-600 dark:text-emerald-400">{{ formatCurrency(r.revenue) }}</span>
+                                    </div>
+                                    <p v-if="!revenuePerClientTop.length" class="text-[10px] text-slate-400">No paid invoices yet.</p>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Staff Engaged per Client</p>
+                                <div class="space-y-1.5">
+                                    <div v-for="s in staffPerClientTop" :key="`staff-${s.clientName}`" class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-700/40 px-2.5 py-1.5">
+                                        <span class="min-w-0 truncate text-xs font-bold text-slate-700 dark:text-slate-200">{{ s.clientName }}</span>
+                                        <span class="shrink-0 text-xs font-extrabold text-brand-blue">{{ s.staffCount }} staff</span>
+                                    </div>
+                                    <p v-if="!staffPerClientTop.length" class="text-[10px] text-slate-400">No project assignments yet.</p>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Delivery Velocity</p>
+                                <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 p-4">
+                                    <h4 class="text-2xl font-black text-brand-dark dark:text-white">{{ avgActiveProjectAgeDays }}<span class="text-xs font-bold text-slate-400 ml-1">days</span></h4>
+                                    <p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Average age of active projects still in progress.</p>
+                                </div>
+                                <div class="mt-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 p-4">
+                                    <h4 class="text-2xl font-black text-brand-dark dark:text-white">{{ overloadedEmployeeCount }}<span class="text-xs font-bold text-slate-400 ml-1">staff</span></h4>
+                                    <p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Currently overloaded across client work (4+ active items).</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1745,42 +1980,54 @@
 
                                 <div class="space-y-2.5 min-h-[180px]">
                                     <article v-for="group in getClientGroupsByStage(stage)" :key="group.key" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm transition hover:shadow-md">
-                                        <div class="flex w-full items-center gap-2 rounded-xl p-3">
-                                            <button type="button" @click="toggleClientGroup(`${stage}::${group.key}`)" class="flex min-w-0 flex-1 items-center gap-2 text-left" :title="isClientGroupExpanded(`${stage}::${group.key}`) ? 'Collapse tasks' : 'Expand tasks'">
-                                                <i class="fa-solid text-[10px] text-slate-400 dark:text-slate-500 shrink-0" :class="isClientGroupExpanded(`${stage}::${group.key}`) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
-                                                <span class="min-w-0 truncate text-[12px] font-extrabold text-brand-dark dark:text-white"><i class="fa-solid fa-building mr-1.5 text-slate-400 dark:text-slate-500"></i>{{ group.clientName }}</span>
-                                                <span class="shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-[9px] font-black text-slate-600 dark:text-slate-300">{{ group.projects.length }}</span>
+                                        <div class="flex w-full items-start gap-2 rounded-xl p-3">
+                                            <button type="button" @click="toggleClientGroup(`${stage}::${group.key}`)" class="flex min-w-0 flex-1 items-start gap-2 text-left" :title="isClientGroupExpanded(`${stage}::${group.key}`) ? 'Collapse tasks' : 'Expand tasks'">
+                                                <i class="fa-solid text-[10px] text-slate-400 dark:text-slate-500 shrink-0 mt-0.5" :class="isClientGroupExpanded(`${stage}::${group.key}`) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex min-w-0 items-center gap-2">
+                                                        <span class="min-w-0 truncate text-[12px] font-extrabold text-brand-dark dark:text-white"><i class="fa-solid fa-building mr-1.5 text-slate-400 dark:text-slate-500"></i>{{ group.clientName }}</span>
+                                                        <span class="shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-[9px] font-black text-slate-600 dark:text-slate-300">{{ group.projects.length }}</span>
+                                                    </div>
+                                                    <p class="mt-1 truncate text-[9px] font-semibold text-slate-400 dark:text-slate-500">SSM: {{ clientSsmForId(group.clientDirectoryId) || '—' }}</p>
+                                                    <p v-if="isNewProjectGroup(group)" class="mt-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-sparkles mr-1"></i>New project · Added {{ formatDateTime(clientGroupNewestCreatedAt(group)) }}</p>
+                                                </div>
                                             </button>
                                             <div class="flex shrink-0 items-center gap-1">
-                                                <span v-if="isNewClient(group.clientDirectoryId)" class="rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 text-[8px] font-extrabold uppercase text-emerald-700 dark:text-emerald-300">New</span>
+                                                <span v-if="isNewClient(group.clientDirectoryId)" class="rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 text-[8px] font-extrabold uppercase text-emerald-700 dark:text-emerald-300">New Client</span>
                                                 <span :class="clientTierMeta(clientTierForId(group.clientDirectoryId)).badgeClass" class="rounded-full px-1.5 py-0.5 text-[8px] font-extrabold uppercase">{{ clientTierMeta(clientTierForId(group.clientDirectoryId)).label }}</span>
                                                 <button type="button" @click="openClientQuickViewForProject(group.projects[0])" class="h-6 w-6 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600" title="View client information"><i class="fa-solid fa-circle-info text-[10px]"></i></button>
                                             </div>
                                         </div>
 
                                         <div v-if="isClientGroupExpanded(`${stage}::${group.key}`)" class="space-y-2 border-t border-slate-100 dark:border-slate-700 p-2.5">
-                                            <div v-for="project in group.projects" :key="project.id" class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                            <div v-for="project in group.projects" :key="project.id" class="overflow-hidden rounded-lg border border-l-4 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" :class="projectTargetDateState(project).borderClass">
                                                 <div class="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 px-3 py-1.5">
-                                                    <span class="rounded-md bg-white dark:bg-slate-800 px-2 py-0.5 text-[9px] font-extrabold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{{ project.projectRef }}</span>
-                                                    <div v-if="canEditProject(project)" class="flex items-center gap-1 shrink-0">
-                                                        <button type="button" @click="openProjectModal(project)" class="h-6 w-6 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60" title="Edit project"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                                                    <div class="flex min-w-0 items-center gap-1.5">
+                                                        <span class="shrink-0 rounded-md bg-white dark:bg-slate-800 px-2 py-0.5 text-[9px] font-extrabold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{{ project.projectRef }}</span>
+                                                        <span class="shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-extrabold uppercase" :class="projectTargetDateState(project).className">{{ projectTargetDateState(project).label }}</span>
+                                                    </div>
+                                                    <div class="flex items-center gap-1 shrink-0">
+                                                        <button type="button" @click="openProjectDetails(project)" class="h-6 w-6 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600" title="View details"><i class="fa-regular fa-eye text-[9px]"></i></button>
+                                                        <template v-if="canEditProject(project)">
+                                                            <button type="button" @click="openProjectModal(project)" class="h-6 w-6 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60" title="Edit project"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                                                            <button type="button" @click="moveProject(project, -1)" :disabled="stageIndex === 0" class="h-6 w-6 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-30" title="Move to previous stage"><i class="fa-solid fa-arrow-left text-[9px]"></i></button>
+                                                            <button type="button" @click="moveProject(project, 1)" :disabled="stageIndex === projectStages.length - 1" class="h-6 w-6 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-30" title="Move to next stage"><i class="fa-solid fa-arrow-right text-[9px]"></i></button>
+                                                        </template>
                                                         <button v-if="canManageProjects" type="button" @click="deleteProject(project)" class="h-6 w-6 rounded-md bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/60" title="Delete project"><i class="fa-solid fa-trash text-[9px]"></i></button>
                                                     </div>
                                                 </div>
-                                                <div class="p-3">
+                                                <button type="button" @click="openProjectDetails(project)" class="block w-full p-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-700/40">
                                                     <h4 class="text-sm font-extrabold leading-snug text-brand-dark dark:text-white">{{ project.title }}</h4>
-                                                    <div class="project-card-meta mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[10px] text-slate-600 dark:text-slate-300">
-                                                        <p v-if="project.ownerName" class="truncate" :title="project.ownerName"><i class="fa-solid fa-user-gear mr-1.5 w-3 text-slate-400 dark:text-slate-500"></i>{{ project.ownerName }}</p>
-                                                        <p v-if="project.ownerEmpNo" class="truncate"><i class="fa-solid fa-id-badge mr-1.5 w-3 text-slate-400 dark:text-slate-500"></i>{{ project.ownerEmpNo }}</p>
-                                                        <p v-if="project.targetDate" class="truncate"><i class="fa-solid fa-calendar-check mr-1.5 w-3 text-slate-400 dark:text-slate-500"></i>{{ project.targetDate }}</p>
-                                                        <p v-if="project.ownerEmpNo" class="flex items-center gap-1.5 truncate"><span :class="isProjectPicOnline(project) ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'" class="h-1.5 w-1.5 shrink-0 rounded-full"></span><span :class="isProjectPicOnline(project) ? 'font-bold text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'" class="truncate">{{ projectPicPresenceDetail(project) }}</span></p>
+                                                    <div class="mt-2.5 flex items-center gap-2">
+                                                        <img v-if="projectOwnerPhoto(project)" :src="projectOwnerPhoto(project)" :alt="project.ownerName" class="h-7 w-7 shrink-0 rounded-full object-cover border border-slate-200 dark:border-slate-600">
+                                                        <div v-else class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-blue/10 dark:bg-blue-950/40 text-[9px] font-extrabold text-brand-blue dark:text-blue-300">{{ getInitials(project.ownerName) }}</div>
+                                                        <div class="min-w-0 flex-1">
+                                                            <p class="truncate text-[10px] font-bold text-slate-700 dark:text-slate-200">{{ project.ownerName || 'Unassigned' }}<span v-if="project.ownerEmpNo" class="font-normal text-slate-400 dark:text-slate-500"> · {{ project.ownerEmpNo }}</span></p>
+                                                            <p class="truncate text-[9px] text-slate-400 dark:text-slate-500"><i class="fa-solid fa-calendar-check mr-1"></i>Target: {{ project.targetDate || 'Not scheduled' }}</p>
+                                                        </div>
+                                                        <span v-if="project.ownerEmpNo" :class="isProjectPicOnline(project) ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'" class="h-2 w-2 shrink-0 rounded-full" :title="projectPicPresenceDetail(project)"></span>
                                                     </div>
-                                                    <div class="mt-2.5 flex items-center gap-2 border-t border-slate-100 dark:border-slate-700 pt-2.5">
-                                                        <button type="button" @click="openProjectDetails(project)" class="flex-1 rounded-lg bg-brand-dark px-3 py-2 text-[10px] font-bold text-white hover:bg-brand-blue"><i class="fa-regular fa-eye mr-1.5"></i>View Details</button>
-                                                        <button v-if="canEditProject(project)" type="button" @click="moveProject(project, -1)" :disabled="stageIndex === 0" class="h-8 w-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-[10px] font-bold text-slate-700 dark:text-slate-200 disabled:cursor-not-allowed disabled:opacity-30" title="Move to previous stage"><i class="fa-solid fa-arrow-left"></i></button>
-                                                        <button v-if="canEditProject(project)" type="button" @click="moveProject(project, 1)" :disabled="stageIndex === projectStages.length - 1" class="h-8 w-8 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-[10px] font-bold text-slate-700 dark:text-slate-200 disabled:cursor-not-allowed disabled:opacity-30" title="Move to next stage"><i class="fa-solid fa-arrow-right"></i></button>
-                                                    </div>
-                                                </div>
+                                                </button>
                                             </div>
                                         </div>
                                     </article>
@@ -1815,15 +2062,71 @@
 
                     <div v-if="projectPreview.show && projectPreview.project" class="fixed inset-0 z-[96] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" @click.self="closeProjectDetails">
                         <div class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white dark:bg-slate-800 shadow-2xl">
-                            <header class="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 dark:border-slate-700 bg-brand-dark px-6 py-5 text-white">
-                                <div><p class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-teal-300">{{ projectPreview.project.projectRef }}</p><h3 class="mt-1 text-lg font-extrabold leading-snug">{{ projectPreview.project.title }}</h3></div>
-                                <button type="button" @click="closeProjectDetails" class="h-9 w-9 shrink-0 rounded-lg bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+                            <header class="sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700 bg-brand-dark px-6 py-5 text-white">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <p class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-teal-300">{{ projectPreview.project.projectRef }}</p>
+                                            <span class="rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase" :class="projectTargetDateState(projectPreview.project).className">{{ projectTargetDateState(projectPreview.project).label }}</span>
+                                        </div>
+                                        <h3 class="mt-1 text-lg font-extrabold leading-snug">{{ projectPreview.project.title }}</h3>
+                                    </div>
+                                    <button type="button" @click="closeProjectDetails" class="h-9 w-9 shrink-0 rounded-lg bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                                <div class="mt-5 flex items-center">
+                                    <template v-for="(stage, stageIndex) in projectStages" :key="stage">
+                                        <div class="flex flex-1 flex-col items-center text-center">
+                                            <div class="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-black"
+                                                 :class="stageIndex < projectStages.indexOf(projectPreview.project.status) ? 'bg-emerald-500 text-white' : stageIndex === projectStages.indexOf(projectPreview.project.status) ? 'bg-white text-brand-dark ring-4 ring-white/25' : 'bg-white/10 text-white/50'">
+                                                <i v-if="stageIndex < projectStages.indexOf(projectPreview.project.status)" class="fa-solid fa-check text-[9px]"></i>
+                                                <span v-else>{{ stageIndex + 1 }}</span>
+                                            </div>
+                                            <p class="mt-1.5 hidden max-w-[80px] text-[8px] font-bold uppercase leading-tight sm:block" :class="stageIndex <= projectStages.indexOf(projectPreview.project.status) ? 'text-white' : 'text-white/40'">{{ stage }}</p>
+                                        </div>
+                                        <div v-if="stageIndex < projectStages.length - 1" class="mb-4 sm:mb-5 h-0.5 flex-1" :class="stageIndex < projectStages.indexOf(projectPreview.project.status) ? 'bg-emerald-500' : 'bg-white/15'"></div>
+                                    </template>
+                                </div>
                             </header>
                             <div class="space-y-5 p-6 text-slate-700 dark:text-slate-200">
-                                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 px-4 py-3"><div><p class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Current Workflow</p><p class="mt-1 text-sm font-extrabold text-brand-dark dark:text-white">{{ projectPreview.project.status }}</p></div><span :class="isProjectPicOnline(projectPreview.project) ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'" class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-extrabold"><span :class="isProjectPicOnline(projectPreview.project) ? 'bg-emerald-500' : 'bg-slate-400'" class="h-2 w-2 rounded-full"></span>{{ projectPicPresenceDetail(projectPreview.project) }}</span></div>
-                                <section><h4 class="mb-3 text-[10px] font-extrabold uppercase tracking-widest text-brand-blue">Project Information</h4><div class="grid grid-cols-1 gap-3 sm:grid-cols-2"><button v-if="projectPreview.project.clientName" type="button" @click="openClientQuickViewForProject(projectPreview.project)" class="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-left transition hover:border-brand-blue hover:bg-blue-50 dark:hover:bg-blue-950/30"><div class="flex items-start justify-between gap-2"><p class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">Client <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-[8px]"></i></p><div class="flex shrink-0 gap-1"><span v-if="isNewClient(projectPreview.project.clientDirectoryId)" class="rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 text-[8px] font-extrabold uppercase text-emerald-700 dark:text-emerald-300">New</span><span :class="clientTierMeta(clientTierForId(projectPreview.project.clientDirectoryId)).badgeClass" class="rounded-full px-1.5 py-0.5 text-[8px] font-extrabold uppercase">{{ clientTierMeta(clientTierForId(projectPreview.project.clientDirectoryId)).label }}</span></div></div><p class="mt-1 text-xs font-extrabold text-brand-dark dark:text-white">{{ projectPreview.project.clientName || '—' }}</p><p class="mt-1 text-[10px] lowercase text-slate-500 dark:text-slate-400">{{ projectPreview.project.clientEmail || '—' }}</p></button>
-                                <div v-else class="rounded-xl border border-slate-200 dark:border-slate-700 p-4"><p class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">Client</p><p class="mt-1 text-xs font-extrabold text-brand-dark dark:text-white">—</p></div><div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4"><p class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">Schedule</p><p class="mt-1 text-xs font-bold text-slate-700 dark:text-slate-200">Start: {{ projectPreview.project.startDate || '—' }}</p><p class="mt-1 text-xs font-bold text-slate-700 dark:text-slate-200">Target: {{ projectPreview.project.targetDate || '—' }}</p></div></div></section>
-                                <section><h4 class="mb-3 text-[10px] font-extrabold uppercase tracking-widest text-brand-blue">Person In Charge</h4><div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4"><div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p class="text-sm font-extrabold text-brand-dark dark:text-white">{{ projectPreview.project.ownerName || '—' }}</p><p class="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">{{ projectPreview.project.ownerPosition || 'NO POSITION' }}</p><p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">{{ projectPreview.project.ownerEmpNo }} · <span class="lowercase">{{ projectPreview.project.ownerEmail }}</span></p></div><div class="text-left text-[10px] text-slate-500 dark:text-slate-400 sm:text-right"><p>Assigned {{ formatDateTime(projectPreview.project.ownerAssignedAt) }}</p><p class="mt-1">{{ projectPicPresenceDetail(projectPreview.project) }}</p></div></div></div></section>
+                                <section>
+                                    <h4 class="mb-3 text-[10px] font-extrabold uppercase tracking-widest text-brand-blue">Project Information</h4>
+                                    <button v-if="projectPreview.project.clientName" type="button" @click="openClientQuickViewForProject(projectPreview.project)" class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-left transition hover:border-brand-blue hover:bg-blue-50 dark:hover:bg-blue-950/30">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <p class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">Client <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-[8px]"></i></p>
+                                            <div class="flex shrink-0 gap-1">
+                                                <span v-if="isNewClient(projectPreview.project.clientDirectoryId)" class="rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 text-[8px] font-extrabold uppercase text-emerald-700 dark:text-emerald-300">New</span>
+                                                <span :class="clientTierMeta(clientTierForId(projectPreview.project.clientDirectoryId)).badgeClass" class="rounded-full px-1.5 py-0.5 text-[8px] font-extrabold uppercase">{{ clientTierMeta(clientTierForId(projectPreview.project.clientDirectoryId)).label }}</span>
+                                            </div>
+                                        </div>
+                                        <p class="mt-1 text-xs font-extrabold text-brand-dark dark:text-white">{{ projectPreview.project.clientName || '—' }}</p>
+                                        <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-slate-500 dark:text-slate-400">
+                                            <span><i class="fa-solid fa-hashtag mr-1"></i>SSM: {{ clientSsmForId(projectPreview.project.clientDirectoryId) || '—' }}</span>
+                                            <span class="lowercase"><i class="fa-solid fa-envelope mr-1"></i>{{ projectPreview.project.clientEmail || '—' }}</span>
+                                        </div>
+                                    </button>
+                                    <div v-else class="rounded-xl border border-slate-200 dark:border-slate-700 p-4"><p class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">Client</p><p class="mt-1 text-xs font-extrabold text-brand-dark dark:text-white">—</p></div>
+                                    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                                            <p class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">Schedule</p>
+                                            <p class="mt-1.5 text-xs font-bold text-slate-700 dark:text-slate-200"><i class="fa-solid fa-play mr-1.5 w-3 text-slate-400 dark:text-slate-500"></i>Start: {{ projectPreview.project.startDate || '—' }}</p>
+                                            <p class="mt-1 text-xs font-bold text-slate-700 dark:text-slate-200"><i class="fa-solid fa-flag-checkered mr-1.5 w-3 text-slate-400 dark:text-slate-500"></i>Target: {{ projectPreview.project.targetDate || '—' }}</p>
+                                        </div>
+                                        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                                            <p class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">Person In Charge</p>
+                                            <div class="mt-1.5 flex items-center gap-2">
+                                                <img v-if="projectOwnerPhoto(projectPreview.project)" :src="projectOwnerPhoto(projectPreview.project)" :alt="projectPreview.project.ownerName" class="h-8 w-8 shrink-0 rounded-full object-cover border border-slate-200 dark:border-slate-600">
+                                                <div v-else class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-blue/10 dark:bg-blue-950/40 text-[10px] font-extrabold text-brand-blue dark:text-blue-300">{{ getInitials(projectPreview.project.ownerName) }}</div>
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="truncate text-xs font-extrabold text-brand-dark dark:text-white">{{ projectPreview.project.ownerName || '—' }}</p>
+                                                    <p class="truncate text-[9px] text-slate-500 dark:text-slate-400">{{ projectPreview.project.ownerPosition || 'NO POSITION' }}</p>
+                                                </div>
+                                                <span :class="isProjectPicOnline(projectPreview.project) ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'" class="h-2 w-2 shrink-0 rounded-full" :title="projectPicPresenceDetail(projectPreview.project)"></span>
+                                            </div>
+                                            <p class="mt-2 truncate text-[9px] text-slate-500 dark:text-slate-400">{{ projectPreview.project.ownerEmpNo }} · <span class="lowercase">{{ projectPreview.project.ownerEmail }}</span></p>
+                                            <p class="mt-1 text-[9px] text-slate-400 dark:text-slate-500">Assigned {{ formatDateTime(projectPreview.project.ownerAssignedAt) }} · {{ projectPicPresenceDetail(projectPreview.project) }}</p>
+                                        </div>
+                                    </div>
+                                </section>
                                 <section><h4 class="mb-3 text-[10px] font-extrabold uppercase tracking-widest text-brand-blue">Project Description</h4><div class="min-h-[90px] whitespace-pre-wrap rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4 text-xs leading-relaxed text-slate-700 dark:text-slate-200">{{ projectPreview.project.description || 'No project description provided.' }}</div></section>
                                 <section v-if="userProfile.role !== 'Client'">
                                     <div class="mb-3 flex items-center justify-between gap-3"><div><h4 class="text-[10px] font-extrabold uppercase tracking-widest text-brand-blue">Activity Issues</h4><p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Scheduled actions, assignees and due dates for this project.</p></div><button v-if="canManageProjectActivities(projectPreview.project)" type="button" @click="openActivityModal(projectPreview.project)" class="rounded-lg bg-brand-blue px-3 py-2 text-[10px] font-bold text-white hover:bg-teal-800"><i class="fa-solid fa-calendar-plus mr-1.5"></i>Schedule Activity</button></div>
@@ -1960,6 +2263,62 @@
                         </div>
                     </div>
 
+                    <!-- COMPANY PROFILE CARD — systematic identity summary, same pattern used across the platform -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5">
+                            <div class="flex lg:flex-col items-center lg:items-stretch gap-4 lg:gap-3 bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 rounded-xl p-4">
+                                <div class="w-16 h-16 lg:w-20 lg:h-20 lg:mx-auto rounded-2xl bg-brand-dark dark:bg-brand-blue text-white flex items-center justify-center text-xl lg:text-2xl font-extrabold shrink-0">{{ getInitials(myClientRecord?.clientName || userProfile.name) }}</div>
+                                <div class="min-w-0 lg:text-center">
+                                    <p class="font-extrabold text-sm text-brand-dark dark:text-white truncate">{{ myClientRecord?.clientName || userProfile.name }}</p>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{{ myClientRecord?.clientSSM || 'SSM not on file' }}</p>
+                                    <span v-if="myClientRecord" :class="clientTierMeta(myClientRecord.clientTier).badgeClass" class="inline-flex items-center gap-1 mt-2 px-2 py-1 rounded-full text-[10px] font-bold">{{ clientTierMeta(myClientRecord.clientTier).label }}</span>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 p-3.5">
+                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Total Documents</p>
+                                    <h4 class="mt-1.5 text-xl font-black text-brand-dark dark:text-white">{{ clientPortalDocs.length }}</h4>
+                                </div>
+                                <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 p-3.5">
+                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Paid Invoices</p>
+                                    <h4 class="mt-1.5 text-xl font-black text-emerald-600 dark:text-emerald-400">{{ myClientPaidCount }}</h4>
+                                </div>
+                                <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 p-3.5">
+                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Unpaid Invoices</p>
+                                    <h4 class="mt-1.5 text-xl font-black text-red-500">{{ myClientUnpaidCount }}</h4>
+                                </div>
+                                <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/40 p-3.5">
+                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Active Projects</p>
+                                    <h4 class="mt-1.5 text-xl font-black text-brand-blue">{{ projects.filter(p => p.status !== 'Completed & Done').length }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PROJECT PROGRESS — systematic project overview for this client, same stepper pattern used elsewhere -->
+                    <div v-if="projects.length" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+                        <div class="mb-4 flex items-center justify-between gap-3">
+                            <h3 class="text-sm font-extrabold text-brand-dark dark:text-white flex items-center gap-2"><i class="fa-solid fa-diagram-project text-brand-blue"></i>Your Project Progress</h3>
+                            <button type="button" @click="switchTab('project-activities')" class="text-[10px] font-bold text-brand-blue hover:underline">View Full Tracker</button>
+                        </div>
+                        <div class="space-y-3">
+                            <button type="button" v-for="project in projects.slice(0, 4)" :key="`portal-project-${project.id}`" @click="openProjectDetails(project)" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 text-left transition hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <span class="rounded-md bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 text-[9px] font-extrabold text-brand-blue dark:text-blue-300 border border-blue-100 dark:border-blue-900">{{ project.projectRef }}</span>
+                                        <p class="mt-1 truncate text-xs font-extrabold text-brand-dark dark:text-white">{{ project.title }}</p>
+                                    </div>
+                                    <span class="shrink-0 rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-1 text-[9px] font-extrabold uppercase text-slate-600 dark:text-slate-300">{{ project.status }}</span>
+                                </div>
+                                <div class="mt-3 flex items-center gap-1">
+                                    <template v-for="(stage, stageIndex) in projectStages" :key="stage">
+                                        <span class="h-1.5 flex-1 rounded-full" :class="stageIndex <= projectStages.indexOf(project.status) ? ['bg-blue-500','bg-amber-500','bg-orange-500','bg-violet-500','bg-emerald-500'][projectStages.indexOf(project.status)] : 'bg-slate-100 dark:bg-slate-700'"></span>
+                                    </template>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
                         <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <span class="text-xs font-bold text-slate-400">Showing {{ filteredClientPortalDocs.length }} of {{ clientPortalDocs.length }} document(s)</span>
@@ -1991,7 +2350,9 @@
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
                                     <tr v-if="!filteredClientPortalDocs.length"><td colspan="6" class="py-8 text-center text-slate-400">No documents match this filter.</td></tr>
                                     <tr v-for="d in filteredClientPortalDocs" :key="d.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                        <td class="py-3 px-4 font-bold">{{ d.type }}</td>
+                                        <td class="py-3 px-4">
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold" :class="d.type === 'Invoice' ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300' : 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300'"><i class="fa-solid" :class="d.type === 'Invoice' ? 'fa-file-invoice-dollar' : 'fa-file-pen'"></i>{{ d.type }}</span>
+                                        </td>
                                         <td class="py-3 px-4 font-bold text-brand-dark dark:text-slate-100">{{ d.docNo }}</td>
                                         <td class="py-3 px-4 text-slate-600 dark:text-slate-300">{{ d.date }}</td>
                                         <td class="py-3 px-4 text-right font-extrabold">{{ formatCurrency(d.amount) }}</td>
@@ -2021,6 +2382,9 @@
                                 <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Real-time user security and activity logs from Firebase.</p>
                             </div>
                         </div>
+                        <button type="button" @click="exportComplianceReport" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
+                            <i class="fa-solid fa-shield-halved"></i><span>Export Compliance Report</span>
+                        </button>
                     </div>
 
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
@@ -2037,18 +2401,18 @@
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs font-mono">
                                     <tr v-for="log in auditLogs" :key="log.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                        <td class="py-3 px-4 text-slate-500">{{ log.timestamp }}</td>
+                                        <td class="py-3 px-4 text-slate-500 dark:text-slate-400">{{ log.timestamp }}</td>
                                         <td class="py-3 px-4 font-bold text-brand-dark dark:text-slate-200">{{ log.user }}</td>
                                         <td class="py-3 px-4">
                                             <span :class="{
-                                                'bg-blue-100 text-blue-800': log.action === 'LOGIN',
-                                                'bg-emerald-100 text-emerald-800': log.action === 'CREATE',
-                                                'bg-amber-100 text-amber-800': log.action === 'UPDATE',
-                                                'bg-red-100 text-red-800': log.action === 'DELETE'
+                                                'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300': log.action === 'LOGIN',
+                                                'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300': log.action === 'CREATE',
+                                                'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300': log.action === 'UPDATE',
+                                                'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300': log.action === 'DELETE'
                                             }" class="px-2 py-0.5 rounded text-[10px] font-bold">{{ log.action }}</span>
                                         </td>
                                         <td class="py-3 px-4 text-slate-700 dark:text-slate-300">{{ log.details }}</td>
-                                        <td class="py-3 px-4 text-slate-400">{{ log.ip }} ({{ log.browser }})</td>
+                                        <td class="py-3 px-4 text-slate-400 dark:text-slate-500">{{ log.ip }} ({{ log.browser }})</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -2247,12 +2611,12 @@
 
         <!-- IMAGE ATTACHMENT PREVIEW -->
         <div v-if="attachmentPreview.show" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 no-print" @click.self="attachmentPreview.show = false">
-            <div class="w-full max-w-5xl overflow-hidden rounded-xl bg-white shadow-2xl">
-                <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
-                    <div class="flex items-center gap-2 text-sm font-extrabold text-brand-dark"><i class="fa-solid fa-image text-brand-blue"></i>{{ attachmentPreview.label }}</div>
-                    <button type="button" @click="attachmentPreview.show = false" class="rounded-lg bg-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-300"><i class="fa-solid fa-xmark mr-1"></i>Close</button>
+            <div class="w-full max-w-5xl overflow-hidden rounded-xl bg-white dark:bg-slate-800 shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 px-4 py-3">
+                    <div class="flex items-center gap-2 text-sm font-extrabold text-brand-dark dark:text-white"><i class="fa-solid fa-image text-brand-blue"></i>{{ attachmentPreview.label }}</div>
+                    <button type="button" @click="attachmentPreview.show = false" class="rounded-lg bg-slate-200 dark:bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600"><i class="fa-solid fa-xmark mr-1"></i>Close</button>
                 </div>
-                <div class="max-h-[78vh] overflow-auto bg-slate-100 p-4 md:p-6">
+                <div class="max-h-[78vh] overflow-auto bg-slate-100 dark:bg-slate-900/60 p-4 md:p-6">
                     <img :src="attachmentPreview.url" :alt="attachmentPreview.label" class="mx-auto h-auto max-w-full rounded-lg bg-white shadow-lg">
                 </div>
             </div>
@@ -2271,31 +2635,32 @@
 
         <!-- CLIENT INFORMATION VIEW -->
         <div v-if="clientView.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[102] flex items-center justify-center p-4 no-print" @click.self="clientView.show = false">
-            <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
-                <div class="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
-                    <div><p class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-brand-blue">Client Directory</p><h3 class="mt-1 text-lg font-extrabold text-brand-dark">Client Information</h3><p class="mt-1 text-xs text-slate-500">Registered company and contact information.</p></div>
-                    <button type="button" @click="clientView.show = false" aria-label="Close client information" class="rounded-lg bg-slate-100 px-3 py-2 text-slate-600 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-700 pb-4">
+                    <div><p class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-brand-blue">Client Directory</p><h3 class="mt-1 text-lg font-extrabold text-brand-dark dark:text-white">Client Information</h3><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Registered company and contact information.</p></div>
+                    <button type="button" @click="clientView.show = false" aria-label="Close client information" class="rounded-lg bg-slate-100 dark:bg-slate-700 px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-5 text-xs">
-                    <div class="sm:col-span-2 rounded-xl bg-slate-50 border border-slate-200 p-4">
+                    <div class="sm:col-span-2 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 p-4">
                         <div class="flex flex-wrap items-start justify-between gap-2">
-                            <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Company</p><p class="mt-1 text-base font-extrabold text-brand-dark">{{ clientView.client.clientName }}</p><p class="mt-1 text-slate-600">SSM: {{ clientView.client.clientSSM }}</p></div>
+                            <div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Company</p><p class="mt-1 text-base font-extrabold text-brand-dark dark:text-white">{{ clientView.client.clientName }}</p><p class="mt-1 text-slate-600 dark:text-slate-300">SSM: {{ clientView.client.clientSSM }}</p></div>
                             <div class="flex shrink-0 items-center gap-1.5">
-                                <span v-if="clientView.client.id && isNewClient(clientView.client.id)" class="rounded-full bg-emerald-100 px-2 py-1 text-[9px] font-extrabold uppercase text-emerald-700">New Client</span>
-                                <span v-else-if="clientView.client.id" class="rounded-full bg-slate-200 px-2 py-1 text-[9px] font-extrabold uppercase text-slate-600">Returning · {{ clientProjectCount(clientView.client.id) }} Project{{ clientProjectCount(clientView.client.id) === 1 ? '' : 's' }}</span>
+                                <span v-if="clientView.client.id && isNewClient(clientView.client.id)" class="rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-2 py-1 text-[9px] font-extrabold uppercase text-emerald-700 dark:text-emerald-300">New Client</span>
+                                <span v-else-if="clientView.client.id" class="rounded-full bg-slate-200 dark:bg-slate-700 px-2 py-1 text-[9px] font-extrabold uppercase text-slate-600 dark:text-slate-300">Returning · {{ clientProjectCount(clientView.client.id) }} Project{{ clientProjectCount(clientView.client.id) === 1 ? '' : 's' }}</span>
                                 <span :class="clientTierMeta(clientView.client.clientTier).badgeClass" class="rounded-full px-2 py-1 text-[9px] font-extrabold uppercase">{{ clientTierMeta(clientView.client.clientTier).label }}</span>
+                                <span :class="clientHealthScore(clientView.client).className" class="rounded-full px-2 py-1 text-[9px] font-extrabold uppercase" :title="'Health Score: ' + clientHealthScore(clientView.client).score + '/100'">{{ clientHealthScore(clientView.client).label }} · {{ clientHealthScore(clientView.client).score }}</span>
                             </div>
                         </div>
-                        <div v-if="canManageClients && clientView.client.id" class="mt-3 flex items-center gap-1.5 border-t border-slate-200 pt-3">
-                            <span class="text-[10px] font-bold text-slate-400">Set Tier:</span>
-                            <button type="button" v-for="tier in ['Standard','Premium','Priority']" :key="`tier-${tier}`" @click="updateClientTier(clientView.client, tier); clientView.client.clientTier = tier" :class="clientView.client.clientTier === tier ? clientTierMeta(tier).badgeClass + ' ring-2 ring-offset-1 ring-brand-blue' : 'bg-white text-slate-500 border border-slate-200'" class="rounded-full px-2.5 py-1 text-[9px] font-extrabold uppercase transition">{{ tier }}</button>
+                        <div v-if="canManageClients && clientView.client.id" class="mt-3 flex items-center gap-1.5 border-t border-slate-200 dark:border-slate-700 pt-3">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">Set Tier:</span>
+                            <button type="button" v-for="tier in ['Standard','Premium','Priority']" :key="`tier-${tier}`" @click="updateClientTier(clientView.client, tier); clientView.client.clientTier = tier" :class="clientView.client.clientTier === tier ? clientTierMeta(tier).badgeClass + ' ring-2 ring-offset-1 ring-brand-blue' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-600'" class="rounded-full px-2.5 py-1 text-[9px] font-extrabold uppercase transition">{{ tier }}</button>
                         </div>
                     </div>
-                    <div><p class="font-bold text-slate-400">Contact Person</p><p class="mt-1 font-semibold text-slate-700">{{ clientView.client.clientContactPerson }}</p></div>
-                    <div><p class="font-bold text-slate-400">Position</p><p class="mt-1 font-semibold text-slate-700">{{ clientView.client.clientPosition }}</p></div>
-                    <div><p class="font-bold text-slate-400">Email</p><p class="mt-1 font-semibold text-slate-700 break-all">{{ clientView.client.clientEmail }}</p></div>
-                    <div><p class="font-bold text-slate-400">Phone</p><p class="mt-1 font-semibold text-slate-700">{{ clientView.client.clientPhone }}</p></div>
-                    <div class="sm:col-span-2"><p class="font-bold text-slate-400">Registered Address</p><p class="mt-1 rounded-lg border border-slate-200 p-3 font-semibold text-slate-700">{{ clientView.client.clientAddress }}<br>{{ clientView.client.clientPostcode }} {{ clientView.client.clientCity }}, {{ clientView.client.clientState }}<br>{{ clientView.client.clientCountry }}</p></div>
+                    <div><p class="font-bold text-slate-400 dark:text-slate-500">Contact Person</p><p class="mt-1 font-semibold text-slate-700 dark:text-slate-200">{{ clientView.client.clientContactPerson }}</p></div>
+                    <div><p class="font-bold text-slate-400 dark:text-slate-500">Position</p><p class="mt-1 font-semibold text-slate-700 dark:text-slate-200">{{ clientView.client.clientPosition }}</p></div>
+                    <div><p class="font-bold text-slate-400 dark:text-slate-500">Email</p><p class="mt-1 font-semibold text-slate-700 dark:text-slate-200 break-all">{{ clientView.client.clientEmail }}</p></div>
+                    <div><p class="font-bold text-slate-400 dark:text-slate-500">Phone</p><p class="mt-1 font-semibold text-slate-700 dark:text-slate-200">{{ clientView.client.clientPhone }}</p></div>
+                    <div class="sm:col-span-2"><p class="font-bold text-slate-400 dark:text-slate-500">Registered Address</p><p class="mt-1 rounded-lg border border-slate-200 dark:border-slate-700 p-3 font-semibold text-slate-700 dark:text-slate-200">{{ clientView.client.clientAddress }}<br>{{ clientView.client.clientPostcode }} {{ clientView.client.clientCity }}, {{ clientView.client.clientState }}<br>{{ clientView.client.clientCountry }}</p></div>
                 </div>
                 <div class="flex justify-end"><button type="button" @click="clientView.show = false" class="rounded-xl bg-brand-dark px-5 py-2 text-xs font-bold text-white hover:bg-brand-blue">Close</button></div>
             </div>
@@ -2303,37 +2668,52 @@
 
         <!-- CLIENT ACTION CONFIRMATION -->
         <div v-if="clientActionConfirm.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 no-print">
-            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-                <div class="flex items-center gap-3"><span :class="clientActionConfirm.action === 'delete' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'" class="flex h-10 w-10 items-center justify-center rounded-full"><i :class="clientActionConfirm.action === 'delete' ? 'fa-solid fa-trash' : 'fa-solid fa-pen'"></i></span><div><h3 class="font-extrabold text-brand-dark">{{ clientActionConfirm.action === 'delete' ? 'Delete client record?' : 'Edit client record?' }}</h3><p class="mt-1 text-xs text-slate-500">{{ clientActionConfirm.client?.clientName }}</p></div></div>
-                <p class="mt-4 text-sm text-slate-600">{{ clientActionConfirm.action === 'delete' ? 'This action removes the client record. Please confirm before continuing.' : 'You will be taken to the Document Generator to update the client information.' }}</p>
-                <div class="mt-6 flex justify-end gap-2"><button type="button" @click="clientActionConfirm.show = false" class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200">No</button><button type="button" @click="confirmClientAction" :class="clientActionConfirm.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-dark hover:bg-brand-blue'" class="rounded-xl px-4 py-2 text-xs font-bold text-white">Yes, Continue</button></div>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+                <div class="flex items-center gap-3"><span :class="clientActionConfirm.action === 'delete' ? 'bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-300' : 'bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300'" class="flex h-10 w-10 items-center justify-center rounded-full"><i :class="clientActionConfirm.action === 'delete' ? 'fa-solid fa-trash' : 'fa-solid fa-pen'"></i></span><div><h3 class="font-extrabold text-brand-dark dark:text-white">{{ clientActionConfirm.action === 'delete' ? 'Delete client record?' : 'Edit client record?' }}</h3><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ clientActionConfirm.client?.clientName }}</p></div></div>
+                <p class="mt-4 text-sm text-slate-600 dark:text-slate-300">{{ clientActionConfirm.action === 'delete' ? 'This action removes the client record. Please confirm before continuing.' : 'You will be taken to Billing & Documents to update the client information.' }}</p>
+                <div class="mt-6 flex justify-end gap-2"><button type="button" @click="clientActionConfirm.show = false" class="rounded-xl bg-slate-100 dark:bg-slate-700 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600">No</button><button type="button" @click="confirmClientAction" :class="clientActionConfirm.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-dark hover:bg-brand-blue'" class="rounded-xl px-4 py-2 text-xs font-bold text-white">Yes, Continue</button></div>
+            </div>
+        </div>
+
+        <!-- GENERIC APP CONFIRMATION -->
+        <div v-if="appConfirm.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4 no-print" @click.self="resolveAppConfirm(false)">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+                <div class="flex items-center gap-3">
+                    <span :class="appConfirm.danger ? 'bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-300' : 'bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300'" class="flex h-10 w-10 items-center justify-center rounded-full shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                    <h3 class="font-extrabold text-brand-dark dark:text-white">{{ appConfirm.title }}</h3>
+                </div>
+                <p class="mt-4 text-sm text-slate-600 dark:text-slate-300">{{ appConfirm.message }}</p>
+                <div class="mt-6 flex justify-end gap-2">
+                    <button type="button" @click="resolveAppConfirm(false)" class="rounded-xl bg-slate-100 dark:bg-slate-700 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600">Cancel</button>
+                    <button type="button" @click="resolveAppConfirm(true)" :class="appConfirm.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-dark hover:bg-brand-blue'" class="rounded-xl px-4 py-2 text-xs font-bold text-white">{{ appConfirm.confirmLabel }}</button>
+                </div>
             </div>
         </div>
 
         <!-- EMPLOYEE INFORMATION VIEW -->
         <div v-if="employeeView.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] flex items-center justify-center p-4 no-print" @click.self="employeeView.show = false">
-            <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
-                <div class="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-700 pb-4">
                     <div>
                         <p class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-brand-blue">HR Employee Management</p>
-                        <h3 class="mt-1 text-lg font-extrabold text-brand-dark">Employee Information</h3>
-                        <p class="mt-1 text-xs text-slate-500">Sensitive identifiers are protected and shown only as the final four digits.</p>
+                        <h3 class="mt-1 text-lg font-extrabold text-brand-dark dark:text-white">Employee Information</h3>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Sensitive identifiers are protected and shown only as the final four digits.</p>
                     </div>
-                    <button type="button" @click="employeeView.show = false" aria-label="Close employee information" class="rounded-lg bg-slate-100 px-3 py-2 text-slate-600 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" @click="employeeView.show = false" aria-label="Close employee information" class="rounded-lg bg-slate-100 dark:bg-slate-700 px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-5 text-xs">
-                    <div class="sm:col-span-2 rounded-xl bg-slate-50 border border-slate-200 p-4"><div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Employee</p><p class="mt-1 text-base font-extrabold text-brand-dark">{{ employeeView.employee.name }}</p><p class="mt-1 text-slate-600">{{ employeeView.employee.empNo }} · {{ employeeView.employee.position }}</p></div><div class="text-right"><span :class="isEmployeeOnline(employeeViewLiveRecord) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-extrabold"><span :class="isEmployeeOnline(employeeViewLiveRecord) ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'" class="h-2 w-2 rounded-full"></span>{{ employeePresenceLabel(employeeViewLiveRecord) }}</span><p class="mt-1 text-[9px] text-slate-400">{{ employeeLastSeen(employeeViewLiveRecord) }}</p></div></div></div>
-                    <div><p class="font-bold text-slate-400">Department</p><p class="mt-1 font-semibold text-slate-700">{{ employeeView.employee.dept }}</p></div>
-                    <div><p class="font-bold text-slate-400">Employment</p><p class="mt-1 font-semibold text-slate-700">{{ employeeView.employee.employmentType }} · {{ employeeView.employee.status }}</p></div>
-                    <div><p class="font-bold text-slate-400">Work Email</p><p class="mt-1 font-semibold text-slate-700 break-all">{{ employeeView.employee.email }}</p></div>
-                    <div><p class="font-bold text-slate-400">Join Date</p><p class="mt-1 font-semibold text-slate-700">{{ employeeView.employee.joinDate }}</p></div>
+                    <div class="sm:col-span-2 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 p-4"><div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Employee</p><p class="mt-1 text-base font-extrabold text-brand-dark dark:text-white">{{ employeeView.employee.name }}</p><p class="mt-1 text-slate-600 dark:text-slate-300">{{ employeeView.employee.empNo }} · {{ employeeView.employee.position }}</p></div><div class="text-right"><span :class="isEmployeeOnline(employeeViewLiveRecord) ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-extrabold"><span :class="isEmployeeOnline(employeeViewLiveRecord) ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'" class="h-2 w-2 rounded-full"></span>{{ employeePresenceLabel(employeeViewLiveRecord) }}</span><p class="mt-1 text-[9px] text-slate-400 dark:text-slate-500">{{ employeeLastSeen(employeeViewLiveRecord) }}</p></div></div></div>
+                    <div><p class="font-bold text-slate-400 dark:text-slate-500">Department</p><p class="mt-1 font-semibold text-slate-700 dark:text-slate-200">{{ employeeView.employee.dept }}</p></div>
+                    <div><p class="font-bold text-slate-400 dark:text-slate-500">Employment</p><p class="mt-1 font-semibold text-slate-700 dark:text-slate-200">{{ employeeView.employee.employmentType }} · {{ employeeView.employee.status }}</p></div>
+                    <div><p class="font-bold text-slate-400 dark:text-slate-500">Work Email</p><p class="mt-1 font-semibold text-slate-700 dark:text-slate-200 break-all">{{ employeeView.employee.email }}</p></div>
+                    <div><p class="font-bold text-slate-400 dark:text-slate-500">Join Date</p><p class="mt-1 font-semibold text-slate-700 dark:text-slate-200">{{ employeeView.employee.joinDate }}</p></div>
                 </div>
-                <div class="border-t border-slate-200 pt-4"><h4 class="font-extrabold text-brand-dark">Protected information</h4>
+                <div class="border-t border-slate-200 dark:border-slate-700 pt-4"><h4 class="font-extrabold text-brand-dark dark:text-white">Protected information</h4>
                     <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                        <p class="rounded-lg border border-slate-200 p-3"><span class="block text-slate-400 font-bold">ID / Passport</span><span class="mt-1 block font-mono font-bold text-slate-700">{{ employeeView.employee.ic }}</span></p>
-                        <p class="rounded-lg border border-slate-200 p-3"><span class="block text-slate-400 font-bold">Bank Account</span><span class="mt-1 block font-mono font-bold text-slate-700">{{ employeeView.employee.bankAcc }}</span></p>
-                        <p class="rounded-lg border border-slate-200 p-3"><span class="block text-slate-400 font-bold">EPF / SOCSO</span><span class="mt-1 block font-mono font-bold text-slate-700">{{ employeeView.employee.epfNo }} · {{ employeeView.employee.socsoNo }}</span></p>
-                        <p class="rounded-lg border border-slate-200 p-3"><span class="block text-slate-400 font-bold">EIS / Tax PCB</span><span class="mt-1 block font-mono font-bold text-slate-700">{{ employeeView.employee.eisNo }} · {{ employeeView.employee.taxNo }}</span></p>
+                        <p class="rounded-lg border border-slate-200 dark:border-slate-700 p-3"><span class="block text-slate-400 dark:text-slate-500 font-bold">ID / Passport</span><span class="mt-1 block font-mono font-bold text-slate-700 dark:text-slate-200">{{ employeeView.employee.ic }}</span></p>
+                        <p class="rounded-lg border border-slate-200 dark:border-slate-700 p-3"><span class="block text-slate-400 dark:text-slate-500 font-bold">Bank Account</span><span class="mt-1 block font-mono font-bold text-slate-700 dark:text-slate-200">{{ employeeView.employee.bankAcc }}</span></p>
+                        <p class="rounded-lg border border-slate-200 dark:border-slate-700 p-3"><span class="block text-slate-400 dark:text-slate-500 font-bold">EPF / SOCSO</span><span class="mt-1 block font-mono font-bold text-slate-700 dark:text-slate-200">{{ employeeView.employee.epfNo }} · {{ employeeView.employee.socsoNo }}</span></p>
+                        <p class="rounded-lg border border-slate-200 dark:border-slate-700 p-3"><span class="block text-slate-400 dark:text-slate-500 font-bold">EIS / Tax PCB</span><span class="mt-1 block font-mono font-bold text-slate-700 dark:text-slate-200">{{ employeeView.employee.eisNo }} · {{ employeeView.employee.taxNo }}</span></p>
                     </div>
                 </div>
                 <div class="mt-5 flex justify-end"><button type="button" @click="employeeView.show = false" class="rounded-xl bg-brand-dark px-5 py-2 text-xs font-bold text-white hover:bg-brand-blue">Close</button></div>
@@ -2342,10 +2722,10 @@
 
         <!-- EMPLOYEE ACTION CONFIRMATION -->
         <div v-if="employeeActionConfirm.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 no-print">
-            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-                <div class="flex items-center gap-3"><span :class="employeeActionConfirm.action === 'delete' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'" class="flex h-10 w-10 items-center justify-center rounded-full"><i :class="employeeActionConfirm.action === 'delete' ? 'fa-solid fa-trash' : 'fa-solid fa-pen'"></i></span><div><h3 class="font-extrabold text-brand-dark">{{ employeeActionConfirm.action === 'delete' ? 'Delete employee record?' : 'Edit employee record?' }}</h3><p class="mt-1 text-xs text-slate-500">{{ employeeActionConfirm.employee?.name }} · {{ employeeActionConfirm.employee?.empNo }}</p></div></div>
-                <p class="mt-4 text-sm text-slate-600">{{ employeeActionConfirm.action === 'delete' ? 'This action removes the employee record. Please confirm before continuing.' : 'Sensitive fields remain protected and require a full value when changed.' }}</p>
-                <div class="mt-6 flex justify-end gap-2"><button type="button" @click="employeeActionConfirm.show = false" class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200">No</button><button type="button" @click="confirmEmployeeAction" :class="employeeActionConfirm.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-dark hover:bg-brand-blue'" class="rounded-xl px-4 py-2 text-xs font-bold text-white">Yes, Continue</button></div>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+                <div class="flex items-center gap-3"><span :class="employeeActionConfirm.action === 'delete' ? 'bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-300' : 'bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-300'" class="flex h-10 w-10 items-center justify-center rounded-full"><i :class="employeeActionConfirm.action === 'delete' ? 'fa-solid fa-trash' : 'fa-solid fa-pen'"></i></span><div><h3 class="font-extrabold text-brand-dark dark:text-white">{{ employeeActionConfirm.action === 'delete' ? 'Delete employee record?' : 'Edit employee record?' }}</h3><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ employeeActionConfirm.employee?.name }} · {{ employeeActionConfirm.employee?.empNo }}</p></div></div>
+                <p class="mt-4 text-sm text-slate-600 dark:text-slate-300">{{ employeeActionConfirm.action === 'delete' ? 'This action removes the employee record. Please confirm before continuing.' : 'Sensitive fields remain protected and require a full value when changed.' }}</p>
+                <div class="mt-6 flex justify-end gap-2"><button type="button" @click="employeeActionConfirm.show = false" class="rounded-xl bg-slate-100 dark:bg-slate-700 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600">No</button><button type="button" @click="confirmEmployeeAction" :class="employeeActionConfirm.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-dark hover:bg-brand-blue'" class="rounded-xl px-4 py-2 text-xs font-bold text-white">Yes, Continue</button></div>
             </div>
         </div>
 
@@ -2797,5 +3177,12 @@
     </div>
 
     <script type="module" src="./app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
+            });
+        }
+    </script>
 </body>
 </html>

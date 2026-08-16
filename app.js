@@ -71,6 +71,7 @@ createApp({
             authLoading: true,
             loginLoading: false,
             logoutConfirm: false,
+            postLogoutChoice: false,
             browserBackHandler: null,
             appUpdateCheckInterval: null,
             appVisibilityHandler: null,
@@ -80,8 +81,9 @@ createApp({
             idleWarningVisible: false,
             idleActivityHandler: null,
             showPassword: false,
-            loginForm: { 
-                email: '', 
+            authView: 'landing',
+            loginForm: {
+                email: '',
                 password: ''
             },
             loginError: '',
@@ -225,6 +227,7 @@ createApp({
             employeeActionConfirm: { show: false, action: '', employee: null },
             clientView: { show: false, client: {} },
             clientActionConfirm: { show: false, action: '', client: null },
+            appConfirm: { show: false, title: '', message: '', confirmLabel: 'Yes, Continue', danger: false, onConfirm: null },
 
             officialEmailDomain: 'zenq0r.com',
 
@@ -299,7 +302,9 @@ createApp({
                     'Supplier Invoice Payment',
                     'Vendor Service Payment',
                     'Utility Bill Payment',
-                    'Rental / Lease Payment'
+                    'Rental / Lease Payment',
+                    'Equipment / Asset Purchase',
+                    'Maintenance and Repair Service'
                 ],
                 'Wages and Contractor': [
                     'Casual Wages / Daily Pay',
@@ -310,15 +315,47 @@ createApp({
                 'Allowance and Honorarium': [
                     'Staff Allowance',
                     'Honorarium',
-                    'Meeting / Committee Allowance'
+                    'Meeting / Committee Allowance',
+                    'Travel and Accommodation Claim'
                 ],
                 'Operations and Projects': [
                     'Project Equipment Purchase',
                     'Software / SaaS Subscription',
-                    'Emergency Operations Purchase'
+                    'Emergency Operations Purchase',
+                    'Logistics / Courier Service'
+                ],
+                'Travel and Accommodation': [
+                    'Flight / Train / Bus Ticket',
+                    'Hotel Accommodation',
+                    'Vehicle Rental',
+                    'Fuel and Toll',
+                    'Visa / Travel Insurance'
+                ],
+                'Marketing and Business Development': [
+                    'Advertising and Promotion',
+                    'Sponsorship',
+                    'Printing and Marketing Materials',
+                    'Event / Exhibition Cost'
+                ],
+                'Statutory and Government Payment': [
+                    'SSM / License Renewal Fee',
+                    'Government Stamp Duty',
+                    'Income Tax Installment',
+                    'EPF / SOCSO / EIS Late Payment Penalty'
+                ],
+                'Insurance and Legal': [
+                    'Insurance Premium',
+                    'Legal / Professional Fee',
+                    'Audit and Accounting Fee'
+                ],
+                'Corporate and Client Relations': [
+                    'Client Entertainment',
+                    'Corporate Gift / Souvenir',
+                    'Donation / CSR Contribution'
                 ],
                 'Miscellaneous': [
                     'Bank Charges / Fees',
+                    'Refund to Client / Customer',
                     'Other (Specify in Description)'
                 ]
             },
@@ -432,6 +469,13 @@ createApp({
         myApprovedClaimsAmount() { return [...this.myClaims, ...this.myPaymentVouchers].filter(c => c.status === 'Approved').reduce((sum, c) => sum + (Number(c.amount) || 0), 0); },
 
         myClientDocs() { return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email); },
+        myClientRecord() {
+            const email = String(this.userProfile.email || '').trim().toLowerCase();
+            if (!email) return null;
+            return this.customers.find(c => String(c.clientEmail || '').trim().toLowerCase() === email) || null;
+        },
+        myClientPaidCount() { return this.clientPortalDocs.filter(d => d.type === 'Invoice' && d.status === 'Paid').length; },
+        myClientUnpaidCount() { return this.clientPortalDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').length; },
         myUnpaidInvoicesCount() { return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').length; },
         myUnpaidInvoicesAmount() { return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').reduce((sum, d) => sum + (Number(d.amount) || 0), 0); },
         myPaidInvoicesAmount() { return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status === 'Paid').reduce((sum, d) => sum + (Number(d.amount) || 0), 0); },
@@ -451,6 +495,47 @@ createApp({
 
         activeEmployeesCount() { return this.employees.filter(e => e.status === 'Aktif').length; },
         totalPayrollNet() { return this.payslipHistory.reduce((s, p) => s + (Number(p.amount) || 0), 0); },
+
+        // CROSS-SYSTEM INSIGHT: staff workload measured across BOTH HR project assignments and client
+        // activity assignments — only possible because HR and Client data live in the same system.
+        employeeWorkload() {
+            return this.employees
+                .map(emp => {
+                    const projectAssignments = this.employeeActiveProjectAssignments(emp.empNo);
+                    const activityAssignments = this.employeeActiveActivityAssignments(emp.empNo);
+                    const clientNames = [...new Set(projectAssignments.map(p => p.clientName).filter(Boolean))];
+                    return { emp, projectCount: projectAssignments.length, activityCount: activityAssignments.length, clientCount: clientNames.length, total: projectAssignments.length + activityAssignments.length };
+                })
+                .filter(w => w.total > 0)
+                .sort((a, b) => b.total - a.total);
+        },
+        overloadedEmployeeCount() { return this.employeeWorkload.filter(w => w.total >= 4).length; },
+
+        // CROSS-SYSTEM INSIGHT: revenue attributed per client, ranked — combines Client Directory with Billing data.
+        revenuePerClientTop() {
+            const byClient = {};
+            this.docHistory.filter(d => d.type === 'Invoice' && d.status === 'Paid').forEach(d => {
+                const key = d.name || 'Unknown';
+                byClient[key] = (byClient[key] || 0) + (Number(d.amount) || 0);
+            });
+            return Object.entries(byClient).map(([clientName, revenue]) => ({ clientName, revenue })).sort((a, b) => b.revenue - a.revenue).slice(0, 6);
+        },
+        // CROSS-SYSTEM INSIGHT: distinct HR staff engaged per client, ranked.
+        staffPerClientTop() {
+            const byClient = {};
+            this.projects.forEach(p => {
+                if (!p.clientName) return;
+                if (!byClient[p.clientName]) byClient[p.clientName] = new Set();
+                if (p.ownerEmpNo) byClient[p.clientName].add(p.ownerEmpNo);
+            });
+            return Object.entries(byClient).map(([clientName, staffSet]) => ({ clientName, staffCount: staffSet.size })).filter(c => c.staffCount > 0).sort((a, b) => b.staffCount - a.staffCount).slice(0, 6);
+        },
+        avgActiveProjectAgeDays() {
+            const active = this.projects.filter(p => p.status !== 'Completed & Done' && p.createdAt);
+            if (!active.length) return 0;
+            const totalDays = active.reduce((s, p) => s + Math.max(0, (Date.now() - Date.parse(p.createdAt)) / 86400000), 0);
+            return Math.round(totalDays / active.length);
+        },
 
         pendingClaimsCount() { return [...this.claimsHistory, ...this.paymentVouchers].filter(c => c.status && c.status.includes('Pending')).length; },
         totalApprovedClaimsAmount() { return [...this.claimsHistory, ...this.paymentVouchers].filter(c => c.status === 'Approved').reduce((s, c) => s + (Number(c.amount) || 0), 0); },
@@ -819,6 +904,38 @@ createApp({
             if (daysRemaining <= 3) return { label: `Due In ${daysRemaining} Day${daysRemaining === 1 ? '' : 's'}`, className: 'bg-emerald-100 text-emerald-800', borderClass: 'border-l-emerald-500', dotClass: 'bg-emerald-500', daysRemaining };
             return { label: `Scheduled · ${daysRemaining} Days`, className: 'bg-blue-100 text-blue-800', borderClass: 'border-l-blue-500', dotClass: 'bg-blue-500', daysRemaining };
         },
+        projectTargetDateState(project) {
+            if (project.status === 'Completed & Done') return { label: 'Completed', className: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300', borderClass: 'border-l-emerald-500', daysRemaining: null };
+            const today = this.getLocalDateKey();
+            const targetDate = String(project.targetDate || '');
+            const daysRemaining = Math.round((Date.parse(`${targetDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
+            if (!Number.isFinite(daysRemaining)) return { label: 'No Target', className: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300', borderClass: 'border-l-slate-300 dark:border-l-slate-600', daysRemaining: null };
+            if (daysRemaining < 0) return { label: `${Math.abs(daysRemaining)}d Overdue`, className: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300', borderClass: 'border-l-red-500', daysRemaining };
+            if (daysRemaining === 0) return { label: 'Due Today', className: 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300', borderClass: 'border-l-amber-400', daysRemaining };
+            if (daysRemaining <= 3) return { label: `Due In ${daysRemaining}d`, className: 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300', borderClass: 'border-l-amber-400', daysRemaining };
+            if (daysRemaining <= 7) return { label: `Due In ${daysRemaining}d`, className: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300', borderClass: 'border-l-blue-500', daysRemaining };
+            return { label: `On Track · ${daysRemaining}d`, className: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300', borderClass: 'border-l-emerald-500', daysRemaining };
+        },
+        getInitials(name) {
+            const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+            if (!parts.length) return '?';
+            return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+        },
+        projectOwnerPhoto(project) {
+            const email = String(project?.ownerEmail || '').trim().toLowerCase();
+            if (!email) return '';
+            const matchedUser = this.users.find(u => String(u.email || '').trim().toLowerCase() === email);
+            return matchedUser?.photo || '';
+        },
+        employeePhotoByEmail(email) {
+            const normalized = String(email || '').trim().toLowerCase();
+            if (!normalized) return '';
+            const matchedUser = this.users.find(u => String(u.email || '').trim().toLowerCase() === normalized);
+            return matchedUser?.photo || '';
+        },
+        payEmployeePhoto() { return this.employeePhotoByEmail(this.payForm?.empEmail); },
+        claimEmployeePhoto() { return this.employeePhotoByEmail(this.claimForm?.empEmail); },
+        voucherEmployeePhoto() { return this.employeePhotoByEmail(this.voucherForm?.empEmail); },
         isProjectOwner(project) {
             if (!project) return false;
             return this.userProfile.role !== 'Client' && String(project.ownerEmail || '').trim().toLowerCase() === String(this.userProfile.email || '').trim().toLowerCase();
@@ -1197,6 +1314,28 @@ createApp({
             this.logAudit('EXPORT', `Mengeksport fail CSV bagi modul: ${type.toUpperCase()}`);
             this.showNotify(`Laporan CSV (${type}) berjaya dimuat turun.`);
         },
+        exportComplianceReport() {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const filename = `Compliance_Audit_Report_ZENQOR_${todayStr}.csv`;
+            const rows = [
+                ['ZENQOR HRMS/CDTS - PDPA Compliance & Security Audit Report'],
+                [`Generated: ${new Date().toLocaleString('en-US')}`],
+                [`Generated By: ${this.userProfile.name} (${this.userProfile.email})`],
+                [`Total Logged Events: ${this.auditLogs.length}`],
+                [],
+                ['Timestamp', 'User', 'Action', 'Activity / Target', 'Browser'],
+                ...this.auditLogs.map(log => [log.timestamp || '', log.user || '', log.action || '', log.details || '', log.browser || ''])
+            ];
+            const csvContent = "data:text/csv;charset=utf-8,﻿" + rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csvContent));
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            this.logAudit('EXPORT', 'Exported PDPA compliance & security audit report.');
+            this.showNotify('Compliance report downloaded.');
+        },
         generateRandomPassword(length = 8) {
             const allChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
             let pwd = "";
@@ -1402,14 +1541,40 @@ createApp({
                 e.target.value = '';
             } finally { this.attachmentUploadState.director = false; e.target.value = ''; }
         },
+        requestConfirm({ title, message, confirmLabel = 'Yes, Continue', danger = false, onConfirm }) {
+            this.appConfirm = { show: true, title, message, confirmLabel, danger, onConfirm };
+        },
+        resolveAppConfirm(confirmed) {
+            const { onConfirm } = this.appConfirm;
+            this.appConfirm = { show: false, title: '', message: '', confirmLabel: 'Yes, Continue', danger: false, onConfirm: null };
+            if (confirmed && typeof onConfirm === 'function') onConfirm();
+        },
         clearAllDocItems() {
-            if (confirm("Are you sure you want to clear all product/service items?")) { this.docForm.items = [{ desc: '', qty: 1, price: 0 }]; this.showNotify("All items cleared."); }
+            this.requestConfirm({
+                title: 'Clear all items?',
+                message: 'This removes every product/service line from this document.',
+                confirmLabel: 'Yes, Clear Items',
+                danger: true,
+                onConfirm: () => { this.docForm.items = [{ desc: '', qty: 1, price: 0 }]; this.showNotify("All items cleared."); }
+            });
         },
         resetDocForm() {
-            if (confirm("Are you sure you want to clear the entire document form?")) { this.resetAllForms(); this.showNotify("Form cleared."); }
+            this.requestConfirm({
+                title: 'Clear the entire form?',
+                message: 'This removes all client information and items entered so far.',
+                confirmLabel: 'Yes, Clear Form',
+                danger: true,
+                onConfirm: () => { this.resetAllForms(); this.showNotify("Form cleared."); }
+            });
         },
         resetPayForm() {
-            if (confirm("Are you sure you want to clear the entire payslip form?")) { this.editingPayId = null; this.resetAllForms(); }
+            this.requestConfirm({
+                title: 'Clear the entire payslip form?',
+                message: 'This removes all payslip details entered so far.',
+                confirmLabel: 'Yes, Clear Form',
+                danger: true,
+                onConfirm: () => { this.editingPayId = null; this.resetAllForms(); this.showNotify("Form cleared."); }
+            });
         },
         resetClaimForm() {
             this.editingClaimId = null; this.resetAllForms();
@@ -1709,6 +1874,10 @@ createApp({
         requestLogout() {
             this.logoutConfirm = true;
         },
+        selectAuthView(view) {
+            this.authView = view;
+            this.loginError = '';
+        },
         setChartFilter(timeframe) {
             this.chartTimeFilter = timeframe; this.refreshDashboardCharts();
             this.showNotify(`Chart view changed to: ${timeframe.toUpperCase()}`);
@@ -1754,8 +1923,20 @@ createApp({
                     this.loginLoading = false;
                     return;
                 }
+                if (this.authView === 'client' && role !== 'Client') {
+                    await signOut(auth);
+                    this.loginError = 'This is a staff account. Please use "Company Staff" sign in instead.';
+                    this.loginLoading = false;
+                    return;
+                }
+                if (this.authView === 'staff' && role === 'Client') {
+                    await signOut(auth);
+                    this.loginError = 'This is a client account. Please use "Client Portal" sign in instead.';
+                    this.loginLoading = false;
+                    return;
+                }
 
-                this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '' };
+                this.userProfile ={ name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '' };
                 this.applyDarkModePreference();
                 this.notificationsLog = Array.isArray(userData?.notificationsLog) ? userData.notificationsLog : [];
                 this.startIdleTimeoutWatch();
@@ -1789,8 +1970,16 @@ createApp({
             } finally {
                 this.destroyDashboardCharts();
                 this.isLoggedIn = false; this.loginLoading = false; this.portalDataReady = false; this.portalDataReadyPromise = null; this.userProfile = { name: '', email: '', role: '', photo: '' };
-                this.resetAllForms(); this.currentTab = 'dashboard'; this.loginForm = { email: '', password: '' }; this.searchQuery = '';
+                this.resetAllForms(); this.currentTab = 'dashboard'; this.loginForm = { email: '', password: '' }; this.searchQuery = ''; this.authView = 'landing';
+                this.postLogoutChoice = true;
             }
+        },
+        stayOnPortal() {
+            this.postLogoutChoice = false;
+        },
+        goToMainSite() {
+            this.postLogoutChoice = false;
+            window.location.href = 'https://www.zenq0r.com';
         },
 
         async handleChangePassword() {
@@ -2023,9 +2212,37 @@ createApp({
             const customer = this.customers.find(c => c.id === clientDirectoryId);
             return customer?.clientTier || 'Standard';
         },
+        clientSsmForId(clientDirectoryId) {
+            const customer = this.customers.find(c => c.id === clientDirectoryId);
+            return customer?.clientSSM || '';
+        },
         clientProjectCount(clientDirectoryId) {
             if (!clientDirectoryId) return 0;
             return this.projects.filter(p => p.clientDirectoryId === clientDirectoryId).length;
+        },
+        // CROSS-SYSTEM INSIGHT: client health score blends Billing (payment behaviour) with
+        // Project Activities (delivery velocity) — a signal only possible with HR + Client data unified.
+        clientHealthScore(cust) {
+            if (!cust) return { score: 0, label: 'No Data', className: 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400' };
+            const clientInvoices = this.docHistory.filter(d => d.type === 'Invoice' && d.name === cust.clientName);
+            const totalInvoiced = clientInvoices.reduce((s, d) => s + (Number(d.amount) || 0), 0);
+            const totalPaid = clientInvoices.filter(d => d.status === 'Paid').reduce((s, d) => s + (Number(d.amount) || 0), 0);
+            const paymentScore = totalInvoiced > 0 ? Math.round((totalPaid / totalInvoiced) * 50) : 35;
+
+            const clientProjects = cust.id ? this.projects.filter(p => p.clientDirectoryId === cust.id) : [];
+            const activeProjects = clientProjects.filter(p => p.status !== 'Completed & Done');
+            const overdueProjects = activeProjects.filter(p => (this.projectTargetDateState(p).daysRemaining ?? 0) < 0);
+            const projectScore = activeProjects.length ? Math.max(0, 30 - overdueProjects.length * 10) : 20;
+
+            const engagementScore = Math.min(20, activeProjects.length * 5);
+            const score = Math.min(100, paymentScore + projectScore + engagementScore);
+
+            let label, className;
+            if (score >= 80) { label = 'Excellent'; className = 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'; }
+            else if (score >= 60) { label = 'Good'; className = 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'; }
+            else if (score >= 40) { label = 'Fair'; className = 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'; }
+            else { label = 'At Risk'; className = 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300'; }
+            return { score, label, className };
         },
         isNewClient(clientDirectoryId) {
             if (!clientDirectoryId) return false;
@@ -2034,6 +2251,23 @@ createApp({
             const createdMs = Date.parse(customer.createdAt);
             if (!Number.isFinite(createdMs)) return false;
             const ageMs = Date.now() - createdMs;
+            return ageMs >= 0 && ageMs <= 3 * 24 * 60 * 60 * 1000;
+        },
+        isNewProject(project) {
+            if (!project?.createdAt) return false;
+            const createdMs = Date.parse(project.createdAt);
+            if (!Number.isFinite(createdMs)) return false;
+            const ageMs = Date.now() - createdMs;
+            return ageMs >= 0 && ageMs <= 3 * 24 * 60 * 60 * 1000;
+        },
+        clientGroupNewestCreatedAt(group) {
+            const timestamps = group.projects.map(p => Date.parse(p.createdAt || '')).filter(Number.isFinite);
+            return timestamps.length ? Math.max(...timestamps) : null;
+        },
+        isNewProjectGroup(group) {
+            const newest = this.clientGroupNewestCreatedAt(group);
+            if (newest === null) return false;
+            const ageMs = Date.now() - newest;
             return ageMs >= 0 && ageMs <= 3 * 24 * 60 * 60 * 1000;
         },
         async updateClientTier(cust, tier) {
@@ -2060,7 +2294,7 @@ createApp({
         },
         editCustomer(cust) {
             if (!this.canManageClients) { this.showNotify('You do not have permission to update client records.'); return; }
-            if (!this.hasAccess('doc-generator')) { this.showNotify('Editing client details requires Document Generator access, which your role does not have.'); return; }
+            if (!this.hasAccess('doc-generator')) { this.showNotify('Editing client details requires Billing & Documents access, which your role does not have.'); return; }
             this.selectCustomerFromTable(cust); this.switchTab('doc-generator');
         },
         async deleteCustomer(clientName, requiresConfirmation = true) {

@@ -146,6 +146,10 @@ body {
         background-image: radial-gradient(circle at 100% 0, rgba(15, 118, 110, 0.1), transparent 28rem), linear-gradient(180deg, #f8fafc 0, #f1f5f9 100%);
     }
 
+    .dark #app main {
+        background-image: radial-gradient(circle at 100% 0, rgba(45, 212, 191, 0.08), transparent 28rem), linear-gradient(180deg, #0f172a 0, #0b1220 100%);
+    }
+
     #app input,
     #app select,
     #app textarea {
@@ -190,7 +194,15 @@ body {
     #app .bg-white.rounded-2xl,
     #app .dark\:bg-slate-800.rounded-2xl {
         box-shadow: 0 6px 22px rgba(15, 23, 42, 0.06);
+    }
+
+    #app .bg-white.rounded-2xl {
         border-color: #d7e0e8;
+    }
+
+    .dark #app .dark\:bg-slate-800.rounded-2xl {
+        border-color: #334155;
+        box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
     }
 
     #app table thead {
@@ -211,13 +223,26 @@ body {
         font-size: 0.68rem;
     }
 
+    .dark #app table thead tr {
+        background: #1e293b;
+        color: #cbd5e1;
+    }
+
     #app table tbody tr:hover {
         background: #f0fdfa !important;
+    }
+
+    .dark #app table tbody tr:hover {
+        background: #1e293b !important;
     }
 
     #app label {
         color: #475569;
         letter-spacing: 0.025em;
+    }
+
+    .dark #app label {
+        color: #cbd5e1;
     }
 
     #app .fixed.inset-0 > .bg-white,
@@ -305,9 +330,6 @@ body {
         border-color: #e76f51;
     }
 
-    #app .bg-slate-100 {
-        background-color: #f1f5f9;
-    }
 
     #app input,
     #app select,
