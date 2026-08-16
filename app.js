@@ -81,6 +81,7 @@ createApp({
             logoutConfirm: false,
             postLogoutChoice: false,
             passwordResetFlow: { active: false, oobCode: '', email: '', verifying: true, valid: false, error: '', newPassword: '', confirmPassword: '', loading: false, success: false },
+            forgotPasswordFlow: { active: false, email: '', loading: false, sent: false, error: '' },
             browserBackHandler: null,
             appUpdateCheckInterval: null,
             appVisibilityHandler: null,
@@ -2036,19 +2037,29 @@ createApp({
             const newLog = { id: String(Date.now()), timestamp: new Date().toLocaleString('en-US'), user: this.userProfile.email, action: action, details: details, browser: navigator.userAgent.substring(0, 80) };
             setDoc(doc(db, "audit_logs", newLog.id), newLog).catch(e => console.error(e));
         },
-        async handleForgotPassword() {
-            if (!this.loginForm.email) { alert("Please enter your official sign-in email address first."); return; }
+        openForgotPasswordFlow() {
+            this.forgotPasswordFlow = { active: true, email: this.loginForm.email || '', loading: false, sent: false, error: '' };
+        },
+        exitForgotPasswordFlow() {
+            this.forgotPasswordFlow = { active: false, email: '', loading: false, sent: false, error: '' };
+        },
+        async submitForgotPasswordRequest() {
+            this.forgotPasswordFlow.error = '';
+            if (!this.forgotPasswordFlow.email) { this.forgotPasswordFlow.error = 'Please enter your email address.'; return; }
+            this.forgotPasswordFlow.loading = true;
             try {
-                await sendPasswordResetEmail(auth, this.loginForm.email, { url: window.location.origin + '/' });
-                this.showNotify(`Password reset link sent to: ${this.loginForm.email}`);
+                await sendPasswordResetEmail(auth, this.forgotPasswordFlow.email, { url: window.location.origin + '/' });
+                this.forgotPasswordFlow.sent = true;
             } catch (error) {
-                console.error('Password reset failed:', error?.code, error?.message);
+                console.error('Password reset request failed:', error?.code, error?.message);
                 const code = String(error?.code || '');
-                if (code.includes('too-many-requests')) alert("Too many reset attempts in a short time. Please wait a while before trying again.");
-                else if (code.includes('invalid-email')) alert("That email address is not a valid format.");
-                else if (code.includes('unauthorized-domain') || code.includes('unauthorized-continue-uri')) alert("This domain is not authorized to send reset emails. Contact your system administrator.");
-                else if (code.includes('user-not-found')) this.showNotify(`If ${this.loginForm.email} has an account, a reset link has been sent.`);
-                else alert(`Failed to send password reset email (${code || 'unknown error'}). Please try again shortly.`);
+                if (code.includes('too-many-requests')) this.forgotPasswordFlow.error = 'Too many reset attempts in a short time. Please wait a while before trying again.';
+                else if (code.includes('invalid-email')) this.forgotPasswordFlow.error = 'That email address is not a valid format.';
+                else if (code.includes('unauthorized-domain') || code.includes('unauthorized-continue-uri')) this.forgotPasswordFlow.error = 'This domain is not authorized to send reset emails. Contact your system administrator.';
+                else if (code.includes('user-not-found')) this.forgotPasswordFlow.sent = true;
+                else this.forgotPasswordFlow.error = `Failed to send password reset email (${code || 'unknown error'}). Please try again shortly.`;
+            } finally {
+                this.forgotPasswordFlow.loading = false;
             }
         },
         async checkPasswordResetLink() {
