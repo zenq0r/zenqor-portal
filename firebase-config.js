@@ -26,6 +26,13 @@ import {
     EmailAuthProvider,
     reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+    getStorage,
+    ref as storageRef,
+    uploadBytes,
+    getDownloadURL,
+    deleteObject
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const env = window.__ENV__ || {};
 const getEnvValue = (key, fallback) => {
@@ -50,10 +57,12 @@ isAnalyticsSupported().then((supported) => {
 
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 export {
     db,
     auth,
+    storage,
     collection,
     doc,
     setDoc,
@@ -69,5 +78,9 @@ export {
     onAuthStateChanged,
     updatePassword,
     EmailAuthProvider,
-    reauthenticateWithCredential
+    reauthenticateWithCredential,
+    storageRef,
+    uploadBytes,
+    getDownloadURL,
+    deleteObject
 };

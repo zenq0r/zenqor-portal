@@ -5,6 +5,7 @@
 import {
     db,
     auth,
+    storage,
     collection,
     doc,
     setDoc,
@@ -20,7 +21,11 @@ import {
     onAuthStateChanged,
     updatePassword,
     EmailAuthProvider,
-    reauthenticateWithCredential
+    reauthenticateWithCredential,
+    storageRef,
+    uploadBytes,
+    getDownloadURL,
+    deleteObject
 } from "./firebase-config.js";
 
 const { createApp } = Vue;
@@ -192,6 +197,7 @@ createApp({
             clientPortalFilter: { type: 'all', status: 'all' },
             expandedClientGroups: new Set(),
             projectPreview: { show: false, project: null },
+            clientDocuments: { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false },
             projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
             projectModal: {
                 show: false,
@@ -736,12 +742,14 @@ createApp({
         },
         openProjectDetails(project) {
             this.projectPreview = { show: true, project: JSON.parse(JSON.stringify(project)) };
+            this.loadClientDocuments(project.clientDirectoryId, project.clientName, project.clientEmail);
         },
         closeProjectDetails() {
             this.projectPreview = { show: false, project: null };
             this.clientReplyMessage = '';
             this.editingReplyId = '';
             this.editingReplyMessage = '';
+            this.clientDocuments = { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false };
         },
         editProjectFromPreview() {
             const project = this.projectPreview.project ? JSON.parse(JSON.stringify(this.projectPreview.project)) : null;
@@ -1541,6 +1549,142 @@ createApp({
                 e.target.value = '';
             } finally { this.attachmentUploadState.director = false; e.target.value = ''; }
         },
+        async validateClientDocumentFile(file) {
+            if (!file) throw new Error('No file was selected.');
+            if (file.size <= 0) throw new Error('The selected file is empty.');
+            if (file.size > 10 * 1024 * 1024) throw new Error('File size must not exceed 10 MB.');
+
+            const extension = String(file.name || '').split('.').pop().toLowerCase();
+            const extensionTypeMap = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', pdf: 'application/pdf' };
+            const contentType = extensionTypeMap[extension];
+            if (!contentType) throw new Error('Only JPG, JPEG, PNG and PDF files are allowed.');
+
+            const declaredType = String(file.type || '').toLowerCase();
+            const compatibleTypesMap = {
+                'image/png': ['image/png', 'image/x-png'],
+                'image/jpeg': ['image/jpeg', 'image/jpg', 'image/pjpeg'],
+                'application/pdf': ['application/pdf']
+            };
+            if (declaredType && !compatibleTypesMap[contentType].includes(declaredType)) throw new Error('The file extension does not match its actual file type.');
+
+            const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+            const isPng = signature.length >= 8 && signature[0] === 0x89 && signature[1] === 0x50 && signature[2] === 0x4E && signature[3] === 0x47 && signature[4] === 0x0D && signature[5] === 0x0A && signature[6] === 0x1A && signature[7] === 0x0A;
+            const isJpeg = signature.length >= 3 && signature[0] === 0xFF && signature[1] === 0xD8 && signature[2] === 0xFF;
+            const isPdf = signature.length >= 4 && signature[0] === 0x25 && signature[1] === 0x50 && signature[2] === 0x44 && signature[3] === 0x46;
+            if ((contentType === 'image/png' && !isPng) || (contentType === 'image/jpeg' && !isJpeg) || (contentType === 'application/pdf' && !isPdf)) {
+                throw new Error('The selected file is not a valid JPG, PNG or PDF — its content does not match its extension.');
+            }
+            return contentType;
+        },
+        async loadClientDocuments(clientDirectoryId, clientName = '', clientEmail = '') {
+            if (!clientDirectoryId) { this.clientDocuments = { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false }; return; }
+            this.clientDocuments.clientDirectoryId = clientDirectoryId;
+            this.clientDocuments.clientName = clientName;
+            this.clientDocuments.clientEmail = clientEmail;
+            this.clientDocuments.loading = true;
+            try {
+                const baseCol = collection(db, 'client_documents');
+                const q = this.userProfile.role === 'Client'
+                    ? query(baseCol, where('clientDirectoryId', '==', clientDirectoryId), where('clientEmail', '==', String(this.userProfile.email || '').trim().toLowerCase()))
+                    : query(baseCol, where('clientDirectoryId', '==', clientDirectoryId));
+                const snapshot = await getDocs(q);
+                if (this.clientDocuments.clientDirectoryId !== clientDirectoryId) return;
+                this.clientDocuments.items = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || '')));
+            } catch (error) {
+                console.error('Load client documents failed:', error);
+                this.showNotify('Unable to load documents for this client.');
+            } finally {
+                if (this.clientDocuments.clientDirectoryId === clientDirectoryId) this.clientDocuments.loading = false;
+            }
+        },
+        clientDocumentIcon(fileType) {
+            return fileType === 'application/pdf' ? 'fa-file-pdf text-red-500' : 'fa-file-image text-blue-500';
+        },
+        async handleClientDocumentUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!this.canManageDocuments) { this.showNotify('You do not have permission to upload client documents.'); e.target.value = ''; return; }
+            const clientDirectoryId = this.clientDocuments.clientDirectoryId;
+            if (!clientDirectoryId) { this.showNotify('No client selected for this document.'); e.target.value = ''; return; }
+            this.clientDocuments.uploading = true;
+            try {
+                const contentType = await this.validateClientDocumentFile(file);
+                const safeName = String(file.name || 'document').replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120);
+                const storageFileName = `${Date.now()}_${safeName}`;
+                const storagePath = `client_documents/${clientDirectoryId}/${storageFileName}`;
+                const fileRef = storageRef(storage, storagePath);
+                await uploadBytes(fileRef, file, { contentType });
+                const downloadURL = await getDownloadURL(fileRef);
+                const docId = `${clientDirectoryId}_${Date.now()}`;
+                await setDoc(doc(db, 'client_documents', docId), {
+                    clientDirectoryId,
+                    clientName: this.clientDocuments.clientName,
+                    clientEmail: String(this.clientDocuments.clientEmail || '').trim().toLowerCase(),
+                    fileName: file.name,
+                    fileType: contentType,
+                    fileSize: file.size,
+                    storagePath,
+                    storageFileName,
+                    downloadURL,
+                    uploadedByUid: this.userProfile.uid,
+                    uploadedByName: this.userProfile.name,
+                    uploadedByEmail: this.userProfile.email,
+                    uploadedAt: new Date().toISOString()
+                });
+                this.logAudit('UPLOAD_DOCUMENT', `Uploaded "${file.name}" for client ${this.clientDocuments.clientName}`);
+                this.showNotify('Document uploaded successfully.');
+                await this.loadClientDocuments(clientDirectoryId, this.clientDocuments.clientName, this.clientDocuments.clientEmail);
+            } catch (error) {
+                console.error('Client document upload failed:', error);
+                this.showNotify(error?.message || 'Unable to upload the document. Please try again.');
+            } finally {
+                this.clientDocuments.uploading = false;
+                e.target.value = '';
+            }
+        },
+        viewClientDocument(item) {
+            window.open(item.downloadURL, '_blank', 'noopener');
+        },
+        async downloadClientDocument(item) {
+            try {
+                const response = await fetch(item.downloadURL);
+                if (!response.ok) throw new Error('Download failed.');
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = item.fileName || 'document';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(blobUrl);
+            } catch (error) {
+                console.error('Client document download failed:', error);
+                this.showNotify('Unable to download this document. Please try again.');
+            }
+        },
+        requestDeleteClientDocument(item) {
+            if (!this.canManageDocuments) { this.showNotify('You do not have permission to remove client documents.'); return; }
+            this.requestConfirm({
+                title: 'Remove this document?',
+                message: `"${item.fileName}" will be permanently removed from ${this.clientDocuments.clientName}'s document repository. This cannot be undone.`,
+                confirmLabel: 'Yes, Remove Document',
+                danger: true,
+                onConfirm: () => this.deleteClientDocument(item)
+            });
+        },
+        async deleteClientDocument(item) {
+            try {
+                await deleteObject(storageRef(storage, item.storagePath));
+                await deleteDoc(doc(db, 'client_documents', item.id));
+                this.clientDocuments.items = this.clientDocuments.items.filter(d => d.id !== item.id);
+                this.logAudit('DELETE_DOCUMENT', `Removed "${item.fileName}" from client ${this.clientDocuments.clientName}`);
+                this.showNotify('Document removed.');
+            } catch (error) {
+                console.error('Client document delete failed:', error);
+                this.showNotify('Unable to remove this document. Please try again.');
+            }
+        },
         requestConfirm({ title, message, confirmLabel = 'Yes, Continue', danger = false, onConfirm }) {
             this.appConfirm = { show: true, title, message, confirmLabel, danger, onConfirm };
         },
@@ -2194,6 +2338,11 @@ createApp({
                 clientPostcode: cust.clientPostcode || '-', clientCountry: cust.clientCountry || '-', clientTier: cust.clientTier || 'Standard'
             };
             this.clientView.show = true;
+            if (cust.id) this.loadClientDocuments(cust.id, cust.clientName, cust.clientEmail);
+        },
+        closeClientView() {
+            this.clientView.show = false;
+            this.clientDocuments = { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false };
         },
         openClientQuickViewForProject(project) {
             const customer = this.customers.find(c => c.id === project.clientDirectoryId);

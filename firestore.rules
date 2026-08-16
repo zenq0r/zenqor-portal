@@ -169,6 +169,32 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Client Document Repository — centralized JPEG/JPG/PNG/PDF storage metadata per client.
+    // Actual file bytes live in Firebase Storage (see storage.rules); this collection only
+    // tracks who uploaded what, when, and the Storage path/download URL.
+    match /client_documents/{documentId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || isHR() || isAccount() || isIT() ||
+        (isClient() && resource.data.clientEmail == request.auth.token.email)
+      );
+      allow create: if isAuthenticated() && (isSuperadmin() || isHR() || isAccount()) &&
+        request.resource.data.uploadedByUid == request.auth.uid &&
+        request.resource.data.uploadedByEmail == request.auth.token.email &&
+        request.resource.data.clientDirectoryId is string &&
+        request.resource.data.clientDirectoryId.size() > 0 &&
+        request.resource.data.storagePath is string &&
+        request.resource.data.storagePath.size() > 0 &&
+        request.resource.data.storagePath == 'client_documents/' + request.resource.data.clientDirectoryId + '/' + request.resource.data.storageFileName &&
+        request.resource.data.fileName is string &&
+        request.resource.data.fileName.size() > 0 &&
+        request.resource.data.fileType in ['image/jpeg', 'image/png', 'application/pdf'] &&
+        request.resource.data.fileSize is number &&
+        request.resource.data.fileSize > 0 &&
+        request.resource.data.fileSize <= 10485760;
+      allow update: if false;
+      allow delete: if isSuperadmin() || isHR() || isAccount();
+    }
+
     match /payslips/{payslipId} {
       allow read: if isAuthenticated() && (
         isAdmin() || isHR() || isAccount() ||

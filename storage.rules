@@ -1,0 +1,39 @@
+// ============================================================
+// ZENQOR PORTAL - storage.rules
+// Client Document Repository — file bytes for client_documents/{clientDirectoryId}/{fileName}
+// Metadata for these files is tracked in Firestore's client_documents collection (see firestore.rules).
+// ============================================================
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userRole() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isStaffDocumentManager() {
+      return isSignedIn() && userRole() in ['Superadmin', 'HR', 'Account'];
+    }
+
+    function isStaffReader() {
+      return isSignedIn() && userRole() in ['Superadmin', 'Director', 'HR', 'Account', 'IT'];
+    }
+
+    function isOwningClient(clientDirectoryId) {
+      return isSignedIn() && userRole() == 'Client' &&
+        firestore.get(/databases/(default)/documents/customers/$(clientDirectoryId)).data.clientEmail == request.auth.token.email;
+    }
+
+    match /client_documents/{clientDirectoryId}/{fileName} {
+      allow read: if isStaffReader() || isOwningClient(clientDirectoryId);
+      allow write: if isStaffDocumentManager() &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        request.resource.contentType in ['image/jpeg', 'image/png', 'application/pdf'];
+      allow delete: if isStaffDocumentManager();
+    }
+  }
+}
