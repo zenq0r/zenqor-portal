@@ -1585,7 +1585,7 @@ createApp({
             try {
                 const baseCol = collection(db, 'client_documents');
                 const q = this.userProfile.role === 'Client'
-                    ? query(baseCol, where('clientDirectoryId', '==', clientDirectoryId), where('clientEmail', '==', String(this.userProfile.email || '').trim().toLowerCase()))
+                    ? query(baseCol, where('clientDirectoryId', '==', clientDirectoryId), where('clientEmail', '==', this.userProfile.email))
                     : query(baseCol, where('clientDirectoryId', '==', clientDirectoryId));
                 const snapshot = await getDocs(q);
                 if (this.clientDocuments.clientDirectoryId !== clientDirectoryId) return;
@@ -1619,7 +1619,7 @@ createApp({
                 await setDoc(doc(db, 'client_documents', docId), {
                     clientDirectoryId,
                     clientName: this.clientDocuments.clientName,
-                    clientEmail: String(this.clientDocuments.clientEmail || '').trim().toLowerCase(),
+                    clientEmail: this.clientDocuments.clientEmail,
                     fileName: file.name,
                     fileType: contentType,
                     fileSize: file.size,
