@@ -2048,7 +2048,7 @@ createApp({
             if (!this.forgotPasswordFlow.email) { this.forgotPasswordFlow.error = 'Please enter your email address.'; return; }
             this.forgotPasswordFlow.loading = true;
             try {
-                await sendPasswordResetEmail(auth, this.forgotPasswordFlow.email, { url: window.location.origin + '/' });
+                await sendPasswordResetEmail(auth, this.forgotPasswordFlow.email, { url: window.location.origin + '/', handleCodeInApp: true });
                 this.forgotPasswordFlow.sent = true;
             } catch (error) {
                 console.error('Password reset request failed:', error?.code, error?.message);
