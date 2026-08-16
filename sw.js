@@ -3,7 +3,7 @@
 // so we never want a stale cached response to shadow real data. Caching only speeds up the
 // static shell (HTML/CSS/JS/logo) on repeat visits and satisfies PWA "installable" criteria.
 
-const SHELL_CACHE = 'zenqor-shell-v1';
+const SHELL_CACHE = 'zenqor-shell-v2';
 const SHELL_ASSETS = ['/', '/index.html', '/app.js', '/custom.css', '/logo.png'];
 
 self.addEventListener('install', (event) => {
@@ -29,7 +29,7 @@ self.addEventListener('fetch', (event) => {
     if (!isShellAsset) return; // let Firebase/API/everything else hit the network normally
 
     event.respondWith(
-        fetch(request)
+        fetch(request, { cache: 'no-store' })
             .then((response) => {
                 const clone = response.clone();
                 caches.open(SHELL_CACHE).then((cache) => cache.put(request, clone)).catch(() => {});
