@@ -2038,7 +2038,15 @@ createApp({
                 const { sendPasswordResetEmail } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
                 await sendPasswordResetEmail(auth, this.loginForm.email);
                 this.showNotify(`Password reset link sent to: ${this.loginForm.email}`);
-            } catch (error) { alert("Failed to send password reset email. Ensure the email is valid."); }
+            } catch (error) {
+                console.error('Password reset failed:', error?.code, error?.message);
+                const code = String(error?.code || '');
+                if (code.includes('too-many-requests')) alert("Too many reset attempts in a short time. Please wait a while before trying again.");
+                else if (code.includes('invalid-email')) alert("That email address is not a valid format.");
+                else if (code.includes('unauthorized-domain')) alert("This domain is not authorized to send reset emails. Contact your system administrator.");
+                else if (code.includes('user-not-found')) this.showNotify(`If ${this.loginForm.email} has an account, a reset link has been sent.`);
+                else alert(`Failed to send password reset email (${code || 'unknown error'}). Please try again shortly.`);
+            }
         },
 
         async handleLogin() {
