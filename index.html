@@ -2095,12 +2095,12 @@
                                             <p class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">Client <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-[8px]"></i></p>
                                             <div class="flex shrink-0 gap-1">
                                                 <span v-if="isNewClient(projectPreview.project.clientDirectoryId)" class="rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 text-[8px] font-extrabold uppercase text-emerald-700 dark:text-emerald-300">New</span>
-                                                <span :class="clientTierMeta(clientTierForId(projectPreview.project.clientDirectoryId)).badgeClass" class="rounded-full px-1.5 py-0.5 text-[8px] font-extrabold uppercase">{{ clientTierMeta(clientTierForId(projectPreview.project.clientDirectoryId)).label }}</span>
+                                                <span :class="clientTierMeta(clientTierForId(projectPreview.project.clientDirectoryId, projectPreview.project.clientTier)).badgeClass" class="rounded-full px-1.5 py-0.5 text-[8px] font-extrabold uppercase">{{ clientTierMeta(clientTierForId(projectPreview.project.clientDirectoryId, projectPreview.project.clientTier)).label }}</span>
                                             </div>
                                         </div>
                                         <p class="mt-1 text-xs font-extrabold text-brand-dark dark:text-white">{{ projectPreview.project.clientName || '—' }}</p>
                                         <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-slate-500 dark:text-slate-400">
-                                            <span><i class="fa-solid fa-hashtag mr-1"></i>SSM: {{ clientSsmForId(projectPreview.project.clientDirectoryId) || '—' }}</span>
+                                            <span><i class="fa-solid fa-hashtag mr-1"></i>SSM: {{ clientSsmForId(projectPreview.project.clientDirectoryId, projectPreview.project.clientSSM) || '—' }}</span>
                                             <span class="lowercase"><i class="fa-solid fa-envelope mr-1"></i>{{ projectPreview.project.clientEmail || '—' }}</span>
                                         </div>
                                     </button>

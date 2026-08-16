@@ -202,7 +202,7 @@ createApp({
             projectModal: {
                 show: false,
                 isEdit: false,
-                form: { id: '', projectRef: '', title: '', clientDirectoryId: '', clientPortalUid: '', clientName: '', clientEmail: '', ownerEmpNo: '', ownerName: '', ownerEmail: '', ownerPosition: '', ownerDepartment: '', ownerAssignedAt: '', ownerPresenceStatus: 'Offline', ownerPresenceUpdatedAt: '', ownerLastSeen: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' }
+                form: { id: '', projectRef: '', title: '', clientDirectoryId: '', clientPortalUid: '', clientName: '', clientEmail: '', clientSSM: '', clientTier: 'Standard', ownerEmpNo: '', ownerName: '', ownerEmail: '', ownerPosition: '', ownerDepartment: '', ownerAssignedAt: '', ownerPresenceStatus: 'Offline', ownerPresenceUpdatedAt: '', ownerLastSeen: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' }
             },
             employees: [],
             customers: [],
@@ -1051,6 +1051,8 @@ createApp({
             if (!customer) return;
             this.projectModal.form.clientDirectoryId = customer.id;
             this.projectModal.form.clientName = customer.clientName || '';
+            this.projectModal.form.clientSSM = customer.clientSSM || '';
+            this.projectModal.form.clientTier = customer.clientTier || 'Standard';
             const directoryEmail = String(customer.clientEmail || '').trim().toLowerCase();
             const matchingAccess = this.projectClientAccessUsers.find(user => String(user.email || '').trim().toLowerCase() === directoryEmail)
                 || this.projectClientAccessUsers.find(user => String(user.name || '').trim().toLowerCase() === String(customer.clientName || '').trim().toLowerCase());
@@ -1086,7 +1088,7 @@ createApp({
         },
         openProjectModal(project = null) {
             if (project ? !this.canEditProject(project) : !this.canManageProjects) { this.showNotify(project ? 'Only Director, Superadmin, or this project\'s Person In Charge may edit this project.' : 'Only Director and Superadmin may create new projects.'); return; }
-            const emptyForm = { id: '', projectRef: `PRJ-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`, title: '', clientDirectoryId: '', clientPortalUid: '', clientName: '', clientEmail: '', ownerEmpNo: '', ownerName: '', ownerEmail: '', ownerPosition: '', ownerDepartment: '', ownerAssignedAt: '', ownerPresenceStatus: 'Offline', ownerPresenceUpdatedAt: '', ownerLastSeen: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' };
+            const emptyForm = { id: '', projectRef: `PRJ-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`, title: '', clientDirectoryId: '', clientPortalUid: '', clientName: '', clientEmail: '', clientSSM: '', clientTier: 'Standard', ownerEmpNo: '', ownerName: '', ownerEmail: '', ownerPosition: '', ownerDepartment: '', ownerAssignedAt: '', ownerPresenceStatus: 'Offline', ownerPresenceUpdatedAt: '', ownerLastSeen: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' };
             this.projectModal = { show: true, isEdit: Boolean(project), form: project ? JSON.parse(JSON.stringify(project)) : emptyForm };
         },
         closeProjectModal() {
@@ -2347,7 +2349,7 @@ createApp({
         openClientQuickViewForProject(project) {
             const customer = this.customers.find(c => c.id === project.clientDirectoryId);
             if (customer) { this.openClientView(customer); return; }
-            this.openClientView({ clientName: project.clientName || 'Unknown Client', clientEmail: project.clientEmail || '' });
+            this.openClientView({ clientName: project.clientName || 'Unknown Client', clientEmail: project.clientEmail || '', clientSSM: project.clientSSM || '', clientTier: project.clientTier || 'Standard' });
         },
         clientTierMeta(tier) {
             const map = {
@@ -2357,13 +2359,13 @@ createApp({
             };
             return map[tier] || map.Standard;
         },
-        clientTierForId(clientDirectoryId) {
+        clientTierForId(clientDirectoryId, fallbackTier = 'Standard') {
             const customer = this.customers.find(c => c.id === clientDirectoryId);
-            return customer?.clientTier || 'Standard';
+            return customer?.clientTier || fallbackTier || 'Standard';
         },
-        clientSsmForId(clientDirectoryId) {
+        clientSsmForId(clientDirectoryId, fallbackSSM = '') {
             const customer = this.customers.find(c => c.id === clientDirectoryId);
-            return customer?.clientSSM || '';
+            return customer?.clientSSM || fallbackSSM || '';
         },
         clientProjectCount(clientDirectoryId) {
             if (!clientDirectoryId) return 0;
