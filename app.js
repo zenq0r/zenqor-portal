@@ -22,9 +22,6 @@ import {
     updatePassword,
     EmailAuthProvider,
     reauthenticateWithCredential,
-    sendPasswordResetEmail,
-    verifyPasswordResetCode,
-    confirmPasswordReset,
     storageRef,
     uploadBytes,
     getDownloadURL,
@@ -2048,39 +2045,41 @@ createApp({
             if (!this.forgotPasswordFlow.email) { this.forgotPasswordFlow.error = 'Please enter your email address.'; return; }
             this.forgotPasswordFlow.loading = true;
             try {
-                await sendPasswordResetEmail(auth, this.forgotPasswordFlow.email, { url: window.location.origin + '/', handleCodeInApp: true });
+                const response = await fetch('/api/request-password-reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: this.forgotPasswordFlow.email })
+                });
+                if (!response.ok) throw new Error('request-failed');
                 this.forgotPasswordFlow.sent = true;
             } catch (error) {
-                console.error('Password reset request failed:', error?.code, error?.message);
-                const code = String(error?.code || '');
-                if (code.includes('too-many-requests')) this.forgotPasswordFlow.error = 'Too many reset attempts in a short time. Please wait a while before trying again.';
-                else if (code.includes('invalid-email')) this.forgotPasswordFlow.error = 'That email address is not a valid format.';
-                else if (code.includes('unauthorized-domain') || code.includes('unauthorized-continue-uri')) this.forgotPasswordFlow.error = 'This domain is not authorized to send reset emails. Contact your system administrator.';
-                else if (code.includes('user-not-found')) this.forgotPasswordFlow.sent = true;
-                else this.forgotPasswordFlow.error = `Failed to send password reset email (${code || 'unknown error'}). Please try again shortly.`;
+                console.error('Password reset request failed:', error);
+                this.forgotPasswordFlow.error = 'Failed to send password reset email. Please try again shortly.';
             } finally {
                 this.forgotPasswordFlow.loading = false;
             }
         },
         async checkPasswordResetLink() {
             const params = new URLSearchParams(window.location.search);
-            if (params.get('mode') !== 'resetPassword' || !params.get('oobCode')) return;
+            const token = params.get('resetToken');
+            if (!token) return;
             this.passwordResetFlow.active = true;
-            this.passwordResetFlow.oobCode = params.get('oobCode');
+            this.passwordResetFlow.oobCode = token;
             window.history.replaceState({}, '', window.location.pathname);
             try {
-                const email = await verifyPasswordResetCode(auth, this.passwordResetFlow.oobCode);
-                this.passwordResetFlow.email = email;
-                this.passwordResetFlow.valid = true;
+                const response = await fetch('/api/verify-reset-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const data = await response.json();
+                this.passwordResetFlow.valid = Boolean(data.valid);
+                if (data.valid) this.passwordResetFlow.email = data.email;
+                else this.passwordResetFlow.error = data.reason || 'This reset link is invalid. Please request a new one.';
             } catch (error) {
-                console.error('Password reset link verification failed:', error?.code, error?.message);
+                console.error('Password reset link verification failed:', error);
                 this.passwordResetFlow.valid = false;
-                const code = String(error?.code || '');
-                this.passwordResetFlow.error = code.includes('expired')
-                    ? 'This reset link has expired. Please request a new one.'
-                    : code.includes('invalid-action-code')
-                    ? 'This reset link has already been used or is invalid. Please request a new one.'
-                    : 'Unable to verify this reset link. Please request a new one.';
+                this.passwordResetFlow.error = 'Unable to verify this reset link. Please request a new one.';
             } finally {
                 this.passwordResetFlow.verifying = false;
             }
@@ -2091,16 +2090,17 @@ createApp({
             if (this.passwordResetFlow.newPassword !== this.passwordResetFlow.confirmPassword) { this.passwordResetFlow.error = 'Passwords do not match.'; return; }
             this.passwordResetFlow.loading = true;
             try {
-                await confirmPasswordReset(auth, this.passwordResetFlow.oobCode, this.passwordResetFlow.newPassword);
+                const response = await fetch('/api/confirm-password-reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: this.passwordResetFlow.oobCode, newPassword: this.passwordResetFlow.newPassword })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Unable to reset your password.');
                 this.passwordResetFlow.success = true;
             } catch (error) {
-                console.error('Password reset confirmation failed:', error?.code, error?.message);
-                const code = String(error?.code || '');
-                this.passwordResetFlow.error = (code.includes('expired') || code.includes('invalid-action-code'))
-                    ? 'This reset link has expired or already been used. Please request a new one.'
-                    : code.includes('weak-password')
-                    ? 'Please choose a stronger password.'
-                    : 'Unable to reset your password. Please try again.';
+                console.error('Password reset confirmation failed:', error);
+                this.passwordResetFlow.error = error.message || 'Unable to reset your password. Please try again.';
             } finally {
                 this.passwordResetFlow.loading = false;
             }

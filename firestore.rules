@@ -195,6 +195,14 @@ service cloud.firestore {
       allow delete: if isSuperadmin() || isHR() || isAccount();
     }
 
+    // Password reset tokens for the custom (non-Firebase-hosted) reset flow — written and
+    // read exclusively by the /api/*.js serverless functions via the Admin SDK, which
+    // bypasses these rules entirely. No client, staff or otherwise, should ever touch this
+    // collection directly.
+    match /password_reset_tokens/{token} {
+      allow read, write: if false;
+    }
+
     match /payslips/{payslipId} {
       allow read: if isAuthenticated() && (
         isAdmin() || isHR() || isAccount() ||

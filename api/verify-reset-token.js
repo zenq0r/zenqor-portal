@@ -1,0 +1,37 @@
+const { getAdminApp } = require('./_firebaseAdmin');
+
+module.exports = async function handler(req, res) {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    try {
+        const { token } = req.body || {};
+        if (!token || typeof token !== 'string') {
+            res.status(200).json({ valid: false, reason: 'This reset link is invalid. Please request a new one.' });
+            return;
+        }
+
+        const admin = getAdminApp();
+        const db = admin.firestore();
+        const doc = await db.collection('password_reset_tokens').doc(token).get();
+
+        if (!doc.exists) {
+            res.status(200).json({ valid: false, reason: 'This reset link is invalid. Please request a new one.' });
+            return;
+        }
+
+        const data = doc.data();
+        if (data.used) {
+            res.status(200).json({ valid: false, reason: 'This reset link has already been used. Please request a new one.' });
+            return;
+        }
+        if (new Date(data.expiresAt).getTime() < Date.now()) {
+            res.status(200).json({ valid: false, reason: 'This reset link has expired. Please request a new one.' });
+            return;
+        }
+
+        res.status(200).json({ valid: true, email: data.email });
+    } catch (error) {
+        console.error('verify-reset-token error:', error);
+        res.status(500).json({ valid: false, reason: 'Unable to verify this link right now. Please try again shortly.' });
+    }
+};

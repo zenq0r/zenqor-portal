@@ -6,6 +6,9 @@
   "scripts": {
     "start": "npx serve ."
   },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  },
   "keywords": [
     "zenqor",
     "enterprise",

@@ -10,3 +10,6 @@
 # OS / editor junk
 .DS_Store
 Thumbs.db
+
+# Dependencies (Vercel installs these fresh at build time)
+node_modules/
