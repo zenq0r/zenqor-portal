@@ -554,13 +554,18 @@ service cloud.firestore {
 
     // Public CREATE-only submissions — visitors can send, only admins read.
     match /contact_messages/{document=**} {
-      allow create: if true;
+      allow create: if request.resource.data.keys().hasOnly(['name', 'phone', 'email', 'company', 'subject', 'message', 'status', 'createdAt']) &&
+        request.resource.data.name is string && request.resource.data.name.size() <= 200 &&
+        request.resource.data.email is string && request.resource.data.email.size() <= 200 &&
+        request.resource.data.message is string && request.resource.data.message.size() <= 5000 &&
+        request.resource.data.status == 'UNREAD';
       allow read, update, delete: if isAdmin();
     }
 
     // Pageview analytics — anyone can log a visit, only admins read the log.
     match /analytics_events/{document=**} {
-      allow create: if true;
+      allow create: if request.resource.data.keys().hasOnly(['page', 'referrer', 'lang', 'timestamp']) &&
+        request.resource.data.page is string && request.resource.data.page.size() <= 300;
       allow read: if isAdmin();
     }
   }

@@ -1356,6 +1356,11 @@ createApp({
                 this.legacyClaimMigrationRunning = false;
             }
         },
+        csvSafeCell(value) {
+            let str = String(value);
+            if (/^[=+\-@\t\r]/.test(str)) str = "'" + str;
+            return `"${str.replace(/"/g, '""')}"`;
+        },
         exportCSV(type) {
             let filename = '';
             let rows = [];
@@ -1383,7 +1388,7 @@ createApp({
 
             if (rows.length === 0) { alert("Tiada rekod data untuk dieksport."); return; }
 
-            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + rows.map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + rows.map(e => e.map(cell => this.csvSafeCell(cell)).join(",")).join("\n");
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -1407,7 +1412,7 @@ createApp({
                 ['Timestamp', 'User', 'Action', 'Activity / Target', 'Browser'],
                 ...this.auditLogs.map(log => [log.timestamp || '', log.user || '', log.action || '', log.details || '', log.browser || ''])
             ];
-            const csvContent = "data:text/csv;charset=utf-8,﻿" + rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+            const csvContent = "data:text/csv;charset=utf-8,﻿" + rows.map(row => row.map(cell => this.csvSafeCell(cell)).join(",")).join("\n");
             const link = document.createElement("a");
             link.setAttribute("href", encodeURI(csvContent));
             link.setAttribute("download", filename);
@@ -2335,6 +2340,9 @@ createApp({
             try { await signOut(auth); } catch (error) { console.error('Sign-out during OTP cancel failed:', error); }
         },
         async completeLogin({ firebaseUser, userData, role, name, photo, mustChangePassword }) {
+            if (['Superadmin', 'Director'].includes(role)) {
+                try { sessionStorage.setItem('zenqorOtpVerifiedUid', firebaseUser.uid); } catch (error) { console.error('Failed to persist OTP-verified marker:', error); }
+            }
             this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '', customAccess: userData?.customAccess || {} };
             this.applyDarkModePreference();
             this.notificationsLog = Array.isArray(userData?.notificationsLog) ? userData.notificationsLog : [];
@@ -2367,6 +2375,7 @@ createApp({
                 this.destroyDashboardCharts();
                 this.isLoggedIn = false; this.loginLoading = false; this.portalDataReady = false; this.portalDataReadyPromise = null; this.userProfile = { name: '', email: '', role: '', photo: '' };
                 this.resetAllForms(); this.currentTab = 'dashboard'; this.loginForm = { email: '', password: '' }; this.searchQuery = ''; this.authView = 'landing';
+                try { sessionStorage.removeItem('zenqorOtpVerifiedUid'); } catch (error) { console.error('Failed to clear OTP-verified marker:', error); }
                 this.postLogoutChoice = true;
             }
         },
@@ -3554,6 +3563,19 @@ createApp({
                         this.loginError = `Only Client Users System Terminal may use an external email. Other roles must use @${this.officialEmailDomain}.`;
                         await signOut(auth);
                         return;
+                    }
+                    if (['Superadmin', 'Director'].includes(role)) {
+                        let otpVerifiedUid = null;
+                        try { otpVerifiedUid = sessionStorage.getItem('zenqorOtpVerifiedUid'); } catch (error) { console.error('Failed to read OTP-verified marker:', error); }
+                        if (otpVerifiedUid !== firebaseUser.uid) {
+                            // signInWithEmailAndPassword() fires this listener immediately, before the
+                            // OTP challenge in handleLogin()/verifyLoginOtp() has run. Do not auto-complete
+                            // the login here for OTP-gated roles — only completeLogin() (called after a
+                            // verified OTP) may finish signing this user in.
+                            this.loginLoading = false;
+                            this.authLoading = false;
+                            return;
+                        }
                     }
                     this.userProfile = { name, email: firebaseUser.email, role, uid: firebaseUser.uid, photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '', customAccess: userData?.customAccess || {} };
                     this.applyDarkModePreference();
