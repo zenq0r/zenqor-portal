@@ -199,7 +199,7 @@ createApp({
             clientPortalFilter: { type: 'all', status: 'all' },
             expandedClientGroups: new Set(),
             projectPreview: { show: false, project: null },
-            clientDocuments: { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false },
+            clientDocuments: { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false, error: '' },
             projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
             projectModal: {
                 show: false,
@@ -751,7 +751,7 @@ createApp({
             this.clientReplyMessage = '';
             this.editingReplyId = '';
             this.editingReplyMessage = '';
-            this.clientDocuments = { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false };
+            this.clientDocuments = { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false, error: '' };
         },
         editProjectFromPreview() {
             const project = this.projectPreview.project ? JSON.parse(JSON.stringify(this.projectPreview.project)) : null;
@@ -1581,11 +1581,12 @@ createApp({
             return contentType;
         },
         async loadClientDocuments(clientDirectoryId, clientName = '', clientEmail = '') {
-            if (!clientDirectoryId) { this.clientDocuments = { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false }; return; }
+            if (!clientDirectoryId) { this.clientDocuments = { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false, error: '' }; return; }
             this.clientDocuments.clientDirectoryId = clientDirectoryId;
             this.clientDocuments.clientName = clientName;
             this.clientDocuments.clientEmail = clientEmail;
             this.clientDocuments.loading = true;
+            this.clientDocuments.error = '';
             try {
                 const baseCol = collection(db, 'client_documents');
                 const q = this.userProfile.role === 'Client'
@@ -1596,7 +1597,10 @@ createApp({
                 this.clientDocuments.items = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || '')));
             } catch (error) {
                 console.error('Load client documents failed:', error);
-                this.showNotify('Unable to load documents for this client.');
+                if (this.clientDocuments.clientDirectoryId !== clientDirectoryId) return;
+                this.clientDocuments.error = error && error.code === 'permission-denied'
+                    ? "You don't have access to view these documents. If this looks wrong, please contact our team."
+                    : 'Could not load documents right now — check your internet connection and try again.';
             } finally {
                 if (this.clientDocuments.clientDirectoryId === clientDirectoryId) this.clientDocuments.loading = false;
             }
@@ -2412,7 +2416,7 @@ createApp({
         },
         closeClientView() {
             this.clientView.show = false;
-            this.clientDocuments = { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false };
+            this.clientDocuments = { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false, error: '' };
         },
         openClientQuickViewForProject(project) {
             const customer = this.customers.find(c => c.id === project.clientDirectoryId);
