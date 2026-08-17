@@ -159,7 +159,7 @@
             </div>
         </div>
 
-        <!-- PASSWORD RESET LANDING (reached via ?mode=resetPassword&oobCode=... from the reset email) -->
+        <!-- PASSWORD RESET LANDING (reached via ?resetToken=... from our own custom reset email, see /api/*.js) -->
         <div v-if="passwordResetFlow.active" class="relative min-h-screen flex items-center justify-center bg-brand-dark px-4 py-8 overflow-hidden">
             <div class="pointer-events-none select-none absolute inset-0 flex items-center justify-center opacity-[0.06]">
                 <img src="./logo.png" alt="" class="w-full max-w-3xl object-contain" style="filter: invert(1);">
