@@ -1436,7 +1436,7 @@ createApp({
             this.docForm = {
                 type: 'Invoice', docNo: '', status: 'Unpaid', paymentMethod: 'Bank Transfer (EFT)', paymentBank: '', paymentReceiver: '', paymentRefNo: '', paymentAttachment: '',
                 date: new Date().toISOString().substr(0, 10), dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
-                clientName: '', clientPhone: '', clientSSM: '', clientAddress: '', clientCity: '', clientState: '', clientPostcode: '', clientCountry: 'Malaysia', clientEmail: '', clientContactPerson: '', clientPosition: '', additionalClientEmailsText: '',
+                customerId: '', clientName: '', clientPhone: '', clientSSM: '', clientAddress: '', clientCity: '', clientState: '', clientPostcode: '', clientCountry: 'Malaysia', clientEmail: '', clientContactPerson: '', clientPosition: '', additionalClientEmailsText: '',
                 items: [{ desc: '', qty: 1, price: 0 }], discount: 0
             };
             this.payForm = {
@@ -2612,10 +2612,12 @@ createApp({
             const cust = this.customers.find(c => c.clientName === e.target.value);
             if (cust) {
                 Object.keys(cust).forEach(k => { if (this.docForm.hasOwnProperty(k)) this.docForm[k] = cust[k]; });
+                this.docForm.customerId = cust.id || '';
                 this.docForm.additionalClientEmailsText = Array.isArray(cust.additionalClientEmails) ? cust.additionalClientEmails.join(', ') : '';
                 this.clientSavedForDocument = true;
                 this.showNotify(`Saved client loaded. You can now add document items.`);
             } else {
+                this.docForm.customerId = '';
                 this.clientSavedForDocument = false;
             }
         },
@@ -2623,18 +2625,26 @@ createApp({
             if (!this.canManageClients) { this.showNotify('You do not have permission to save client records.'); return false; }
             if (!this.docForm.clientName || !this.docForm.clientPhone || !this.docForm.clientAddress) return alert('Enter Client Name, Phone, and Address.');
             try {
-                const docId = this.docForm.clientName.trim().replace(/\s+/g, '_').toLowerCase();
-                const isNewRecord = !this.customers.some(c => c.id === docId);
+                // Existing records keep whatever ID they already have (legacy records are
+                // still name-derived — left untouched to avoid a data migration). New
+                // records get a generated unique ID instead of one derived from the client
+                // name, since two unrelated clients can share a common SME name (e.g. two
+                // different "ABC Enterprise" entities) and would otherwise silently merge
+                // into the same customers/{id} document.
+                const isNewRecord = !this.docForm.customerId;
+                const docId = this.docForm.customerId || doc(collection(db, "customers")).id;
                 const additionalClientEmails = String(this.docForm.additionalClientEmailsText || '')
                     .split(',').map(e => e.trim().toLowerCase()).filter(e => e && e.includes('@'));
                 const newCust = this.normalizeOfficialRecord({ clientName: this.docForm.clientName, clientPhone: this.docForm.clientPhone, clientSSM: this.docForm.clientSSM, clientAddress: this.docForm.clientAddress, clientCity: this.docForm.clientCity, clientState: this.docForm.clientState, clientPostcode: this.docForm.clientPostcode, clientCountry: this.docForm.clientCountry, clientEmail: String(this.docForm.clientEmail || '').trim().toLowerCase(), clientContactPerson: this.docForm.clientContactPerson, clientPosition: this.docForm.clientPosition, additionalClientEmails });
                 if (isNewRecord) newCust.createdAt = new Date().toISOString();
+                this.docForm.customerId = docId;
                 Object.assign(this.docForm, newCust);
             await setDoc(doc(db, "customers", docId), newCust, { merge: true }); this.clientSavedForDocument = true; this.logAudit(isNewRecord ? 'CREATE' : 'UPDATE', `Saved customer ${this.docForm.clientName}`); this.showNotify('Client saved. You can now add document items.'); return true;
             } catch (error) { console.error('Client save failed:', error); this.showNotify('Unable to save client information.'); return false; }
         },
         selectCustomerFromTable(cust) {
             ['clientName','clientPhone','clientSSM','clientAddress','clientCity','clientState','clientPostcode','clientCountry','clientEmail','clientContactPerson','clientPosition'].forEach(k => { this.docForm[k] = cust[k] || (k === 'clientCountry' ? 'Malaysia' : ''); });
+            this.docForm.customerId = cust.id || '';
             this.docForm.additionalClientEmailsText = Array.isArray(cust.additionalClientEmails) ? cust.additionalClientEmails.join(', ') : '';
             this.showNotify(`Client loaded.`);
         },
@@ -2753,21 +2763,22 @@ createApp({
             this.clientActionConfirm = { show: false, action: '', client: null };
             if (!client) return;
             if (action === 'edit') this.editCustomer(client);
-            if (action === 'delete') await this.deleteCustomer(client.clientName, false);
+            if (action === 'delete') await this.deleteCustomer(client, false);
         },
         editCustomer(cust) {
             if (!this.canManageClients) { this.showNotify('You do not have permission to update client records.'); return; }
             if (!this.hasAccess('doc-generator')) { this.showNotify('Editing client details requires Billing & Documents access, which your role does not have.'); return; }
             this.selectCustomerFromTable(cust); this.switchTab('doc-generator');
         },
-        async deleteCustomer(clientName, requiresConfirmation = true) {
+        async deleteCustomer(clientOrName, requiresConfirmation = true) {
+            const client = typeof clientOrName === 'string' ? this.customers.find(cust => cust.clientName === clientOrName) : clientOrName;
             if (requiresConfirmation) {
-                const client = this.customers.find(cust => cust.clientName === clientName);
                 if (client) this.requestClientAction('delete', client);
                 return;
             }
             if (!this.canDelete) { this.showNotify('Only Superadmin and Director can delete client records.'); return; }
-            try { await deleteDoc(doc(db, "customers", clientName.trim().replace(/\s+/g, '_').toLowerCase())); this.showNotify('Client deleted.'); } catch (error) { this.showNotify('Unable to delete client.'); }
+            if (!client || !client.id) { this.showNotify('Unable to delete client.'); return; }
+            try { await deleteDoc(doc(db, "customers", client.id)); this.showNotify('Client deleted.'); } catch (error) { this.showNotify('Unable to delete client.'); }
         },
 
         openEmployeeModal(emp = null) {
