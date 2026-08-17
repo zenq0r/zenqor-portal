@@ -242,8 +242,24 @@ createApp({
             userModal: {
                 show: false,
                 isEdit: false,
-                form: { uid: '', name: '', email: '', password: '', role: 'Staff' }
+                form: { uid: '', name: '', email: '', password: '', role: 'Staff', customAccess: {} }
             },
+            // Pages available for the per-user custom access override in Portal Access
+            // Management. Keys must match the module keys used by hasAccess()/RBAC_ROLES.
+            accessModules: [
+                { key: 'dashboard', label: 'Dashboard' },
+                { key: 'project-activities', label: 'Project Activities' },
+                { key: 'doc-generator', label: 'Documents (Quotation / Invoice)' },
+                { key: 'payslip-generator', label: 'Payroll (Payslip Generator)' },
+                { key: 'claims', label: 'Claims & Payment Vouchers' },
+                { key: 'client-directory', label: 'Client Directory' },
+                { key: 'hr-employees', label: 'HR Employees' },
+                { key: 'reports', label: 'Reports' },
+                { key: 'client-portal', label: 'Client Portal (Staff View)' },
+                { key: 'audit-logs', label: 'Audit Logs' },
+                { key: 'settings', label: 'Settings' },
+                { key: 'profile', label: 'Profile' }
+            ],
 
             claimSubCategories: {
                 'Medical': [
@@ -426,10 +442,14 @@ createApp({
     },
     computed: {
         canManageSensitiveData() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
-        canManageEmployees() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
-        canManageClients() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
-        canManageDocuments() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
-        canManagePayroll() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
+        canManageEmployees() { return this.hasModulePermission('hr-employees', 'edit'); },
+        canManageClients() { return this.hasModulePermission('client-directory', 'edit'); },
+        canManageDocuments() { return this.hasModulePermission('doc-generator', 'edit'); },
+        canManagePayroll() { return this.hasModulePermission('payslip-generator', 'edit'); },
+        canDeleteEmployees() { return this.hasModulePermission('hr-employees', 'delete'); },
+        canDeleteClients() { return this.hasModulePermission('client-directory', 'delete'); },
+        canDeleteDocuments() { return this.hasModulePermission('doc-generator', 'delete'); },
+        canDeletePayroll() { return this.hasModulePermission('payslip-generator', 'delete'); },
         canDelete() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageRBAC() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageCompanySettings() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },
@@ -1749,8 +1769,33 @@ createApp({
         },
 
         hasAccess(moduleName) {
+            const override = this.userProfile.customAccess && this.userProfile.customAccess[moduleName];
+            if (override && typeof override.view === 'boolean') return override.view;
             const allowedModules = RBAC_ROLES[this.userProfile.role] || ['dashboard'];
             return allowedModules.includes(moduleName);
+        },
+        // Per-module permission check used by Portal Access Management's custom overrides.
+        // action: 'view' | 'edit' | 'delete'. Falls back to the role's default when the
+        // admin/owner hasn't ticked a specific override for this module on this user —
+        // 'edit' defaults to page visibility, 'delete' defaults to the global canDelete flag,
+        // matching this app's pre-existing behavior for users with no override set.
+        hasModulePermission(moduleName, action) {
+            const override = this.userProfile.customAccess && this.userProfile.customAccess[moduleName];
+            if (override && typeof override[action] === 'boolean') return override[action];
+            if (action === 'delete') return ['Superadmin', 'Director'].includes(this.userProfile.role);
+            return this.hasAccess(moduleName);
+        },
+        // Toggles a module's custom access override on the Add/Update Portal Access form.
+        // Ticking grants full view+edit+delete for that page by default; the admin can then
+        // untick Edit/Delete individually to fine-tune. Unticking removes the override
+        // entirely so the user reverts to their role's default access for that page.
+        toggleAccessModule(moduleKey) {
+            if (!this.userModal.form.customAccess) this.userModal.form.customAccess = {};
+            if (this.userModal.form.customAccess[moduleKey]) {
+                delete this.userModal.form.customAccess[moduleKey];
+            } else {
+                this.userModal.form.customAccess[moduleKey] = { view: true, edit: true, delete: true };
+            }
         },
         formatCurrency(val) {
             return new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR' }).format(val || 0);
@@ -2154,7 +2199,7 @@ createApp({
                     return;
                 }
 
-                this.userProfile ={ name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '' };
+                this.userProfile ={ name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '', customAccess: userData?.customAccess || {} };
                 this.applyDarkModePreference();
                 this.notificationsLog = Array.isArray(userData?.notificationsLog) ? userData.notificationsLog : [];
                 this.startIdleTimeoutWatch();
@@ -2250,8 +2295,8 @@ createApp({
 
         openUserAccessModal(usr = null) {
             if (!this.canManageRBAC) { this.showNotify('Only Superadmin and Director can manage portal access.'); return; }
-            if (usr) { this.userModal.isEdit = true; this.userModal.form = { uid: usr.uid || usr.id || '', name: usr.name || '', email: usr.email || '', password: '', role: usr.role || 'Staff' }; }
-            else { this.userModal.isEdit = false; this.userModal.form = { uid: '', name: '', email: '', password: this.generateRandomPassword(8), role: 'Staff' }; }
+            if (usr) { this.userModal.isEdit = true; this.userModal.form = { uid: usr.uid || usr.id || '', name: usr.name || '', email: usr.email || '', password: '', role: usr.role || 'Staff', customAccess: JSON.parse(JSON.stringify(usr.customAccess || {})) }; }
+            else { this.userModal.isEdit = false; this.userModal.form = { uid: '', name: '', email: '', password: this.generateRandomPassword(8), role: 'Staff', customAccess: {} }; }
             this.userModal.show = true;
         },
 
@@ -2276,6 +2321,7 @@ createApp({
                 name: pendingData.name || firebaseUser.displayName || normalizedEmail,
                 photo: pendingData.photo || '',
                 role: pendingData.role || 'Client',
+                customAccess: pendingData.customAccess || {},
                 mustChangePassword: pendingData.mustChangePassword === true,
                 migratedAt: new Date().toISOString()
             };
@@ -2334,6 +2380,7 @@ createApp({
                         name: this.userModal.form.name,
                         photo: photoUrl,
                         role: this.userModal.form.role,
+                        customAccess: this.userModal.form.customAccess || {},
                         mustChangePassword: false,
                         createdByUid: this.userProfile.uid,
                         createdAt: new Date().toISOString()
@@ -2343,11 +2390,12 @@ createApp({
                     this.showNotify(existingAuthenticationAccount ? 'Existing Firebase account found. Access will activate automatically at the next login.' : 'Portal access is pending UID activation.');
                     return;
                 }
-                await setDoc(doc(db, "users", userId), { email: email, name: this.userModal.form.name, photo: photoUrl, role: this.userModal.form.role, ...(isNewUser ? { mustChangePassword: true } : {}) }, { merge: true });
+                await setDoc(doc(db, "users", userId), { email: email, name: this.userModal.form.name, photo: photoUrl, role: this.userModal.form.role, customAccess: this.userModal.form.customAccess || {}, ...(isNewUser ? { mustChangePassword: true } : {}) }, { merge: true });
                 if (userId === this.userProfile.uid) {
                     this.userProfile.role = this.userModal.form.role;
                     this.userProfile.name = this.userModal.form.name;
                     this.userProfile.photo = photoUrl;
+                    this.userProfile.customAccess = this.userModal.form.customAccess || {};
                 }
                 this.userModal.show = false;
                 this.logAudit(isNewUser ? 'CREATE' : 'UPDATE', `User role/metadata for ${email}`);
@@ -3253,7 +3301,7 @@ createApp({
                         await signOut(auth);
                         return;
                     }
-                    this.userProfile = { name, email: firebaseUser.email, role, uid: firebaseUser.uid, photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '' };
+                    this.userProfile = { name, email: firebaseUser.email, role, uid: firebaseUser.uid, photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '', customAccess: userData?.customAccess || {} };
                     this.applyDarkModePreference();
                     this.notificationsLog = Array.isArray(userData?.notificationsLog) ? userData.notificationsLog : [];
                     this.startIdleTimeoutWatch();
