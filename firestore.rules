@@ -105,9 +105,12 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Pengguna baca dokumen sendiri; hanya Superadmin & Director baca semua pengguna.
+      // Pengguna baca dokumen sendiri; mana-mana role staff (bukan Client) boleh baca
+      // semua pengguna lain — supaya nama/gambar profil setiap pekerja terpapar dengan
+      // betul di seluruh portal (cth. avatar Person In Charge), bukan untuk Superadmin/
+      // Director sahaja. Client kekal terhad kepada rekod sendiri.
       allow read: if isAuthenticated() && (
-        request.auth.uid == userId || isAdmin()
+        request.auth.uid == userId || !isClient()
       );
       allow create: if (
         request.auth.uid == userId &&

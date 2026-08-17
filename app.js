@@ -3156,7 +3156,10 @@ createApp({
             const canReadAllPayslips = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
             const canReadAllClaims = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
             const canReadAllEmployees = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
-            const canReadAllUsers = ['Superadmin', 'Director'].includes(role);
+            // Any staff role (not Client) can see the internal user directory — needed so
+            // profile photos and names resolve correctly for every employee everywhere in
+            // the app (e.g. Person In Charge avatars), not just for Superadmin/Director.
+            const canReadUserDirectory = role !== 'Client';
             const canReadAuditLogs = ['Superadmin', 'Director', 'IT'].includes(role);
             const documentsSource = canReadAllDocuments
                 ? collection(db, 'docs')
@@ -3191,7 +3194,7 @@ createApp({
                 ? query(collection(db, 'project_client_updates'), where('clientPortalUid', '==', this.userProfile.uid))
                 : collection(db, 'project_client_updates');
 
-            const userSubscription = canReadAllUsers
+            const userSubscription = canReadUserDirectory
                 ? subscribeWithReadySignal(collection(db, 'users'), (snapshot) => {
                     this.users = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
                     const currentUser = this.users.find(user => user.id === this.userProfile.uid);
