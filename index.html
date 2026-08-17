@@ -515,9 +515,9 @@
                 <div v-show="currentTab === 'doc-generator'" class="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div class="flex items-center space-x-3">
-                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
-                                <i class="fa-solid fa-arrow-left"></i>
-                                <span class="hidden sm:inline">Dashboard</span>
+                            <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
+                                <i class="fa-solid fa-bars"></i>
+                                <span class="hidden sm:inline">Menu</span>
                             </button>
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Billing &amp; Documents</h2>
@@ -750,9 +750,9 @@
                 <div v-show="currentTab === 'payslip-generator'" class="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div class="flex items-center space-x-3">
-                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
-                                <i class="fa-solid fa-arrow-left"></i>
-                                <span class="hidden sm:inline">Dashboard</span>
+                            <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
+                                <i class="fa-solid fa-bars"></i>
+                                <span class="hidden sm:inline">Menu</span>
                             </button>
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Payroll Management</h2>
@@ -884,9 +884,9 @@
                 <div v-show="currentTab === 'claims'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div class="flex items-center space-x-3">
-                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
-                                <i class="fa-solid fa-arrow-left"></i>
-                                <span class="hidden sm:inline">Dashboard</span>
+                            <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
+                                <i class="fa-solid fa-bars"></i>
+                                <span class="hidden sm:inline">Menu</span>
                             </button>
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Claims &amp; Payment Vouchers</h2>
@@ -1800,9 +1800,9 @@
                 <div v-show="currentTab === 'client-directory'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-3">
-                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
-                                <i class="fa-solid fa-arrow-left"></i>
-                                <span class="hidden sm:inline">Dashboard</span>
+                            <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
+                                <i class="fa-solid fa-bars"></i>
+                                <span class="hidden sm:inline">Menu</span>
                             </button>
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Directory</h2>
@@ -1882,9 +1882,9 @@
                 <div v-show="currentTab === 'hr-employees'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-3">
-                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
-                                <i class="fa-solid fa-arrow-left"></i>
-                                <span class="hidden sm:inline">Dashboard</span>
+                            <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
+                                <i class="fa-solid fa-bars"></i>
+                                <span class="hidden sm:inline">Menu</span>
                             </button>
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Employee Management</h2>
@@ -1979,9 +1979,9 @@
                 <div v-show="currentTab === 'reports'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-3">
-                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
-                                <i class="fa-solid fa-arrow-left"></i>
-                                <span class="hidden sm:inline">Dashboard</span>
+                            <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
+                                <i class="fa-solid fa-bars"></i>
+                                <span class="hidden sm:inline">Menu</span>
                             </button>
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Enterprise Reports &amp; Data Export</h2>
@@ -2065,8 +2065,8 @@
                 <div v-show="currentTab === 'project-activities'" class="p-4 md:p-8 max-w-[1800px] mx-auto w-full space-y-6">
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center space-x-3">
-                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
-                                <i class="fa-solid fa-arrow-left"></i><span class="hidden sm:inline">Dashboard</span>
+                            <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
+                                <i class="fa-solid fa-bars"></i><span class="hidden sm:inline">Menu</span>
                             </button>
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">{{ userProfile.role === 'Client' ? 'My Project Tracker' : 'Project Activities' }}</h2>
@@ -2436,9 +2436,9 @@
                 <div v-show="currentTab === 'client-portal'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-3">
-                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
-                                <i class="fa-solid fa-arrow-left"></i>
-                                <span class="hidden sm:inline">Dashboard</span>
+                            <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
+                                <i class="fa-solid fa-bars"></i>
+                                <span class="hidden sm:inline">Menu</span>
                             </button>
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Client Self-Service Portal</h2>
@@ -2557,9 +2557,9 @@
                 <div v-show="currentTab === 'audit-logs'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-3">
-                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
-                                <i class="fa-solid fa-arrow-left"></i>
-                                <span class="hidden sm:inline">Dashboard</span>
+                            <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
+                                <i class="fa-solid fa-bars"></i>
+                                <span class="hidden sm:inline">Menu</span>
                             </button>
                             <div>
                                 <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">System Audit &amp; Security Logs</h2>
@@ -2608,9 +2608,9 @@
                 <div v-show="['settings', 'profile'].includes(currentTab)" class="p-8 max-w-4xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-3">
-                            <button type="button" @click="switchTab('dashboard')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Back to Dashboard">
-                                <i class="fa-solid fa-arrow-left"></i>
-                                <span class="hidden sm:inline">Dashboard</span>
+                            <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
+                                <i class="fa-solid fa-bars"></i>
+                                <span class="hidden sm:inline">Menu</span>
                             </button>
                             <h2 class="text-xl font-extrabold text-brand-dark dark:text-white capitalize">{{ currentTab === 'settings' ? 'Global Company Settings' : 'Admin Profile & Portal Access Management' }}</h2>
                         </div>

@@ -2010,6 +2010,10 @@ createApp({
             if (window.innerWidth < 768) this.mobileMenuOpen = !this.mobileMenuOpen;
             else this.desktopSidebarOpen = !this.desktopSidebarOpen;
         },
+        openSidebar() {
+            if (window.innerWidth < 768) this.mobileMenuOpen = true;
+            else this.desktopSidebarOpen = true;
+        },
         applyDarkModePreference() {
             this.darkMode = this.userProfile.themePreference === 'dark';
             document.documentElement.classList.toggle('dark', this.darkMode);
@@ -2096,16 +2100,25 @@ createApp({
         },
         switchTab(tabName) {
             if (!this.hasAccess(tabName)) { this.showNotify('Access Denied: Your role does not permit access to this module.'); return; }
-            if (tabName === 'dashboard') { this.returnToDashboard(); return; }
-            if (this.currentTab !== tabName) window.history.pushState({ zenqorPortal: true }, '', window.location.href);
+            if (this.currentTab === tabName) {
+                this.mobileMenuOpen = false;
+                this.desktopSidebarOpen = false;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            window.history.pushState({ zenqorPortal: true, tab: tabName }, '', window.location.href);
             this.currentTab = tabName; this.mobileMenuOpen = false; this.desktopSidebarOpen = false;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         returnToDashboard() {
-            this.currentTab = 'dashboard';
-            this.mobileMenuOpen = false; this.desktopSidebarOpen = false;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            this.refreshDashboardCharts();
+            this.switchTab('dashboard');
+        },
+        restoreTabFromHistory(tabName) {
+            const safeTab = typeof tabName === 'string' && this.hasAccess(tabName) ? tabName : 'dashboard';
+            this.currentTab = safeTab;
+            this.mobileMenuOpen = false;
+            this.desktopSidebarOpen = false;
+            window.scrollTo({ top: 0, behavior: 'auto' });
         },
         refreshDashboardCharts(attempt = 0) {
             if (!this.isLoggedIn || !this.portalDataReady || this.currentTab !== 'dashboard' || ['Staff', 'Client'].includes(this.userProfile.role)) return;
@@ -3092,7 +3105,7 @@ createApp({
                 this.editingClaimId = null; this.showNotify(`Expense claim submitted.`); this.resetClaimForm();
             } catch (error) { console.error('Claim save failed:', error); this.showNotify(this.getFirestoreWriteError(error, 'submit the claim')); }
         },
-        editClaimRecord(clm) { this.claimFormMode = 'Claim'; this.editingClaimId = clm.id; this.selectedClaimEmployeeId = clm.empNo || ''; this.claimForm = JSON.parse(JSON.stringify(clm)); this.currentTab = 'claims'; this.mobileMenuOpen = false; window.scrollTo({ top:0, behavior:'smooth' }); },
+        editClaimRecord(clm) { this.claimFormMode = 'Claim'; this.editingClaimId = clm.id; this.selectedClaimEmployeeId = clm.empNo || ''; this.claimForm = JSON.parse(JSON.stringify(clm)); this.switchTab('claims'); },
         cancelEditClaim() { this.editingClaimId = null; this.resetClaimForm(); },
         async printApprovedClaim(claim) {
             if (!claim || claim.status !== 'Approved') { alert('Only approved claims can be printed.'); return; }
@@ -3195,7 +3208,7 @@ createApp({
                 this.editingVoucherId = null; this.showNotify(`Payment voucher submitted.`); this.resetVoucherForm();
             } catch (error) { console.error('Voucher save failed:', error); this.showNotify(this.getFirestoreWriteError(error, 'submit the payment voucher')); }
         },
-        editPaymentVoucher(pv) { this.claimFormMode = 'Payment Voucher'; this.editingVoucherId = pv.id; this.selectedVoucherEmployeeId = pv.empNo || ''; this.voucherForm = JSON.parse(JSON.stringify(pv)); this.currentTab = 'claims'; this.mobileMenuOpen = false; window.scrollTo({ top:0, behavior:'smooth' }); },
+        editPaymentVoucher(pv) { this.claimFormMode = 'Payment Voucher'; this.editingVoucherId = pv.id; this.selectedVoucherEmployeeId = pv.empNo || ''; this.voucherForm = JSON.parse(JSON.stringify(pv)); this.switchTab('claims'); },
         cancelEditVoucher() { this.editingVoucherId = null; this.resetVoucherForm(); },
         async printApprovedVoucher(voucher) {
             if (!voucher || voucher.status !== 'Approved') { alert('Only approved payment vouchers can be printed.'); return; }
@@ -3295,8 +3308,8 @@ createApp({
         },
         editRecord(item) {
             this.mobileMenuOpen = false;
-            if (item.isDoc) { this.editingDocId = item.id; if (item.raw) { this.docForm = JSON.parse(JSON.stringify(item.raw)); this.docForm.status = item.raw.status || item.status || (item.type === 'Invoice' ? 'Unpaid' : 'Open'); } this.currentTab = 'doc-generator'; }
-            else if (item.isPay) { this.editingPayId = item.id; if (item.raw) { this.payForm = JSON.parse(JSON.stringify(item.raw)); this.selectedPayEmployeeId = this.payForm.empNo || ''; } this.autoCalculatePayroll(); this.currentTab = 'payslip-generator'; }
+            if (item.isDoc) { this.editingDocId = item.id; if (item.raw) { this.docForm = JSON.parse(JSON.stringify(item.raw)); this.docForm.status = item.raw.status || item.status || (item.type === 'Invoice' ? 'Unpaid' : 'Open'); } this.switchTab('doc-generator'); }
+            else if (item.isPay) { this.editingPayId = item.id; if (item.raw) { this.payForm = JSON.parse(JSON.stringify(item.raw)); this.selectedPayEmployeeId = this.payForm.empNo || ''; } this.autoCalculatePayroll(); this.switchTab('payslip-generator'); }
             else if (item.isVoucher) this.editPaymentVoucher(item);
             else if (item.isClaim) this.editClaimRecord(item);
         },
@@ -3540,9 +3553,9 @@ createApp({
         this.checkPasswordResetLink();
         this.autoCalculatePayroll();
         this.generateDocNo();
-        window.history.replaceState({ zenqorPortal: true }, '', window.location.href);
-        this.browserBackHandler = () => {
-            if (this.isLoggedIn && this.currentTab !== 'dashboard') this.returnToDashboard();
+        window.history.replaceState({ zenqorPortal: true, tab: this.currentTab }, '', window.location.href);
+        this.browserBackHandler = (event) => {
+            if (this.isLoggedIn) this.restoreTabFromHistory(event.state?.tab);
         };
         window.addEventListener('popstate', this.browserBackHandler);
 
