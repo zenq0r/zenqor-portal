@@ -2,6 +2,15 @@
 // One-time use, 5-minute expiry, tied to the requesting user's own UID via
 // their Firebase ID token — a code can't be used to verify a different account.
 const { getAdminApp } = require('./_firebaseAdmin');
+const crypto = require('crypto');
+
+const MAX_ATTEMPTS = 5;
+
+function safeEqual(a, b) {
+    const left = Buffer.from(String(a));
+    const right = Buffer.from(String(b));
+    return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
@@ -18,15 +27,22 @@ module.exports = async function handler(req, res) {
         if (!code || typeof code !== 'string') { res.status(400).json({ valid: false, error: 'Enter the code from your email.' }); return; }
 
         const docRef = admin.firestore().collection('login_otp_codes').doc(decoded.uid);
-        const doc = await docRef.get();
-        if (!doc.exists) { res.status(400).json({ valid: false, error: 'No verification code was requested. Please sign in again.' }); return; }
-
-        const data = doc.data();
-        if (data.used) { res.status(400).json({ valid: false, error: 'This code has already been used. Please sign in again.' }); return; }
-        if (new Date(data.expiresAt).getTime() < Date.now()) { res.status(400).json({ valid: false, error: 'This code has expired. Please sign in again.' }); return; }
-        if (data.code !== code.trim()) { res.status(400).json({ valid: false, error: 'Incorrect code. Please try again.' }); return; }
-
-        await docRef.update({ used: true, usedAt: new Date().toISOString() });
+        const result = await admin.firestore().runTransaction(async transaction => {
+            const doc = await transaction.get(docRef);
+            if (!doc.exists) return { error: 'No verification code was requested. Please sign in again.' };
+            const data = doc.data();
+            if (data.used) return { error: 'This code has already been used. Please sign in again.' };
+            if (new Date(data.expiresAt).getTime() < Date.now()) return { error: 'This code has expired. Please sign in again.' };
+            const attempts = Number(data.attempts || 0);
+            if (attempts >= MAX_ATTEMPTS) return { error: 'Too many incorrect attempts. Please sign in again.' };
+            if (!safeEqual(data.code, code.trim())) {
+                transaction.update(docRef, { attempts: attempts + 1 });
+                return { error: attempts + 1 >= MAX_ATTEMPTS ? 'Too many incorrect attempts. Please sign in again.' : 'Incorrect code. Please try again.' };
+            }
+            transaction.update(docRef, { used: true, usedAt: new Date().toISOString() });
+            return { valid: true };
+        });
+        if (!result.valid) { res.status(400).json({ valid: false, error: result.error }); return; }
         res.status(200).json({ valid: true });
     } catch (error) {
         console.error('verify-login-otp error:', error);

@@ -4,8 +4,10 @@
 // resets and workflow notifications. Requires the Firebase ID token issued by
 // the FIRST factor (password) — the caller must already be authenticated.
 const { getAdminApp } = require('./_firebaseAdmin');
+const { generateOtp } = require('./_security');
 
 const OTP_TTL_MS = 5 * 60 * 1000;
+const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
 
 function buildOtpEmailHtml(code) {
     return `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; padding: 0; background-color: #ffffff; border-radius: 16px; border: 1px solid #E5E7EB; overflow: hidden;">
@@ -36,14 +38,28 @@ module.exports = async function handler(req, res) {
         const decoded = await admin.auth().verifyIdToken(idToken);
         if (!decoded.email) { res.status(400).json({ error: 'Account has no email address on file.' }); return; }
 
-        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const userDoc = await admin.firestore().collection('users').doc(decoded.uid).get();
+        const role = userDoc.exists ? userDoc.data().role : null;
+        if (!['Superadmin', 'Director'].includes(role)) {
+            res.status(403).json({ error: 'Verification codes are only available for privileged accounts.' });
+            return;
+        }
+
+        const code = generateOtp();
         const now = Date.now();
-        await admin.firestore().collection('login_otp_codes').doc(decoded.uid).set({
+        const otpRef = admin.firestore().collection('login_otp_codes').doc(decoded.uid);
+        const existing = await otpRef.get();
+        if (existing.exists && now - new Date(existing.data().createdAt).getTime() < OTP_RESEND_COOLDOWN_MS) {
+            res.status(429).json({ error: 'Please wait before requesting another verification code.' });
+            return;
+        }
+        await otpRef.set({
             code,
             email: decoded.email,
             createdAt: new Date(now).toISOString(),
             expiresAt: new Date(now + OTP_TTL_MS).toISOString(),
-            used: false
+            used: false,
+            attempts: 0
         });
 
         const apiKey = process.env.RESEND_API_KEY;

@@ -5,13 +5,14 @@
 // actually belong to a provisioned staff user or a known client record —
 // a signed-in caller cannot use this to relay mail to an arbitrary address.
 const { getAdminApp } = require('./_firebaseAdmin');
+const { isAllowedPortalUrl, normalizeEmail } = require('./_security');
 
 function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function buildEmailHtml({ heading, message, ctaLabel, ctaUrl }) {
-    const safeCtaUrl = typeof ctaUrl === 'string' && /^https:\/\/[a-z0-9.-]*zenq0r\.com/i.test(ctaUrl) ? ctaUrl : null;
+    const safeCtaUrl = isAllowedPortalUrl(ctaUrl) ? ctaUrl : null;
     const ctaBlock = safeCtaUrl ? `<div style="text-align: center; margin: 0 0 28px;">
       <a href="${safeCtaUrl}" style="display: inline-block; background-color: #14B8A6; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; padding: 15px 40px; border-radius: 10px;">${escapeHtml(ctaLabel || 'OPEN PORTAL')}</a>
     </div>` : '';
@@ -53,7 +54,7 @@ module.exports = async function handler(req, res) {
         const db = admin.firestore();
 
         const { to, subject, heading, message, ctaLabel, ctaUrl } = req.body || {};
-        const candidates = (Array.isArray(to) ? to : [to]).filter(e => typeof e === 'string' && e.includes('@'));
+        const candidates = [...new Set((Array.isArray(to) ? to : [to]).map(normalizeEmail).filter(Boolean))].slice(0, 20);
         if (!candidates.length) { res.status(400).json({ error: 'At least one valid recipient email is required.' }); return; }
         if (!subject || !heading || !message) { res.status(400).json({ error: 'subject, heading and message are required.' }); return; }
 

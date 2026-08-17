@@ -17,25 +17,24 @@ module.exports = async function handler(req, res) {
         const admin = getAdminApp();
         const db = admin.firestore();
         const docRef = db.collection('password_reset_tokens').doc(token);
-        const doc = await docRef.get();
+        const claim = await db.runTransaction(async transaction => {
+            const doc = await transaction.get(docRef);
+            if (!doc.exists) return { error: 'This reset link is invalid. Please request a new one.' };
+            const data = doc.data();
+            if (data.used || data.processing) return { error: 'This reset link has already been used. Please request a new one.' };
+            if (new Date(data.expiresAt).getTime() < Date.now()) return { error: 'This reset link has expired. Please request a new one.' };
+            transaction.update(docRef, { processing: true, processingAt: new Date().toISOString() });
+            return { uid: data.uid };
+        });
+        if (claim.error) { res.status(400).json({ error: claim.error }); return; }
 
-        if (!doc.exists) {
-            res.status(400).json({ error: 'This reset link is invalid. Please request a new one.' });
-            return;
+        try {
+            await admin.auth().updateUser(claim.uid, { password: newPassword });
+            await docRef.update({ used: true, processing: false, usedAt: new Date().toISOString() });
+        } catch (updateError) {
+            await docRef.update({ processing: false }).catch(() => {});
+            throw updateError;
         }
-
-        const data = doc.data();
-        if (data.used) {
-            res.status(400).json({ error: 'This reset link has already been used. Please request a new one.' });
-            return;
-        }
-        if (new Date(data.expiresAt).getTime() < Date.now()) {
-            res.status(400).json({ error: 'This reset link has expired. Please request a new one.' });
-            return;
-        }
-
-        await admin.auth().updateUser(data.uid, { password: newPassword });
-        await docRef.update({ used: true, usedAt: new Date().toISOString() });
 
         res.status(200).json({ success: true });
     } catch (error) {
