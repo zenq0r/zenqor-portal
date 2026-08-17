@@ -79,5 +79,6 @@ Di Firebase Console → Firestore → `users` collection:
 
 - Portal Access Management mencipta akaun baharu dan metadata role; kemas kini akses tidak mengubah password.
 - Rekod Authentication lama tanpa UID metadata menggunakan `pending_access` dan dimigrasi ketika login.
-- Lampiran PNG/JPG/JPEG dipampatkan dalam browser dan disimpan dalam Firestore; Firebase Storage tidak digunakan.
+- Lampiran Claims/Payment Voucher/Payslip (PNG/JPG/JPEG) dipampatkan dalam browser dan disimpan sebagai base64 dalam Firestore.
+- Client Documents (Client Portal) pula guna Firebase Storage sebenar — lihat `storage.rules` dan `api/sync-user-claims.js` untuk cara role/ownership disahkan melalui Auth custom claims.
 - Fungsi "Tukar Kata Laluan" tersedia dalam Profile tab
