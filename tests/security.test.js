@@ -22,7 +22,7 @@ test('email normalization trims, lowercases, and rejects malformed input', () =>
     assert.equal(normalizeEmail(null), null);
 });
 
-test('Firebase Admin initialization uses the supported modular API', () => {
+test('Firebase Admin initialization fails clearly when credentials are absent', () => {
     const modulePath = path.join(__dirname, '..', 'api', '_firebaseAdmin.js');
     const script = `delete process.env.FIREBASE_SERVICE_ACCOUNT_KEY; require(${JSON.stringify(modulePath)}).getAdminApp()`;
     const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });

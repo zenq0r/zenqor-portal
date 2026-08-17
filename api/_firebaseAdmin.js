@@ -1,10 +1,7 @@
-const { cert, getApps, initializeApp } = require('firebase-admin/app');
-const { getAuth } = require('firebase-admin/auth');
-const { getFirestore } = require('firebase-admin/firestore');
+const admin = require('firebase-admin');
 
 function getAdminApp() {
-    let app = getApps()[0];
-    if (!app) {
+    if (!admin.apps.length) {
         const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
         if (!raw) throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
         let serviceAccount;
@@ -13,12 +10,9 @@ function getAdminApp() {
         } catch (_) {
             throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY must contain valid JSON.');
         }
-        app = initializeApp({ credential: cert(serviceAccount) });
+        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
     }
-    return {
-        auth: () => getAuth(app),
-        firestore: () => getFirestore(app)
-    };
+    return admin;
 }
 
 module.exports = { getAdminApp };
