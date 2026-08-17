@@ -44,7 +44,7 @@ const STATUTORY_RATES = {
 };
 
 const RBAC_ROLES = {
-    'Director': ['dashboard', 'project-activities', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
+    'Director': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'Superadmin': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
     'HR': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
     'Account': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'profile'],
@@ -428,8 +428,8 @@ createApp({
         canManageSensitiveData() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
         canManageEmployees() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
         canManageClients() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
-        canManageDocuments() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
-        canManagePayroll() { return ['Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
+        canManageDocuments() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
+        canManagePayroll() { return ['Superadmin', 'Director', 'HR', 'Account'].includes(this.userProfile.role); },
         canDelete() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageRBAC() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageCompanySettings() { return ['Director', 'Superadmin', 'IT'].includes(this.userProfile.role); },

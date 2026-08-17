@@ -16,7 +16,7 @@ service firebase.storage {
     }
 
     function isStaffDocumentManager() {
-      return isSignedIn() && userRole() in ['Superadmin', 'HR', 'Account'];
+      return isSignedIn() && userRole() in ['Superadmin', 'Director', 'HR', 'Account'];
     }
 
     function isStaffReader() {
