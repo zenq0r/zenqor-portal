@@ -105,13 +105,12 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Pengguna baca dokumen sendiri; mana-mana role staff (bukan Client) boleh baca
-      // semua pengguna lain — supaya nama/gambar profil setiap pekerja terpapar dengan
-      // betul di seluruh portal (cth. avatar Person In Charge), bukan untuk Superadmin/
-      // Director sahaja. Client kekal terhad kepada rekod sendiri.
-      allow read: if isAuthenticated() && (
-        request.auth.uid == userId || !isClient()
-      );
+      // Mana-mana pengguna yang sudah log masuk (staff ATAU Client) boleh baca rekod
+      // pengguna lain — supaya nama/gambar profil setiap pekerja terpapar dengan betul
+      // di seluruh portal (cth. avatar "Person In Charge" yang client lihat pada
+      // projek sendiri). Tiada kata laluan/kelayakan sensitif disimpan di sini —
+      // Firebase Auth uruskan itu berasingan.
+      allow read: if isAuthenticated();
       allow create: if (
         request.auth.uid == userId &&
         hasMatchingPendingAccess() &&

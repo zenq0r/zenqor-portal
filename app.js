@@ -3164,10 +3164,12 @@ createApp({
             const canReadAllPayslips = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
             const canReadAllClaims = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
             const canReadAllEmployees = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
-            // Any staff role (not Client) can see the internal user directory — needed so
-            // profile photos and names resolve correctly for every employee everywhere in
-            // the app (e.g. Person In Charge avatars), not just for Superadmin/Director.
-            const canReadUserDirectory = role !== 'Client';
+            // Every signed-in user — staff and Client Portal alike — can see the internal
+            // user directory (names + photos only, no credentials). Needed so profile
+            // photos resolve correctly everywhere they're shown, including the "Person In
+            // Charge" avatar clients see on their own project (previously staff-only,
+            // which left it blank/initials-only for Client Portal viewers).
+            const canReadUserDirectory = true;
             const canReadAuditLogs = ['Superadmin', 'Director', 'IT'].includes(role);
             const documentsSource = canReadAllDocuments
                 ? collection(db, 'docs')
