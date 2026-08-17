@@ -28,7 +28,7 @@
       ]
     },
     {
-      "source": "/(app.js|firebase-config.js|env-config.js|custom.css)",
+      "source": "/(app.js|firebase-config.js|custom.css)",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
       ]

@@ -3,7 +3,8 @@
 // ============================================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAnalytics, isSupported as isAnalyticsSupported } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+// Analytics is loaded lazily (see below) so its bundle is not downloaded on every
+// page load while Analytics is disabled.
 import {
     getFirestore,
     collection,
@@ -34,26 +35,39 @@ import {
     deleteObject
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-const env = window.__ENV__ || {};
-const getEnvValue = (key, fallback) => {
-    const value = env[key];
-    return typeof value === 'string' && value.trim() && !value.includes('%%') ? value.trim() : fallback;
-};
-
+// These values are not secrets — the Firebase web config is shipped to every browser
+// by design, and access is enforced by Auth + Firestore/Storage Rules, not by hiding
+// them. Restrict the API key by HTTP referrer in the Google Cloud console instead.
+// (`measurementId` is intentionally empty: Analytics is not enabled for this project.)
 const firebaseConfig = {
-    apiKey: getEnvValue('FIREBASE_API_KEY', "AIzaSyDgoE8ckbVWqc1j6bHq1u1685_xJp0y09Y"),
-    authDomain: getEnvValue('FIREBASE_AUTH_DOMAIN', "zenqor-portal-a3b2d.firebaseapp.com"),
-    projectId: getEnvValue('FIREBASE_PROJECT_ID', "zenqor-portal-a3b2d"),
-    storageBucket: getEnvValue('FIREBASE_STORAGE_BUCKET', "zenqor-portal-a3b2d.firebasestorage.app"),
-    messagingSenderId: getEnvValue('FIREBASE_MESSAGING_ID', "1065187936514"),
-    appId: getEnvValue('FIREBASE_APP_ID', "1:1065187936514:web:d05089d6668c58bf3e9a1b"),
-    measurementId: getEnvValue('FIREBASE_MEASUREMENT_ID', "")
+    apiKey: "AIzaSyDgoE8ckbVWqc1j6bHq1u1685_xJp0y09Y",
+    authDomain: "zenqor-portal-a3b2d.firebaseapp.com",
+    projectId: "zenqor-portal-a3b2d",
+    storageBucket: "zenqor-portal-a3b2d.firebasestorage.app",
+    messagingSenderId: "1065187936514",
+    appId: "1:1065187936514:web:d05089d6668c58bf3e9a1b",
+    measurementId: ""
 };
 
 const app = initializeApp(firebaseConfig);
-isAnalyticsSupported().then((supported) => {
-    if (supported) getAnalytics(app);
-}).catch(() => {});
+
+// Analytics is optional. Without a measurementId, getAnalytics() still fires an
+// internal dynamic-config fetch that rejects (403) and surfaces as an "Uncaught
+// (in promise)" FirebaseError on every page load, so only start it when a
+// measurementId is actually configured. getAnalytics() throws synchronously on a
+// bad config and rejects asynchronously on a blocked fetch — catch both.
+if (firebaseConfig.measurementId) {
+    // A blocked/failed dynamic-config fetch rejects inside the SDK rather than on the
+    // promise returned here, so keep a guard to stop it becoming an unhandled rejection.
+    window.addEventListener('unhandledrejection', (event) => {
+        if (String(event.reason?.code || '').startsWith('analytics/')) event.preventDefault();
+    });
+    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js")
+        .then(async ({ getAnalytics, isSupported }) => {
+            if (await isSupported()) getAnalytics(app);
+        })
+        .catch((error) => console.warn('Analytics disabled:', error?.message || error));
+}
 
 const db = getFirestore(app);
 const auth = getAuth(app);

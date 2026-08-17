@@ -1708,7 +1708,16 @@ createApp({
         },
         async deleteClientDocument(item) {
             try {
-                await deleteObject(storageRef(storage, item.storagePath));
+                // The stored file may already be gone (legacy rows predating storagePath, or a
+                // file removed straight from the bucket). Losing the bytes must not block removing
+                // the metadata row, otherwise the entry is orphaned in the UI forever.
+                if (item.storagePath) {
+                    try {
+                        await deleteObject(storageRef(storage, item.storagePath));
+                    } catch (storageError) {
+                        if (storageError?.code !== 'storage/object-not-found') throw storageError;
+                    }
+                }
                 await deleteDoc(doc(db, 'client_documents', item.id));
                 this.clientDocuments.items = this.clientDocuments.items.filter(d => d.id !== item.id);
                 this.logAudit('DELETE_DOCUMENT', `Removed "${item.fileName}" from client ${this.clientDocuments.clientName}`);
@@ -2570,13 +2579,6 @@ createApp({
             const customer = this.customers.find(c => c.id === clientDirectoryId);
             if (!customer?.createdAt) return false;
             const createdMs = Date.parse(customer.createdAt);
-            if (!Number.isFinite(createdMs)) return false;
-            const ageMs = Date.now() - createdMs;
-            return ageMs >= 0 && ageMs <= 3 * 24 * 60 * 60 * 1000;
-        },
-        isNewProject(project) {
-            if (!project?.createdAt) return false;
-            const createdMs = Date.parse(project.createdAt);
             if (!Number.isFinite(createdMs)) return false;
             const ageMs = Date.now() - createdMs;
             return ageMs >= 0 && ageMs <= 3 * 24 * 60 * 60 * 1000;
