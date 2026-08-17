@@ -2223,7 +2223,7 @@
                                 <section>
                                     <div class="mb-3 flex items-center justify-between gap-3">
                                         <div><h4 class="text-[10px] font-extrabold uppercase tracking-widest text-brand-blue">Client Documents</h4><p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Centralized repository — JPG, PNG and PDF files shared between your team and the client.</p></div>
-                                        <label v-if="canManageDocuments" class="shrink-0 cursor-pointer rounded-lg bg-brand-blue px-3 py-2 text-[10px] font-bold text-white hover:bg-teal-800" :class="{ 'opacity-60 pointer-events-none': clientDocuments.uploading }">
+                                        <label v-if="canUploadClientDocuments" class="shrink-0 cursor-pointer rounded-lg bg-brand-blue px-3 py-2 text-[10px] font-bold text-white hover:bg-teal-800" :class="{ 'opacity-60 pointer-events-none': clientDocuments.uploading }">
                                             <i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>{{ clientDocuments.uploading ? 'Uploading…' : 'Upload Document' }}
                                             <input type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" class="hidden" @change="handleClientDocumentUpload" :disabled="clientDocuments.uploading">
                                         </label>
@@ -2779,7 +2779,7 @@
                     <div v-if="clientView.client.id" class="sm:col-span-2 border-t border-slate-200 dark:border-slate-700 pt-4">
                         <div class="mb-3 flex items-center justify-between gap-3">
                             <div><p class="text-[10px] font-extrabold uppercase tracking-widest text-brand-blue">Client Documents</p><p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">All JPG, PNG and PDF files collected for this client, viewable by their Client Portal too.</p></div>
-                            <label v-if="canManageDocuments" class="shrink-0 cursor-pointer rounded-lg bg-brand-blue px-3 py-2 text-[10px] font-bold text-white hover:bg-teal-800" :class="{ 'opacity-60 pointer-events-none': clientDocuments.uploading }">
+                            <label v-if="canUploadClientDocuments" class="shrink-0 cursor-pointer rounded-lg bg-brand-blue px-3 py-2 text-[10px] font-bold text-white hover:bg-teal-800" :class="{ 'opacity-60 pointer-events-none': clientDocuments.uploading }">
                                 <i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>{{ clientDocuments.uploading ? 'Uploading…' : 'Upload Document' }}
                                 <input type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" class="hidden" @change="handleClientDocumentUpload" :disabled="clientDocuments.uploading">
                             </label>

@@ -30,7 +30,7 @@ service firebase.storage {
 
     match /client_documents/{clientDirectoryId}/{fileName} {
       allow read: if isStaffReader() || isOwningClient(clientDirectoryId);
-      allow write: if isStaffDocumentManager() &&
+      allow write: if (isStaffDocumentManager() || isOwningClient(clientDirectoryId)) &&
         request.resource.size <= 10 * 1024 * 1024 &&
         request.resource.contentType in ['image/jpeg', 'image/png', 'application/pdf'];
       allow delete: if isStaffDocumentManager();

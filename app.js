@@ -445,6 +445,11 @@ createApp({
         canManageEmployees() { return this.hasModulePermission('hr-employees', 'edit'); },
         canManageClients() { return this.hasModulePermission('client-directory', 'edit'); },
         canManageDocuments() { return this.hasModulePermission('doc-generator', 'edit'); },
+        // Clients may upload to their OWN client_documents folder (but not the
+        // doc-generator/billing tools canManageDocuments otherwise gates) — the
+        // Firestore/Storage rules independently re-verify clientDirectoryId ownership,
+        // this is just the UI-level show/hide for the upload button.
+        canUploadClientDocuments() { return this.canManageDocuments || this.userProfile.role === 'Client'; },
         canManagePayroll() { return this.hasModulePermission('payslip-generator', 'edit'); },
         canDeleteEmployees() { return this.hasModulePermission('hr-employees', 'delete'); },
         canDeleteClients() { return this.hasModulePermission('client-directory', 'delete'); },
@@ -1631,7 +1636,7 @@ createApp({
         async handleClientDocumentUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-            if (!this.canManageDocuments) { this.showNotify('You do not have permission to upload client documents.'); e.target.value = ''; return; }
+            if (!this.canUploadClientDocuments) { this.showNotify('You do not have permission to upload client documents.'); e.target.value = ''; return; }
             const clientDirectoryId = this.clientDocuments.clientDirectoryId;
             if (!clientDirectoryId) { this.showNotify('No client selected for this document.'); e.target.value = ''; return; }
             this.clientDocuments.uploading = true;

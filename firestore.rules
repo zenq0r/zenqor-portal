@@ -179,11 +179,16 @@ service cloud.firestore {
         isAdmin() || isHR() || isAccount() || isIT() ||
         (isClient() && resource.data.clientEmail == request.auth.token.email)
       );
-      allow create: if isAuthenticated() && (isSuperadmin() || isDirector() || isHR() || isAccount()) &&
-        request.resource.data.uploadedByUid == request.auth.uid &&
-        request.resource.data.uploadedByEmail == request.auth.token.email &&
+      allow create: if isAuthenticated() &&
         request.resource.data.clientDirectoryId is string &&
         request.resource.data.clientDirectoryId.size() > 0 &&
+        (
+          isSuperadmin() || isDirector() || isHR() || isAccount() ||
+          (isClient() &&
+            get(/databases/$(database)/documents/customers/$(request.resource.data.clientDirectoryId)).data.clientEmail == request.auth.token.email)
+        ) &&
+        request.resource.data.uploadedByUid == request.auth.uid &&
+        request.resource.data.uploadedByEmail == request.auth.token.email &&
         request.resource.data.storagePath is string &&
         request.resource.data.storagePath.size() > 0 &&
         request.resource.data.storagePath == 'client_documents/' + request.resource.data.clientDirectoryId + '/' + request.resource.data.storageFileName &&
