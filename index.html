@@ -2571,6 +2571,28 @@
                         </button>
                     </div>
 
+                    <div class="rounded-2xl border border-brand-gold/30 bg-brand-gold/5 p-5 shadow-sm">
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                            <div>
+                                <h3 class="text-sm font-extrabold text-brand-dark dark:text-white"><i class="fa-solid fa-clock-rotate-left mr-2 text-brand-gold"></i>Automatic Audit Log Retention</h3>
+                                <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Available only to Director, Superadmin and IT. Expired records are removed automatically by Firestore TTL.</p>
+                            </div>
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+                                <label class="text-[10px] font-bold uppercase tracking-wide text-slate-500">Keep records for
+                                    <input v-model.number="auditRetention.value" type="number" min="1" max="999" class="mt-1 w-full sm:w-28 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-xs text-brand-dark dark:text-white">
+                                </label>
+                                <label class="text-[10px] font-bold uppercase tracking-wide text-slate-500">Unit
+                                    <select v-model="auditRetention.unit" class="mt-1 w-full sm:w-36 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-xs text-brand-dark dark:text-white">
+                                        <option value="hour">Hour(s)</option><option value="day">Day(s)</option><option value="week">Week(s)</option><option value="month">Month(s)</option><option value="year">Year(s)</option>
+                                    </select>
+                                </label>
+                                <button type="button" @click="saveAuditRetention" :disabled="auditRetention.saving || auditRetention.loading" class="rounded-xl bg-brand-gold px-4 py-2.5 text-xs font-extrabold text-brand-dark shadow transition hover:brightness-105 disabled:opacity-50">{{ auditRetention.saving ? 'Saving…' : 'Save Retention' }}</button>
+                            </div>
+                        </div>
+                        <p v-if="auditRetention.message" class="mt-3 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">{{ auditRetention.message }}</p>
+                        <p v-if="auditRetention.error" class="mt-3 text-[11px] font-semibold text-red-600 dark:text-red-400">{{ auditRetention.error }}</p>
+                    </div>
+
                     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">

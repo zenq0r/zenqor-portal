@@ -4,6 +4,7 @@ const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const { generateOtp, isAllowedPortalUrl, normalizeEmail } = require('../api/_security');
 const { getClientIp, parseUserAgent } = require('../api/_auditMetadata');
+const { normalizeRetention, retentionDurationMs } = require('../api/_auditRetention');
 
 test('OTP is always a six-digit string', () => {
     for (let i = 0; i < 100; i += 1) assert.match(generateOtp(), /^\d{6}$/);
@@ -38,4 +39,11 @@ test('audit metadata extracts the trusted client IP and readable browser details
     assert.equal(metadata.browser, 'Google Chrome 140.0.0.0');
     assert.equal(metadata.os, 'Windows 10/11');
     assert.equal(metadata.device, 'Desktop');
+});
+
+test('audit retention validates supported units and calculates expiry duration', () => {
+    assert.equal(normalizeRetention(2, 'hour').durationMs, 2 * 60 * 60 * 1000);
+    assert.equal(retentionDurationMs({ value: 3, unit: 'week' }), 21 * 24 * 60 * 60 * 1000);
+    assert.equal(normalizeRetention(0, 'day'), null);
+    assert.equal(normalizeRetention(1, 'minute'), null);
 });

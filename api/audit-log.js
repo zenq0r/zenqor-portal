@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { getAdminApp } = require('./_firebaseAdmin');
 const { getClientIp, parseUserAgent } = require('./_auditMetadata');
+const { DEFAULT_RETENTION, retentionDurationMs } = require('./_auditRetention');
 
 const ALLOWED_ACTIONS = new Set([
     'LOGIN', 'LOGOUT', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'BACKUP',
@@ -25,6 +26,9 @@ module.exports = async function handler(req, res) {
         if (typeof details !== 'string' || !details.trim()) { res.status(400).json({ error: 'Audit details are required.' }); return; }
 
         const now = new Date();
+        const retentionDoc = await admin.firestore().collection('settings').doc('audit_retention').get();
+        const retention = retentionDoc.exists ? retentionDoc.data() : DEFAULT_RETENTION;
+        const expireAt = admin.firestore.Timestamp.fromMillis(now.getTime() + retentionDurationMs(retention));
         const metadata = parseUserAgent(req.headers['user-agent']);
         const id = `${now.getTime()}-${crypto.randomUUID()}`;
         const auditRecord = {
@@ -41,7 +45,8 @@ module.exports = async function handler(req, res) {
             browser: metadata.browser,
             os: metadata.os,
             device: metadata.device,
-            userAgent: metadata.userAgent
+            userAgent: metadata.userAgent,
+            expireAt
         };
 
         await admin.firestore().collection('audit_logs').doc(id).set(auditRecord);
