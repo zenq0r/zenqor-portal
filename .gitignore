@@ -2,6 +2,7 @@
 *-key.json
 *serviceAccount*.json
 *service-account*.json
+*firebase-adminsdk*.json
 
 # Local environment files
 .env
