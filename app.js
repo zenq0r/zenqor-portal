@@ -2466,9 +2466,22 @@ createApp({
             this.clientView.show = false;
             this.clientDocuments = { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false, error: '' };
         },
-        openClientQuickViewForProject(project) {
-            const customer = this.customers.find(c => c.id === project.clientDirectoryId);
-            if (customer) { this.openClientView(customer); return; }
+        async openClientQuickViewForProject(project) {
+            const cached = this.customers.find(c => c.id === project.clientDirectoryId);
+            if (cached) { this.openClientView(cached); return; }
+            // Fall back to a direct Firestore read when the local customers cache hasn't
+            // synced yet (e.g. a client was just created and this project opened right
+            // after) — without this, the modal would show only the sparse project-embedded
+            // fields (name/email/SSM) instead of the client's full contact record.
+            if (project.clientDirectoryId) {
+                try {
+                    const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                    const snap = await getDoc(doc(db, 'customers', project.clientDirectoryId));
+                    if (snap.exists()) { this.openClientView({ id: snap.id, ...snap.data() }); return; }
+                } catch (error) {
+                    console.error('Client directory lookup failed:', error);
+                }
+            }
             this.openClientView({ clientName: project.clientName || 'Unknown Client', clientEmail: project.clientEmail || '', clientSSM: project.clientSSM || '', clientTier: project.clientTier || 'Standard' });
         },
         clientTierMeta(tier) {
