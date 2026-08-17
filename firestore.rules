@@ -93,6 +93,20 @@ service cloud.firestore {
       );
     }
 
+    // Multi-user Client Portal access: a customers/{clientDirectoryId} record's
+    // primary clientEmail is always an owner; additionalClientEmails (optional
+    // array, may not exist on older records) lets staff authorize extra people
+    // from the same client company (e.g. their finance contact) without giving
+    // them a separate customer record. Guards field existence first since
+    // Firestore Rules errors — rather than false — on `x in <missing field>`.
+    function customerEmailMatches(customerData, email) {
+      return customerData.clientEmail == email || (
+        'additionalClientEmails' in customerData &&
+        customerData.additionalClientEmails is list &&
+        email in customerData.additionalClientEmails
+      );
+    }
+
     function hasMatchingPendingAccess() {
       return isAuthenticated() &&
         request.auth.token.email is string &&
@@ -156,7 +170,7 @@ service cloud.firestore {
 
     match /customers/{customerId} {
       allow read: if isAdmin() || isHR() || isAccount() || (
-        isClient() && resource.data.clientEmail == request.auth.token.email
+        isClient() && customerEmailMatches(resource.data, request.auth.token.email)
       );
       allow create, update: if isAdmin() || isHR() || isAccount();
       allow delete: if isAdmin();
@@ -177,7 +191,7 @@ service cloud.firestore {
     match /client_documents/{documentId} {
       allow read: if isAuthenticated() && (
         isAdmin() || isHR() || isAccount() || isIT() ||
-        (isClient() && resource.data.clientEmail == request.auth.token.email)
+        (isClient() && customerEmailMatches(get(/databases/$(database)/documents/customers/$(resource.data.clientDirectoryId)).data, request.auth.token.email))
       );
       allow create: if isAuthenticated() &&
         request.resource.data.clientDirectoryId is string &&
@@ -185,7 +199,7 @@ service cloud.firestore {
         (
           isSuperadmin() || isDirector() || isHR() || isAccount() ||
           (isClient() &&
-            get(/databases/$(database)/documents/customers/$(request.resource.data.clientDirectoryId)).data.clientEmail == request.auth.token.email)
+            customerEmailMatches(get(/databases/$(database)/documents/customers/$(request.resource.data.clientDirectoryId)).data, request.auth.token.email))
         ) &&
         request.resource.data.uploadedByUid == request.auth.uid &&
         request.resource.data.uploadedByEmail == request.auth.token.email &&
@@ -207,6 +221,13 @@ service cloud.firestore {
     // bypasses these rules entirely. No client, staff or otherwise, should ever touch this
     // collection directly.
     match /password_reset_tokens/{token} {
+      allow read, write: if false;
+    }
+
+    // Superadmin/Director second-factor email OTP — written and read exclusively
+    // by api/request-login-otp.js and api/verify-login-otp.js via the Admin SDK,
+    // which bypasses these rules entirely. Same deny-all pattern as password reset.
+    match /login_otp_codes/{uid} {
       allow read, write: if false;
     }
 
@@ -330,6 +351,12 @@ service cloud.firestore {
           resource.data.clientEmail is string &&
           resource.data.clientEmail == request.auth.token.email &&
           resource.data.clientPortalUid == request.auth.uid
+        ) || (
+          // Multi-user Client Portal: a secondary authorized email (see
+          // customers/{id}.additionalClientEmails) shares the primary
+          // contact's clientDirectoryId claim, so this covers them too
+          // without needing a separate clientPortalUid on every project.
+          isClient() && resource.data.clientDirectoryId == request.auth.token.clientDirectoryId
         )
       );
       allow create: if isProjectManager() &&

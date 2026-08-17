@@ -1,0 +1,69 @@
+// Second-factor email OTP for Superadmin/Director logins. Generates a 6-digit
+// code, stores it server-side (login_otp_codes/{uid}, deny-all to clients),
+// and emails it via the same Resend integration already proven for password
+// resets and workflow notifications. Requires the Firebase ID token issued by
+// the FIRST factor (password) — the caller must already be authenticated.
+const { getAdminApp } = require('./_firebaseAdmin');
+
+const OTP_TTL_MS = 5 * 60 * 1000;
+
+function buildOtpEmailHtml(code) {
+    return `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; padding: 0; background-color: #ffffff; border-radius: 16px; border: 1px solid #E5E7EB; overflow: hidden;">
+  <div style="background-color: #0B1E36; padding: 28px 32px; text-align: center;">
+    <span style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">ZENQOR</span><span style="font-size: 20px; font-weight: 800; color: #14B8A6; letter-spacing: 0.5px;"> HRMS/CDTS</span>
+  </div>
+  <div style="padding: 36px 32px; text-align: center;">
+    <h2 style="color: #0B1E36; font-size: 19px; margin: 0 0 12px;">Your Sign-In Verification Code</h2>
+    <p style="color: #475569; font-size: 14px; line-height: 1.7; margin: 0 0 24px;">Enter this code to finish signing in to your Superadmin/Director account. It expires in 5 minutes.</p>
+    <div style="display: inline-block; background-color: #F8FAFC; border: 2px dashed #14B8A6; border-radius: 12px; padding: 16px 32px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #0B1E36;">${code}</div>
+    <p style="color: #94A3B8; font-size: 12px; line-height: 1.6; margin: 24px 0 0;">If you did not attempt to sign in, someone may have your password — change it immediately and contact your administrator.</p>
+  </div>
+  <div style="background-color: #F8FAFC; padding: 20px 32px; text-align: center; border-top: 1px solid #E5E7EB;">
+    <p style="color: #94A3B8; font-size: 11px; margin: 0;">© ZENQOR HRMS/CDTS · Zenqor Technologies</p>
+  </div>
+</div>`;
+}
+
+module.exports = async function handler(req, res) {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    try {
+        const authHeader = req.headers.authorization || '';
+        const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+        if (!idToken) { res.status(401).json({ error: 'Missing authorization token.' }); return; }
+
+        const admin = getAdminApp();
+        const decoded = await admin.auth().verifyIdToken(idToken);
+        if (!decoded.email) { res.status(400).json({ error: 'Account has no email address on file.' }); return; }
+
+        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const now = Date.now();
+        await admin.firestore().collection('login_otp_codes').doc(decoded.uid).set({
+            code,
+            email: decoded.email,
+            createdAt: new Date(now).toISOString(),
+            expiresAt: new Date(now + OTP_TTL_MS).toISOString(),
+            used: false
+        });
+
+        const apiKey = process.env.RESEND_API_KEY;
+        if (!apiKey) throw new Error('RESEND_API_KEY environment variable is not set.');
+
+        const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                from: 'Zenqor Technologies <noreply@zenq0r.com>',
+                to: [decoded.email],
+                subject: 'Your ZENQOR Portal Verification Code',
+                html: buildOtpEmailHtml(code)
+            })
+        });
+        if (!response.ok) throw new Error(`Resend send failed: ${response.status} ${await response.text()}`);
+
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('request-login-otp error:', error);
+        res.status(500).json({ error: 'Unable to send verification code right now. Please try again.' });
+    }
+};

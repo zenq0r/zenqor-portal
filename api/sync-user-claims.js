@@ -41,8 +41,15 @@ module.exports = async function handler(req, res) {
 
         const claims = { role };
         if (role === 'Client' && email) {
-            const custSnap = await admin.firestore().collection('customers')
+            // Primary contact match first, then fall back to additionalClientEmails —
+            // lets a client company authorize more than one login (e.g. their finance
+            // contact) against the same customers/{clientDirectoryId} record.
+            let custSnap = await admin.firestore().collection('customers')
                 .where('clientEmail', '==', email).limit(1).get();
+            if (custSnap.empty) {
+                custSnap = await admin.firestore().collection('customers')
+                    .where('additionalClientEmails', 'array-contains', email).limit(1).get();
+            }
             if (!custSnap.empty) claims.clientDirectoryId = custSnap.docs[0].id;
         }
 

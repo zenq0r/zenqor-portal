@@ -336,6 +336,28 @@
             </div>
         </div>
 
+        <!-- SUPERADMIN/DIRECTOR SECOND-FACTOR EMAIL OTP -->
+        <div v-if="loginOtp.show" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-sm w-full p-7 space-y-4 text-center">
+                <div class="mx-auto w-14 h-14 rounded-2xl bg-brand-dark dark:bg-brand-blue text-white flex items-center justify-center text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
+                <div>
+                    <h3 class="text-base font-extrabold text-brand-dark dark:text-white">Verify Your Identity</h3>
+                    <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Superadmin and Director accounts require a second verification step. {{ loginOtp.sending ? 'Sending a code to' : 'We sent a 6-digit code to' }} <span class="font-bold">{{ loginOtp.email }}</span>.</p>
+                </div>
+                <form @submit.prevent="verifyLoginOtp" class="space-y-3">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" v-model="loginOtp.code" :disabled="loginOtp.sending" placeholder="000000" autocomplete="one-time-code" class="w-full text-center text-2xl font-black tracking-[0.5em] px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                    <div v-if="loginOtp.error" class="text-red-500 text-xs font-semibold text-center bg-red-50 dark:bg-red-900/30 p-2.5 rounded-lg">{{ loginOtp.error }}</div>
+                    <button type="submit" :disabled="loginOtp.sending || loginOtp.verifying" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-3 rounded-xl shadow-lg transition duration-200 text-xs uppercase tracking-wider disabled:opacity-50">
+                        {{ loginOtp.verifying ? 'Verifying…' : loginOtp.sending ? 'Sending Code…' : 'Verify & Sign In' }}
+                    </button>
+                    <div class="flex items-center justify-between text-xs pt-1">
+                        <button type="button" @click="cancelLoginOtp" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-semibold">Cancel</button>
+                        <button type="button" @click="requestLoginOtp" :disabled="loginOtp.sending" class="text-brand-gold hover:underline font-bold disabled:opacity-50">Resend Code</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- MAIN PLATFORM LAYOUT -->
         <div v-else class="flex flex-1 overflow-hidden relative">
             
@@ -553,6 +575,13 @@
                                         <div><label for="doc-client-contact" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Contact Person</label><input id="doc-client-contact" name="clientContact" type="text" v-model="docForm.clientContactPerson" @input="clientSavedForDocument = false" placeholder="Officer Name" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50 font-semibold"></div>
                                         <div><label for="doc-client-position" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Position</label><input id="doc-client-position" name="clientPosition" type="text" v-model="docForm.clientPosition" @input="clientSavedForDocument = false" placeholder="EXECUTIVE / DIRECTOR" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
                                     </div>
+                                </div>
+
+                                <div>
+                                    <p class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center"><i class="fa-solid fa-user-group w-4 text-center text-brand-gold"></i><span class="ml-1.5">Client Portal Access</span></p>
+                                    <label for="doc-client-additional-emails" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Additional Authorized Emails (Optional)</label>
+                                    <input id="doc-client-additional-emails" name="additionalClientEmails" type="text" v-model="docForm.additionalClientEmailsText" @input="clientSavedForDocument = false" placeholder="finance@company.com, director@company.com" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50">
+                                    <p class="mt-1 text-[9px] text-slate-400">Comma-separated. Anyone signing in with these emails can also access this client's Client Portal, projects and documents — in addition to the primary Email Address above.</p>
                                 </div>
 
                                 <div>
@@ -1097,10 +1126,19 @@
                             </div>
                         </div>
 
+                        <div v-if="userProfile.role !== 'Director' && selectedClaimIds.length" class="mb-4 flex items-center justify-between rounded-xl border border-brand-gold/40 bg-amber-50 dark:bg-amber-950/20 px-4 py-2.5">
+                            <span class="text-xs font-bold text-brand-dark dark:text-amber-200">{{ selectedClaimIds.length }} claim(s) selected</span>
+                            <div class="flex gap-2">
+                                <button type="button" @click="selectedClaimIds = []" class="rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50">Clear</button>
+                                <button type="button" @click="bulkApproveSelectedClaims" class="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 text-[10px] font-bold flex items-center gap-1.5"><i class="fa-solid fa-check-double"></i>Approve Selected</button>
+                            </div>
+                        </div>
+
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="border-b border-slate-100 dark:border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-400">
+                                        <th v-if="userProfile.role !== 'Director'" class="py-3 px-3 w-8"></th>
                                         <th class="py-3 px-3">Date &amp; Receipt No.</th>
                                         <th class="py-3 px-3">Employee</th>
                                         <th class="py-3 px-3">Category &amp; Sub-Category</th>
@@ -1112,6 +1150,9 @@
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
                                     <tr v-for="clm in paginatedClaims" :key="clm.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                        <td v-if="userProfile.role !== 'Director'" class="py-3 px-3">
+                                            <input v-if="canApproveClaim(clm)" type="checkbox" :checked="selectedClaimIds.includes(clm.id)" @change="toggleClaimSelection(clm.id)" class="h-4 w-4 rounded border-slate-300 text-brand-gold focus:ring-brand-gold">
+                                        </td>
                                         <td class="py-3 px-3">
                                             <span class="font-bold text-slate-800 dark:text-slate-200 block">{{ clm.expenseDate }}</span>
                                             <span class="inline-block mt-1 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-slate-600">Claim</span>
@@ -1153,7 +1194,7 @@
                                          </td>
                                     </tr>
                                     <tr v-if="filteredSortedClaims.length === 0">
-                                        <td colspan="7" class="py-8 text-center text-slate-400">No expense claim records found.</td>
+                                        <td colspan="8" class="py-8 text-center text-slate-400">No expense claim records found.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1198,10 +1239,19 @@
                             </div>
                         </div>
 
+                        <div v-if="userProfile.role !== 'Director' && selectedVoucherIds.length" class="mb-4 flex items-center justify-between rounded-xl border border-brand-gold/40 bg-amber-50 dark:bg-amber-950/20 px-4 py-2.5">
+                            <span class="text-xs font-bold text-brand-dark dark:text-amber-200">{{ selectedVoucherIds.length }} voucher(s) selected</span>
+                            <div class="flex gap-2">
+                                <button type="button" @click="selectedVoucherIds = []" class="rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-3 py-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50">Clear</button>
+                                <button type="button" @click="bulkApproveSelectedVouchers" class="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 text-[10px] font-bold flex items-center gap-1.5"><i class="fa-solid fa-check-double"></i>Approve Selected</button>
+                            </div>
+                        </div>
+
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="border-b border-slate-100 dark:border-slate-700 text-xs font-bold uppercase tracking-wider text-slate-400">
+                                        <th v-if="userProfile.role !== 'Director'" class="py-3 px-3 w-8"></th>
                                         <th class="py-3 px-3">Date &amp; Voucher No.</th>
                                         <th class="py-3 px-3">Payee</th>
                                         <th class="py-3 px-3">Category &amp; Sub-Category</th>
@@ -1213,6 +1263,9 @@
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
                                     <tr v-for="pv in paginatedVouchers" :key="pv.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                        <td v-if="userProfile.role !== 'Director'" class="py-3 px-3">
+                                            <input v-if="canApprovePaymentVoucher(pv)" type="checkbox" :checked="selectedVoucherIds.includes(pv.id)" @change="toggleVoucherSelection(pv.id)" class="h-4 w-4 rounded border-slate-300 text-brand-gold focus:ring-brand-gold">
+                                        </td>
                                         <td class="py-3 px-3">
                                             <span class="font-bold text-slate-800 dark:text-slate-200 block">{{ pv.paymentDate }}</span>
                                             <span class="inline-block mt-1 rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">Voucher</span>
@@ -1254,7 +1307,7 @@
                                          </td>
                                     </tr>
                                     <tr v-if="filteredSortedVouchers.length === 0">
-                                        <td colspan="7" class="py-8 text-center text-slate-400">No payment voucher records found.</td>
+                                        <td colspan="8" class="py-8 text-center text-slate-400">No payment voucher records found.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1947,6 +2000,13 @@
                             <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-file-invoice"></i></div>
                             <h3 class="text-base font-bold text-brand-dark dark:text-white">Invoice &amp; Quotation Report</h3>
                             <button type="button" @click="exportCSV('docs')" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-download"></i><span>Export CSV / Excel</span>
+                            </button>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-4">
+                            <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-receipt"></i></div>
+                            <h3 class="text-base font-bold text-brand-dark dark:text-white">Claims &amp; Payment Vouchers</h3>
+                            <button type="button" @click="exportCSV('claims')" class="w-full bg-brand-dark hover:bg-brand-blue text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center space-x-2">
                                 <i class="fa-solid fa-download"></i><span>Export CSV / Excel</span>
                             </button>
                         </div>

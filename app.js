@@ -94,6 +94,9 @@ createApp({
                 password: ''
             },
             loginError: '',
+            // Superadmin/Director second-factor email OTP (see handleLogin/completeLogin).
+            loginOtp: { show: false, code: '', error: '', sending: false, verifying: false, email: '' },
+            pendingLoginContext: null,
             currentTab: 'dashboard',
             mobileMenuOpen: false,
             desktopSidebarOpen: false,
@@ -216,6 +219,8 @@ createApp({
             editingPayId: null,
             editingClaimId: null,
             editingVoucherId: null,
+            selectedClaimIds: [],
+            selectedVoucherIds: [],
             selectedPayEmployeeId: '',
             selectedClaimEmployeeId: '',
             selectedVoucherEmployeeId: '',
@@ -1365,6 +1370,15 @@ createApp({
             } else if (type === 'docs') {
                 filename = `Laporan_Invois_SebutHarga_ZENQOR_${todayStr}.csv`;
                 rows = [['No Dokumen', 'Jenis', 'Tarikh Issue', 'Nama Pelanggan', 'Status', 'Jumlah (MYR)'], ...this.docHistory.map(d => [d.docNo || '', d.type || '', d.date || '', d.name || '', d.status || '', Number(d.amount || 0).toFixed(2)])];
+            } else if (type === 'claims') {
+                filename = `Laporan_Claims_Vouchers_ZENQOR_${todayStr}.csv`;
+                rows = [
+                    ['No Rujukan', 'Jenis', 'Tarikh', 'Nama Pemohon', 'No Pekerja', 'Jabatan', 'Kategori', 'Status', 'Jumlah (MYR)'],
+                    ...[...this.claimsHistory, ...this.paymentVouchers].map(c => [
+                        c.receiptNo || c.voucherNo || '', c.documentType || c.type || '', c.date || c.expenseDate || c.paymentDate || '',
+                        c.name || '', c.empNo || '', c.dept || '', c.category || '', c.status || '', Number(c.amount || 0).toFixed(2)
+                    ])
+                ];
             }
 
             if (rows.length === 0) { alert("Tiada rekod data untuk dieksport."); return; }
@@ -1417,7 +1431,7 @@ createApp({
             this.docForm = {
                 type: 'Invoice', docNo: '', status: 'Unpaid', paymentMethod: 'Bank Transfer (EFT)', paymentBank: '', paymentReceiver: '', paymentRefNo: '', paymentAttachment: '',
                 date: new Date().toISOString().substr(0, 10), dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
-                clientName: '', clientPhone: '', clientSSM: '', clientAddress: '', clientCity: '', clientState: '', clientPostcode: '', clientCountry: 'Malaysia', clientEmail: '', clientContactPerson: '', clientPosition: '',
+                clientName: '', clientPhone: '', clientSSM: '', clientAddress: '', clientCity: '', clientState: '', clientPostcode: '', clientCountry: 'Malaysia', clientEmail: '', clientContactPerson: '', clientPosition: '', additionalClientEmailsText: '',
                 items: [{ desc: '', qty: 1, price: 0 }], discount: 0
             };
             this.payForm = {
@@ -2262,26 +2276,81 @@ createApp({
                     return;
                 }
 
-                this.userProfile ={ name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '', customAccess: userData?.customAccess || {} };
-                this.applyDarkModePreference();
-                this.notificationsLog = Array.isArray(userData?.notificationsLog) ? userData.notificationsLog : [];
-                this.startIdleTimeoutWatch();
-                await this.syncUserClaims();
+                // Second factor for the two highest-privilege roles: password alone
+                // (already verified above) isn't trusted to finish the login — an
+                // emailed one-time code is required before the portal session starts.
+                // The Firebase Auth session is already live at this point (signOut on
+                // cancel below un-does it); this gate only controls when the PORTAL
+                // itself trusts the sign-in as complete.
+                if (['Superadmin', 'Director'].includes(role)) {
+                    this.pendingLoginContext = { firebaseUser, userData, role, name, photo, mustChangePassword };
+                    this.loginOtp = { show: true, code: '', error: '', sending: true, verifying: false, email: firebaseUser.email };
+                    this.loginLoading = false;
+                    await this.requestLoginOtp();
+                    return;
+                }
 
-                this.resetAllForms(); this.isLoggedIn = true; this.desktopSidebarOpen = false; this.mobileMenuOpen = false;
-                this.logAudit('LOGIN', `User logged in with role ${this.getRoleDisplayName(role)}`);
-                this.showNotify(`Welcome back (${this.getRoleDisplayName(role)}): ${name}`);
-                this.currentTab = mustChangePassword ? 'profile' : 'dashboard';
-                if (mustChangePassword) { this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
-                else this.maybeShowOnboarding();
-                await this.initFirebaseRealtime();
-                await this.startPresenceTracking();
-                this.loginLoading = false;
-                this.refreshDashboardCharts();
+                await this.completeLogin({ firebaseUser, userData, role, name, photo, mustChangePassword });
             } catch (error) {
                 this.loginError = 'Invalid email or password credentials / System Error.';
                 this.loginLoading = false;
             }
+        },
+        async requestLoginOtp() {
+            try {
+                const idToken = await this.pendingLoginContext.firebaseUser.getIdToken();
+                const resp = await fetch('/api/request-login-otp', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` } });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok) throw new Error(data.error || 'Failed to send verification code.');
+                this.loginOtp.sending = false;
+            } catch (error) {
+                console.error('Request login OTP failed:', error);
+                this.loginOtp.error = error.message || 'Unable to send verification code. Try again.';
+                this.loginOtp.sending = false;
+            }
+        },
+        async verifyLoginOtp() {
+            if (!this.loginOtp.code || this.loginOtp.code.trim().length !== 6) { this.loginOtp.error = 'Enter the 6-digit code from your email.'; return; }
+            this.loginOtp.verifying = true;
+            this.loginOtp.error = '';
+            try {
+                const idToken = await this.pendingLoginContext.firebaseUser.getIdToken();
+                const resp = await fetch('/api/verify-login-otp', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` }, body: JSON.stringify({ code: this.loginOtp.code.trim() }) });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok || !data.valid) throw new Error(data.error || 'Invalid or expired code.');
+                this.loginOtp.show = false;
+                this.loginOtp.verifying = false;
+                const ctx = this.pendingLoginContext;
+                this.pendingLoginContext = null;
+                await this.completeLogin(ctx);
+            } catch (error) {
+                console.error('Verify login OTP failed:', error);
+                this.loginOtp.error = error.message || 'Verification failed.';
+                this.loginOtp.verifying = false;
+            }
+        },
+        async cancelLoginOtp() {
+            this.loginOtp.show = false;
+            this.pendingLoginContext = null;
+            try { await signOut(auth); } catch (error) { console.error('Sign-out during OTP cancel failed:', error); }
+        },
+        async completeLogin({ firebaseUser, userData, role, name, photo, mustChangePassword }) {
+            this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '', customAccess: userData?.customAccess || {} };
+            this.applyDarkModePreference();
+            this.notificationsLog = Array.isArray(userData?.notificationsLog) ? userData.notificationsLog : [];
+            this.startIdleTimeoutWatch();
+            await this.syncUserClaims();
+
+            this.resetAllForms(); this.isLoggedIn = true; this.desktopSidebarOpen = false; this.mobileMenuOpen = false;
+            this.logAudit('LOGIN', `User logged in with role ${this.getRoleDisplayName(role)}`);
+            this.showNotify(`Welcome back (${this.getRoleDisplayName(role)}): ${name}`);
+            this.currentTab = mustChangePassword ? 'profile' : 'dashboard';
+            if (mustChangePassword) { this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
+            else this.maybeShowOnboarding();
+            await this.initFirebaseRealtime();
+            await this.startPresenceTracking();
+            this.loginLoading = false;
+            this.refreshDashboardCharts();
         },
 
         async handleLogout() {
@@ -2534,6 +2603,7 @@ createApp({
             const cust = this.customers.find(c => c.clientName === e.target.value);
             if (cust) {
                 Object.keys(cust).forEach(k => { if (this.docForm.hasOwnProperty(k)) this.docForm[k] = cust[k]; });
+                this.docForm.additionalClientEmailsText = Array.isArray(cust.additionalClientEmails) ? cust.additionalClientEmails.join(', ') : '';
                 this.clientSavedForDocument = true;
                 this.showNotify(`Saved client loaded. You can now add document items.`);
             } else {
@@ -2546,7 +2616,9 @@ createApp({
             try {
                 const docId = this.docForm.clientName.trim().replace(/\s+/g, '_').toLowerCase();
                 const isNewRecord = !this.customers.some(c => c.id === docId);
-                const newCust = this.normalizeOfficialRecord({ clientName: this.docForm.clientName, clientPhone: this.docForm.clientPhone, clientSSM: this.docForm.clientSSM, clientAddress: this.docForm.clientAddress, clientCity: this.docForm.clientCity, clientState: this.docForm.clientState, clientPostcode: this.docForm.clientPostcode, clientCountry: this.docForm.clientCountry, clientEmail: String(this.docForm.clientEmail || '').trim().toLowerCase(), clientContactPerson: this.docForm.clientContactPerson, clientPosition: this.docForm.clientPosition });
+                const additionalClientEmails = String(this.docForm.additionalClientEmailsText || '')
+                    .split(',').map(e => e.trim().toLowerCase()).filter(e => e && e.includes('@'));
+                const newCust = this.normalizeOfficialRecord({ clientName: this.docForm.clientName, clientPhone: this.docForm.clientPhone, clientSSM: this.docForm.clientSSM, clientAddress: this.docForm.clientAddress, clientCity: this.docForm.clientCity, clientState: this.docForm.clientState, clientPostcode: this.docForm.clientPostcode, clientCountry: this.docForm.clientCountry, clientEmail: String(this.docForm.clientEmail || '').trim().toLowerCase(), clientContactPerson: this.docForm.clientContactPerson, clientPosition: this.docForm.clientPosition, additionalClientEmails });
                 if (isNewRecord) newCust.createdAt = new Date().toISOString();
                 Object.assign(this.docForm, newCust);
             await setDoc(doc(db, "customers", docId), newCust, { merge: true }); this.clientSavedForDocument = true; this.logAudit(isNewRecord ? 'CREATE' : 'UPDATE', `Saved customer ${this.docForm.clientName}`); this.showNotify('Client saved. You can now add document items.'); return true;
@@ -2554,6 +2626,7 @@ createApp({
         },
         selectCustomerFromTable(cust) {
             ['clientName','clientPhone','clientSSM','clientAddress','clientCity','clientState','clientPostcode','clientCountry','clientEmail','clientContactPerson','clientPosition'].forEach(k => { this.docForm[k] = cust[k] || (k === 'clientCountry' ? 'Malaysia' : ''); });
+            this.docForm.additionalClientEmailsText = Array.isArray(cust.additionalClientEmails) ? cust.additionalClientEmails.join(', ') : '';
             this.showNotify(`Client loaded.`);
         },
         openClientView(cust) {
@@ -2889,6 +2962,38 @@ createApp({
         claimStageStamp(record, role) {
             if (!Array.isArray(record?.approvalHistory)) return null;
             return [...record.approvalHistory].reverse().find(entry => entry.role === role) || null;
+        },
+        // Bulk approval — HR/Account only. Director decisions always require a
+        // per-record supporting document attachment (see approveClaim/
+        // approvePaymentVoucher), so bulk-approving isn't offered for Director;
+        // each Director decision stays a deliberate, individual action.
+        toggleClaimSelection(id) {
+            const idx = this.selectedClaimIds.indexOf(id);
+            if (idx === -1) this.selectedClaimIds.push(id); else this.selectedClaimIds.splice(idx, 1);
+        },
+        toggleVoucherSelection(id) {
+            const idx = this.selectedVoucherIds.indexOf(id);
+            if (idx === -1) this.selectedVoucherIds.push(id); else this.selectedVoucherIds.splice(idx, 1);
+        },
+        async bulkApproveSelectedClaims() {
+            if (this.userProfile.role === 'Director') { this.showNotify('Director approvals require an individual supporting document per claim — please approve one at a time.'); return; }
+            const targets = this.claimsHistory.filter(c => this.selectedClaimIds.includes(c.id) && this.canApproveClaim(c));
+            if (!targets.length) { this.showNotify('No eligible claims selected.'); return; }
+            if (!confirm(`Approve ${targets.length} selected claim(s) and forward to the next reviewer?`)) return;
+            let succeeded = 0;
+            for (const clm of targets) { if (await this.approveClaim(clm)) succeeded++; }
+            this.selectedClaimIds = [];
+            this.showNotify(`${succeeded} of ${targets.length} claim(s) approved and forwarded.`);
+        },
+        async bulkApproveSelectedVouchers() {
+            if (this.userProfile.role === 'Director') { this.showNotify('Director approvals require an individual supporting document per voucher — please approve one at a time.'); return; }
+            const targets = this.paymentVouchers.filter(v => this.selectedVoucherIds.includes(v.id) && this.canApprovePaymentVoucher(v));
+            if (!targets.length) { this.showNotify('No eligible vouchers selected.'); return; }
+            if (!confirm(`Approve ${targets.length} selected voucher(s) and forward to the next reviewer?`)) return;
+            let succeeded = 0;
+            for (const pv of targets) { if (await this.approvePaymentVoucher(pv)) succeeded++; }
+            this.selectedVoucherIds = [];
+            this.showNotify(`${succeeded} of ${targets.length} voucher(s) approved and forwarded.`);
         },
         async approveClaim(clm) {
             if (!this.canApproveClaim(clm)) { this.showNotify('You do not have permission to approve this record at its current workflow stage.'); return false; }
