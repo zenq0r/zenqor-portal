@@ -505,8 +505,9 @@ service cloud.firestore {
 
     match /audit_logs/{logId} {
       allow read: if isAdmin() || isIT();
-      allow create: if isAuthenticated();
-      allow update, delete: if false;
+      // Audit events are written only by /api/audit-log through the Admin SDK.
+      // Client writes are denied so users cannot forge identity, IP, or device metadata.
+      allow create, update, delete: if false;
     }
 
     // ============================================================

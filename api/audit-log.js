@@ -1,0 +1,53 @@
+const crypto = require('crypto');
+const { getAdminApp } = require('./_firebaseAdmin');
+const { getClientIp, parseUserAgent } = require('./_auditMetadata');
+
+const ALLOWED_ACTIONS = new Set([
+    'LOGIN', 'LOGOUT', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'BACKUP',
+    'UPLOAD_DOCUMENT', 'DELETE_DOCUMENT'
+]);
+
+module.exports = async function handler(req, res) {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    try {
+        const authHeader = req.headers.authorization || '';
+        const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+        if (!idToken) { res.status(401).json({ error: 'Missing authorization token.' }); return; }
+
+        const admin = getAdminApp();
+        const decoded = await admin.auth().verifyIdToken(idToken);
+        const userDoc = await admin.firestore().collection('users').doc(decoded.uid).get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+        const { action, details, module } = req.body || {};
+        const normalizedAction = String(action || '').trim().toUpperCase();
+        if (!ALLOWED_ACTIONS.has(normalizedAction)) { res.status(400).json({ error: 'Invalid audit action.' }); return; }
+        if (typeof details !== 'string' || !details.trim()) { res.status(400).json({ error: 'Audit details are required.' }); return; }
+
+        const now = new Date();
+        const metadata = parseUserAgent(req.headers['user-agent']);
+        const id = `${now.getTime()}-${crypto.randomUUID()}`;
+        const auditRecord = {
+            id,
+            timestamp: now.toISOString(),
+            user: decoded.email || userData.email || 'Unknown',
+            userName: userData.name || decoded.name || '',
+            uid: decoded.uid,
+            role: userData.role || decoded.role || 'Unknown',
+            action: normalizedAction,
+            details: details.trim().slice(0, 1000),
+            module: String(module || 'unknown').slice(0, 80),
+            ip: getClientIp(req.headers),
+            browser: metadata.browser,
+            os: metadata.os,
+            device: metadata.device,
+            userAgent: metadata.userAgent
+        };
+
+        await admin.firestore().collection('audit_logs').doc(id).set(auditRecord);
+        res.status(201).json({ success: true, id });
+    } catch (error) {
+        console.error('audit-log error:', error);
+        res.status(500).json({ error: 'Unable to record audit event.' });
+    }
+};

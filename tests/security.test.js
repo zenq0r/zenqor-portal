@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const { generateOtp, isAllowedPortalUrl, normalizeEmail } = require('../api/_security');
+const { getClientIp, parseUserAgent } = require('../api/_auditMetadata');
 
 test('OTP is always a six-digit string', () => {
     for (let i = 0; i < 100; i += 1) assert.match(generateOtp(), /^\d{6}$/);
@@ -29,4 +30,12 @@ test('Firebase Admin initialization fails clearly when credentials are absent', 
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set/);
     assert.doesNotMatch(result.stderr, /reading 'length'/);
+});
+
+test('audit metadata extracts the trusted client IP and readable browser details', () => {
+    assert.equal(getClientIp({ 'x-vercel-forwarded-for': '203.0.113.8, 10.0.0.1' }), '203.0.113.8');
+    const metadata = parseUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36');
+    assert.equal(metadata.browser, 'Google Chrome 140.0.0.0');
+    assert.equal(metadata.os, 'Windows 10/11');
+    assert.equal(metadata.device, 'Desktop');
 });
