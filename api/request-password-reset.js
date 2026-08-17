@@ -42,7 +42,8 @@ module.exports = async function handler(req, res) {
                 const token = crypto.randomBytes(32).toString('hex');
                 const now = new Date();
                 const expiresAt = new Date(now.getTime() + TOKEN_TTL_MS);
-                await db.collection('password_reset_tokens').doc(token).set({
+                const tokenRef = db.collection('password_reset_tokens').doc(token);
+                await tokenRef.set({
                     uid: userRecord.uid,
                     email: normalizedEmail.toLowerCase(),
                     createdAt: now.toISOString(),
@@ -50,8 +51,15 @@ module.exports = async function handler(req, res) {
                     used: false
                 });
 
-                const resetLink = `https://www.portal.zenq0r.com/?resetToken=${token}`;
-                await sendResetEmail(normalizedEmail, resetLink);
+                try {
+                    const resetLink = `https://www.portal.zenq0r.com/?resetToken=${token}`;
+                    await sendResetEmail(normalizedEmail, resetLink);
+                } catch (sendError) {
+                    // The email never reached the user, so this token is useless — remove it
+                    // instead of leaving a dangling record that would wrongly throttle a retry.
+                    await tokenRef.delete().catch(() => {});
+                    throw sendError;
+                }
             }
         }
 
