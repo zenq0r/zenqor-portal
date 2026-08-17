@@ -858,6 +858,12 @@ createApp({
                 this.logAudit('CREATE', `Client update sent for ${payload.projectRef}`);
                 this.closeClientUpdateModal();
                 this.showNotify('Client update sent and added to Client Activity History.');
+                this.notifyByEmail({
+                    to: payload.clientEmail,
+                    subject: `New Update on Your Project — ${payload.projectRef}`,
+                    heading: 'New Update From Your Project Team',
+                    message: `${payload.senderName} posted a "${payload.updateType}" update on "${payload.projectTitle}" (${payload.projectRef}):\n\n"${payload.message}"`
+                });
             } catch (error) {
                 console.error('Client project update failed:', error);
                 this.showNotify(this.getFirestoreWriteError(error, 'send the Client project update'));
@@ -890,6 +896,12 @@ createApp({
                 this.logAudit('CREATE', `Client reply sent for ${payload.projectRef}`);
                 this.clientReplyMessage = '';
                 this.showNotify('Your reply has been sent.');
+                this.notifyByEmail({
+                    to: project.ownerEmail,
+                    subject: `New Client Reply — ${payload.projectRef}`,
+                    heading: 'New Reply From Your Client',
+                    message: `${payload.senderName} replied on "${payload.projectTitle}" (${payload.projectRef}):\n\n"${message}"`
+                });
             } catch (error) {
                 console.error('Client reply failed:', error);
                 this.showNotify(this.getFirestoreWriteError(error, 'send your reply'));
@@ -1147,6 +1159,12 @@ createApp({
                     this.logAudit('UPDATE', `Project progress updated for ${original.projectRef}`);
                     this.closeProjectModal();
                     this.showNotify('Project progress updated successfully.');
+                    if (source.status !== original.status) this.notifyByEmail({
+                        to: original.clientEmail,
+                        subject: `Project Update — ${original.projectRef}: ${source.status}`,
+                        heading: 'Your Project Has Been Updated',
+                        message: `Your project "${original.title}" (${original.projectRef}) has moved to the "${source.status}" stage.`
+                    });
                 } catch (error) {
                     console.error('Project save failed:', error);
                     this.showNotify(this.getFirestoreWriteError(error, 'update the project'));
@@ -1188,6 +1206,12 @@ createApp({
                 this.logAudit(isEdit ? 'UPDATE' : 'CREATE', `Project activity ${payload.projectRef}`);
                 this.closeProjectModal();
                 this.showNotify('Project activity saved successfully.');
+                if (isEdit && original && source.status !== original.status) this.notifyByEmail({
+                    to: payload.clientEmail,
+                    subject: `Project Update — ${payload.projectRef}: ${source.status}`,
+                    heading: 'Your Project Has Been Updated',
+                    message: `Your project "${payload.title}" (${payload.projectRef}) has moved to the "${source.status}" stage.`
+                });
             } catch (error) {
                 console.error('Project save failed:', error);
                 this.showNotify(this.getFirestoreWriteError(error, 'save the project activity'));
@@ -1202,6 +1226,12 @@ createApp({
                 await updateDoc(doc(db, 'projects', project.id), { status: this.projectStages[nextIndex], updatedAt: new Date().toISOString(), updatedByUid: this.userProfile.uid, updatedByEmail: this.userProfile.email });
                 this.logAudit('UPDATE', `Project ${project.projectRef} moved to ${this.projectStages[nextIndex]}`);
                 this.showNotify(`Project moved to ${this.projectStages[nextIndex]}.`);
+                this.notifyByEmail({
+                    to: project.clientEmail,
+                    subject: `Project Update — ${project.projectRef}: ${this.projectStages[nextIndex]}`,
+                    heading: 'Your Project Has Been Updated',
+                    message: `Your project "${project.title}" (${project.projectRef}) has moved to the "${this.projectStages[nextIndex]}" stage.`
+                });
             } catch (error) {
                 console.error('Project stage update failed:', error);
                 this.showNotify(this.getFirestoreWriteError(error, 'update the project stage'));
@@ -1666,6 +1696,17 @@ createApp({
                 });
                 this.logAudit('UPLOAD_DOCUMENT', `Uploaded "${file.name}" for client ${this.clientDocuments.clientName}`);
                 this.showNotify('Document uploaded successfully.');
+                if (this.userProfile.role === 'Client') this.notifyByEmail({
+                    to: [...this.emailsForRole('Superadmin'), ...this.emailsForRole('Director'), ...this.emailsForRole('HR'), ...this.emailsForRole('Account')],
+                    subject: `New Document Uploaded by ${this.clientDocuments.clientName}`,
+                    heading: 'Client Uploaded a New Document',
+                    message: `${this.userProfile.name} from ${this.clientDocuments.clientName} uploaded "${file.name}" to the Client Documents repository.`
+                }); else this.notifyByEmail({
+                    to: this.clientDocuments.clientEmail,
+                    subject: `New Document Shared — ${this.clientDocuments.clientName}`,
+                    heading: 'New Document Shared With You',
+                    message: `${this.userProfile.name} shared a new document, "${file.name}", in your Client Documents repository. Sign in to view or download it.`
+                });
                 await this.loadClientDocuments(clientDirectoryId, this.clientDocuments.clientName, this.clientDocuments.clientEmail);
             } catch (error) {
                 console.error('Client document upload failed:', error);
@@ -2333,6 +2374,23 @@ createApp({
         // until it's refreshed). Called after every login, and after an admin changes
         // someone's role. Failures are non-fatal — the rest of the app still works,
         // only client_documents upload/download would be affected.
+        // Fire-and-forget branded email notification for a workflow event (claim
+        // submitted/decided, document shared, project stage changed, client
+        // message). Never awaited by callers in a way that blocks the underlying
+        // action — a failed notification should never stop the real work from
+        // completing, so all errors are swallowed here.
+        notifyByEmail({ to, subject, heading, message, ctaLabel, ctaUrl }) {
+            const recipients = (Array.isArray(to) ? to : [to]).filter(e => typeof e === 'string' && e.includes('@'));
+            if (!recipients.length || !auth.currentUser) return;
+            auth.currentUser.getIdToken().then(idToken => fetch('/api/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                body: JSON.stringify({ to: recipients, subject, heading, message, ctaLabel, ctaUrl: ctaUrl || 'https://www.portal.zenq0r.com' })
+            })).catch(error => console.warn('Notification email failed (non-fatal):', error));
+        },
+        emailsForRole(role) {
+            return this.users.filter(u => u.role === role).map(u => u.email).filter(Boolean);
+        },
         async syncUserClaims(targetUid = null) {
             try {
                 if (!auth.currentUser) return;
@@ -2856,6 +2914,17 @@ createApp({
                 await updateDoc(doc(db, "claims", clm.id), update);
                 this.logAudit('UPDATE', `Claim ${clm.receiptNo} ${nextRole ? `forwarded to ${roleNames[nextRole]}` : `directly and finally approved by Director${bypassedReviews.length ? ` (bypassed ${bypassedReviews.join(' and ')})` : ''}`}`);
                 this.showNotify(nextRole ? `Claim assigned to ${roleNames[nextRole]}.` : 'Director approval completed immediately. No further HR or Finance review is required.');
+                if (nextRole) this.notifyByEmail({
+                    to: this.emailsForRole(nextRole),
+                    subject: `Expense Claim Pending Your Review — ${clm.receiptNo}`,
+                    heading: 'Expense Claim Forwarded To You',
+                    message: `${clm.name}'s expense claim of ${this.formatCurrency(clm.amount)} (${clm.receiptNo}) was approved by ${roleNames[this.userProfile.role]} and is now pending your review.`
+                }); else this.notifyByEmail({
+                    to: clm.empEmail,
+                    subject: `Your Expense Claim Was Approved — ${clm.receiptNo}`,
+                    heading: 'Expense Claim Approved',
+                    message: `Your expense claim of ${this.formatCurrency(clm.amount)} (${clm.receiptNo}) has been fully approved by the Director. No further action is needed on your part.`
+                });
                 return true;
             } catch (error) {
                 console.error('Claim approval failed:', error);
@@ -2869,7 +2938,7 @@ createApp({
         },
         async rejectClaim(clm) {
             if (!this.canApproveClaim(clm)) { this.showNotify('You do not have permission to reject this record at its current workflow stage.'); return; }
-            if (confirm("REJECT this claim application?")) { try { await updateDoc(doc(db, "claims", clm.id), { status: 'Rejected', rejectedByUid: this.userProfile.uid, rejectedByName: this.userProfile.name, rejectedByRole: this.userProfile.role, rejectedAt: new Date().toISOString() }); this.showNotify("Claim rejected."); } catch (error) { this.showNotify('Unable to reject claim.'); } }
+            if (confirm("REJECT this claim application?")) { try { await updateDoc(doc(db, "claims", clm.id), { status: 'Rejected', rejectedByUid: this.userProfile.uid, rejectedByName: this.userProfile.name, rejectedByRole: this.userProfile.role, rejectedAt: new Date().toISOString() }); this.showNotify("Claim rejected."); this.notifyByEmail({ to: clm.empEmail, subject: `Your Expense Claim Was Rejected — ${clm.receiptNo}`, heading: 'Expense Claim Rejected', message: `Your expense claim of ${this.formatCurrency(clm.amount)} (${clm.receiptNo}) was rejected by ${this.getRoleDisplayName(this.userProfile.role)}. Contact them for details.` }); } catch (error) { this.showNotify('Unable to reject claim.'); } }
         },
         async saveExpenseClaim() {
             if (!['Superadmin', 'Director', 'HR', 'Account', 'Staff'].includes(this.userProfile.role)) { this.showNotify('Your role cannot submit expense claims.'); return; }
@@ -2889,6 +2958,12 @@ createApp({
                 const payload = { id: claimId, type: 'Claim', documentType: 'Claim', date: this.claimForm.expenseDate, expenseDate: this.claimForm.expenseDate, name: this.claimForm.name, empNo: this.claimForm.empNo, empEmail: claimOwnerEmail, position: this.claimForm.position || '', dept: this.claimForm.dept, category: this.claimForm.category, subCategory: this.claimForm.subCategory, amount: Number(this.claimForm.amount), receiptNo: this.claimForm.receiptNo, description: this.claimForm.description, receiptAttachment: this.claimForm.receiptAttachment, receiptAttachmentName: this.claimForm.receiptAttachmentName || '', receiptAttachmentOriginalBytes: Number(this.claimForm.receiptAttachmentOriginalBytes || 0), createdByUid: this.editingClaimId ? (this.claimForm.createdByUid || auth.currentUser.uid) : auth.currentUser.uid, createdByEmail: this.editingClaimId ? (this.claimForm.createdByEmail || signedInEmail) : signedInEmail, createdAt: this.editingClaimId ? (this.claimForm.createdAt || new Date().toISOString()) : new Date().toISOString(), status: this.editingClaimId ? (this.claimForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
                 if (this.getSerializedSize(payload) > 800 * 1024) throw Object.assign(new Error('The claim record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
                 await setDoc(doc(db, "claims", claimId), payload, { merge: true });
+                if (!this.editingClaimId) this.notifyByEmail({
+                    to: this.emailsForRole('HR'),
+                    subject: `New Expense Claim Pending Review — ${payload.receiptNo}`,
+                    heading: 'New Expense Claim Submitted',
+                    message: `${payload.name} (${payload.empNo}) submitted an expense claim of ${this.formatCurrency(payload.amount)} for "${payload.category}". It is now pending your review in Claims & Payment Vouchers.`
+                });
                 this.editingClaimId = null; this.showNotify(`Expense claim submitted.`); this.resetClaimForm();
             } catch (error) { console.error('Claim save failed:', error); this.showNotify(this.getFirestoreWriteError(error, 'submit the claim')); }
         },
@@ -2940,6 +3015,17 @@ createApp({
                 await updateDoc(doc(db, "payment_vouchers", pv.id), update);
                 this.logAudit('UPDATE', `Payment Voucher ${pv.voucherNo} ${nextRole ? `forwarded to ${roleNames[nextRole]}` : `directly and finally approved by Director${bypassedReviews.length ? ` (bypassed ${bypassedReviews.join(' and ')})` : ''}`}`);
                 this.showNotify(nextRole ? `Voucher assigned to ${roleNames[nextRole]}.` : 'Director approval completed immediately. No further HR or Finance review is required.');
+                if (nextRole) this.notifyByEmail({
+                    to: this.emailsForRole(nextRole),
+                    subject: `Payment Voucher Pending Your Review — ${pv.voucherNo}`,
+                    heading: 'Payment Voucher Forwarded To You',
+                    message: `${pv.name}'s payment voucher of ${this.formatCurrency(pv.amount)} (${pv.voucherNo}) payable to "${pv.payeeName}" was approved by ${roleNames[this.userProfile.role]} and is now pending your review.`
+                }); else this.notifyByEmail({
+                    to: pv.empEmail,
+                    subject: `Your Payment Voucher Was Approved — ${pv.voucherNo}`,
+                    heading: 'Payment Voucher Approved',
+                    message: `Your payment voucher of ${this.formatCurrency(pv.amount)} (${pv.voucherNo}) has been fully approved by the Director. No further action is needed on your part.`
+                });
                 return true;
             } catch (error) {
                 console.error('Voucher approval failed:', error);
@@ -2953,7 +3039,7 @@ createApp({
         },
         async rejectPaymentVoucher(pv) {
             if (!this.canApprovePaymentVoucher(pv)) { this.showNotify('You do not have permission to reject this record at its current workflow stage.'); return; }
-            if (confirm("REJECT this payment voucher?")) { try { await updateDoc(doc(db, "payment_vouchers", pv.id), { status: 'Rejected', rejectedByUid: this.userProfile.uid, rejectedByName: this.userProfile.name, rejectedByRole: this.userProfile.role, rejectedAt: new Date().toISOString() }); this.showNotify("Payment voucher rejected."); } catch (error) { this.showNotify('Unable to reject voucher.'); } }
+            if (confirm("REJECT this payment voucher?")) { try { await updateDoc(doc(db, "payment_vouchers", pv.id), { status: 'Rejected', rejectedByUid: this.userProfile.uid, rejectedByName: this.userProfile.name, rejectedByRole: this.userProfile.role, rejectedAt: new Date().toISOString() }); this.showNotify("Payment voucher rejected."); this.notifyByEmail({ to: pv.empEmail, subject: `Your Payment Voucher Was Rejected — ${pv.voucherNo}`, heading: 'Payment Voucher Rejected', message: `Your payment voucher of ${this.formatCurrency(pv.amount)} (${pv.voucherNo}) was rejected by ${this.getRoleDisplayName(this.userProfile.role)}. Contact them for details.` }); } catch (error) { this.showNotify('Unable to reject voucher.'); } }
         },
         async savePaymentVoucher() {
             if (!['Superadmin', 'Director', 'HR', 'Account', 'Staff'].includes(this.userProfile.role)) { this.showNotify('Your role cannot submit payment vouchers.'); return; }
@@ -2975,6 +3061,12 @@ createApp({
                 const payload = { id: voucherId, type: 'Payment Voucher', documentType: 'Payment Voucher', date: this.voucherForm.paymentDate, paymentDate: this.voucherForm.paymentDate, name: this.voucherForm.name, empNo: this.voucherForm.empNo, empEmail: voucherOwnerEmail, position: this.voucherForm.position || '', dept: this.voucherForm.dept, payeeName: this.voucherForm.payeeName, payeeType: this.voucherForm.payeeType || '', payeeReference: this.voucherForm.payeeReference || '', paymentPurpose: this.voucherForm.paymentPurpose, category: this.voucherForm.category, subCategory: this.voucherForm.subCategory, amount: Number(this.voucherForm.amount), voucherNo: this.voucherForm.voucherNo, description: this.voucherForm.description, receiptAttachment: this.voucherForm.receiptAttachment, receiptAttachmentName: this.voucherForm.receiptAttachmentName || '', receiptAttachmentOriginalBytes: Number(this.voucherForm.receiptAttachmentOriginalBytes || 0), createdByUid: this.editingVoucherId ? (this.voucherForm.createdByUid || auth.currentUser.uid) : auth.currentUser.uid, createdByEmail: this.editingVoucherId ? (this.voucherForm.createdByEmail || signedInEmail) : signedInEmail, createdAt: this.editingVoucherId ? (this.voucherForm.createdAt || new Date().toISOString()) : new Date().toISOString(), status: this.editingVoucherId ? (this.voucherForm.status || initialStatus) : initialStatus, assignedToUid: assignee.id, assignedToName: assignee.name, assignedToEmail: assignee.email, assignedToRole: assignee.role };
                 if (this.getSerializedSize(payload) > 800 * 1024) throw Object.assign(new Error('The voucher record exceeds the safe Firestore size.'), { code: 'resource-exhausted' });
                 await setDoc(doc(db, "payment_vouchers", voucherId), payload, { merge: true });
+                if (!this.editingVoucherId) this.notifyByEmail({
+                    to: this.emailsForRole('HR'),
+                    subject: `New Payment Voucher Pending Review — ${payload.voucherNo}`,
+                    heading: 'New Payment Voucher Submitted',
+                    message: `${payload.name} (${payload.empNo}) submitted a payment voucher of ${this.formatCurrency(payload.amount)} payable to "${payload.payeeName}". It is now pending your review in Claims & Payment Vouchers.`
+                });
                 this.editingVoucherId = null; this.showNotify(`Payment voucher submitted.`); this.resetVoucherForm();
             } catch (error) { console.error('Voucher save failed:', error); this.showNotify(this.getFirestoreWriteError(error, 'submit the payment voucher')); }
         },
