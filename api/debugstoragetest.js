@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
         // Step 2: exchange it for a real ID token (this is what the client SDK does internally)
         const signInResp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${WEB_API_KEY}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Referer': 'https://www.portal.zenq0r.com/' },
             body: JSON.stringify({ token: customToken, returnSecureToken: true })
         });
         const signInData = await signInResp.json();
