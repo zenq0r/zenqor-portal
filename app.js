@@ -1953,9 +1953,17 @@ createApp({
         },
         async checkForAppUpdate() {
             try {
-                const response = await fetch(`${window.location.pathname}?_v=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
-                const marker = response.headers.get('etag') || response.headers.get('last-modified');
-                if (!marker) return;
+                // Checks BOTH index.html and app.js — most deploys only change app.js
+                // (the actual application logic), so watching the page alone missed
+                // updates entirely and this banner never appeared for those releases.
+                const [pageResponse, scriptResponse] = await Promise.all([
+                    fetch(`${window.location.pathname}?_v=${Date.now()}`, { method: 'HEAD', cache: 'no-store' }),
+                    fetch(`/app.js?_v=${Date.now()}`, { method: 'HEAD', cache: 'no-store' })
+                ]);
+                const pageMarker = pageResponse.headers.get('etag') || pageResponse.headers.get('last-modified') || '';
+                const scriptMarker = scriptResponse.headers.get('etag') || scriptResponse.headers.get('last-modified') || '';
+                if (!pageMarker && !scriptMarker) return;
+                const marker = `${pageMarker}|${scriptMarker}`;
                 if (!this.appVersionMarker) { this.appVersionMarker = marker; return; }
                 if (marker !== this.appVersionMarker) this.appUpdateAvailable = true;
             } catch (error) { /* offline or blocked request, ignore and retry next interval */ }
