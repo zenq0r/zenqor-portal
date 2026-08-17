@@ -2216,6 +2216,7 @@ createApp({
                 this.applyDarkModePreference();
                 this.notificationsLog = Array.isArray(userData?.notificationsLog) ? userData.notificationsLog : [];
                 this.startIdleTimeoutWatch();
+                await this.syncUserClaims();
 
                 this.resetAllForms(); this.isLoggedIn = true; this.desktopSidebarOpen = false; this.mobileMenuOpen = false;
                 this.logAudit('LOGIN', `User logged in with role ${this.getRoleDisplayName(role)}`);
@@ -2316,6 +2317,28 @@ createApp({
         isLikelyFirebaseUid(value) {
             return typeof value === 'string' && /^[A-Za-z0-9_-]{20,128}$/.test(value);
         },
+        // Syncs Firebase Auth custom claims (role, clientDirectoryId for Client role)
+        // from the Firestore users/{uid} record via the serverless endpoint, then
+        // forces a fresh ID token so Storage Rules see the up-to-date claims in THIS
+        // session immediately (custom claims don't appear in an already-issued token
+        // until it's refreshed). Called after every login, and after an admin changes
+        // someone's role. Failures are non-fatal — the rest of the app still works,
+        // only client_documents upload/download would be affected.
+        async syncUserClaims(targetUid = null) {
+            try {
+                if (!auth.currentUser) return;
+                const idToken = await auth.currentUser.getIdToken();
+                const resp = await fetch('/api/sync-user-claims', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                    body: JSON.stringify(targetUid ? { uid: targetUid } : {})
+                });
+                if (!resp.ok) { console.warn('Claims sync failed:', await resp.text()); return; }
+                if (!targetUid || targetUid === auth.currentUser.uid) await auth.currentUser.getIdToken(true);
+            } catch (error) {
+                console.warn('Claims sync error:', error);
+            }
+        },
         async loadOrMigrateUserMetadata(firebaseUser) {
             if (!firebaseUser?.uid || !firebaseUser?.email) return null;
             const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -2412,6 +2435,7 @@ createApp({
                 }
                 this.userModal.show = false;
                 this.logAudit(isNewUser ? 'CREATE' : 'UPDATE', `User role/metadata for ${email}`);
+                this.syncUserClaims(userId).catch(() => {});
                 if (isNewUser) { this.sendWelcomeEmail(this.userModal.form); this.showNotify('Akaun berjaya dicipta!'); }
                 else this.showNotify('User updated successfully!');
             } catch (error) {
@@ -3336,6 +3360,7 @@ createApp({
                     this.applyDarkModePreference();
                     this.notificationsLog = Array.isArray(userData?.notificationsLog) ? userData.notificationsLog : [];
                     this.startIdleTimeoutWatch();
+                    await this.syncUserClaims();
                     this.resetAllForms();
                     this.isLoggedIn = true;
                     if (mustChangePassword) { this.currentTab = 'profile'; this.changePasswordModal.required = true; this.changePasswordModal.show = true; }

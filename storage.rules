@@ -2,6 +2,14 @@
 // ZENQOR PORTAL - storage.rules
 // Client Document Repository — file bytes for client_documents/{clientDirectoryId}/{fileName}
 // Metadata for these files is tracked in Firestore's client_documents collection (see firestore.rules).
+//
+// Role/ownership checks read directly from the Auth ID token's custom claims
+// (request.auth.token.role / .clientDirectoryId) instead of calling
+// firestore.get()/firestore.exists() cross-service — that cross-service lookup
+// does not work in this Firebase project (confirmed by direct testing: even the
+// simplest possible firestore.exists() check with a hardcoded path fails here).
+// Claims are kept in sync by api/sync-user-claims.js, called after login and
+// whenever an admin changes a user's role in Portal Access Management.
 // ============================================================
 rules_version = '2';
 service firebase.storage {
@@ -12,7 +20,7 @@ service firebase.storage {
     }
 
     function userRole() {
-      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+      return request.auth.token.role;
     }
 
     function isStaffDocumentManager() {
@@ -25,7 +33,7 @@ service firebase.storage {
 
     function isOwningClient(clientDirectoryId) {
       return isSignedIn() && userRole() == 'Client' &&
-        firestore.get(/databases/(default)/documents/customers/$(clientDirectoryId)).data.clientEmail == request.auth.token.email;
+        request.auth.token.clientDirectoryId == clientDirectoryId;
     }
 
     match /client_documents/{clientDirectoryId}/{fileName} {
