@@ -267,7 +267,7 @@ createApp({
             projectModal: {
                 show: false,
                 isEdit: false,
-                form: { id: '', projectRef: '', title: '', clientDirectoryId: '', clientPortalUid: '', clientName: '', clientEmail: '', clientSSM: '', clientTier: 'Standard', ownerEmpNo: '', ownerName: '', ownerEmail: '', ownerPosition: '', ownerDepartment: '', ownerAssignedAt: '', ownerPresenceStatus: 'Offline', ownerPresenceUpdatedAt: '', ownerLastSeen: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' }
+                form: { id: '', projectRef: '', title: '', clientDirectoryId: '', clientPortalUid: '', clientName: '', clientEmail: '', clientSSM: '', clientTier: 'Standard', ownerEmpNo: '', ownerName: '', ownerEmail: '', ownerPhoto: '', ownerPosition: '', ownerDepartment: '', ownerAssignedAt: '', ownerPresenceStatus: 'Offline', ownerPresenceUpdatedAt: '', ownerLastSeen: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' }
             },
             employees: [],
             customers: [],
@@ -1094,6 +1094,7 @@ createApp({
             return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
         },
         projectOwnerPhoto(project) {
+            if (project?.ownerPhoto) return project.ownerPhoto;
             const email = String(project?.ownerEmail || '').trim().toLowerCase();
             if (!email) return '';
             const matchedUser = this.users.find(u => String(u.email || '').trim().toLowerCase() === email);
@@ -1244,6 +1245,7 @@ createApp({
             this.projectModal.form.ownerEmpNo = employee.empNo;
             this.projectModal.form.ownerName = employee.name || '';
             this.projectModal.form.ownerEmail = String(employee.email || '').trim().toLowerCase();
+            this.projectModal.form.ownerPhoto = this.employeePhotoByEmail(employee.email);
             this.projectModal.form.ownerPosition = employee.position || '';
             this.projectModal.form.ownerDepartment = employee.dept || '';
             this.projectModal.form.ownerPresenceStatus = this.employeePresenceLabel(employee);
@@ -1261,7 +1263,7 @@ createApp({
         },
         openProjectModal(project = null) {
             if (project ? !this.canEditProject(project) : !this.canManageProjects) { this.showNotify(project ? 'Only Director, Superadmin, or this project\'s Person In Charge may edit this project.' : 'Only Director and Superadmin may create new projects.'); return; }
-            const emptyForm = { id: '', projectRef: `PRJ-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`, title: '', clientDirectoryId: '', clientPortalUid: '', clientName: '', clientEmail: '', clientSSM: '', clientTier: 'Standard', ownerEmpNo: '', ownerName: '', ownerEmail: '', ownerPosition: '', ownerDepartment: '', ownerAssignedAt: '', ownerPresenceStatus: 'Offline', ownerPresenceUpdatedAt: '', ownerLastSeen: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' };
+            const emptyForm = { id: '', projectRef: `PRJ-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`, title: '', clientDirectoryId: '', clientPortalUid: '', clientName: '', clientEmail: '', clientSSM: '', clientTier: 'Standard', ownerEmpNo: '', ownerName: '', ownerEmail: '', ownerPhoto: '', ownerPosition: '', ownerDepartment: '', ownerAssignedAt: '', ownerPresenceStatus: 'Offline', ownerPresenceUpdatedAt: '', ownerLastSeen: '', status: 'Project Planning', startDate: '', targetDate: '', description: '' };
             this.projectModal = { show: true, isEdit: Boolean(project), form: project ? JSON.parse(JSON.stringify(project)) : emptyForm };
         },
         closeProjectModal() {
@@ -1326,6 +1328,9 @@ createApp({
                 ownerEmpNo: source.ownerEmpNo,
                 ownerName: source.ownerName,
                 ownerEmail: String(source.ownerEmail || '').trim().toLowerCase(),
+                // This is the PIC's public project avatar only. It lets a client
+                // see their assigned PIC without read access to every staff profile.
+                ownerPhoto: source.ownerPhoto || this.employeePhotoByEmail(source.ownerEmail),
                 ownerPosition: source.ownerPosition,
                 ownerDepartment: source.ownerDepartment,
                 ownerAssignedAt: source.ownerAssignedAt || now,
@@ -2126,6 +2131,22 @@ createApp({
             if (this.userProfile.role !== 'Client') return this.setCurrentEmployeePresence(isOnline);
             return true;
         },
+        async syncCurrentOwnerPhoto() {
+            const email = String(this.userProfile.email || '').trim().toLowerCase();
+            const photo = this.userProfile.photo || '';
+            if (this.userProfile.role === 'Client' || !email || !photo) return;
+            try {
+                const snapshot = await getDocs(query(collection(db, 'projects'), where('ownerEmail', '==', email)));
+                const pending = snapshot.docs.filter(projectDoc => projectDoc.data().ownerPhoto !== photo);
+                for (let start = 0; start < pending.length; start += 450) {
+                    const batch = writeBatch(db);
+                    pending.slice(start, start + 450).forEach(projectDoc => batch.update(projectDoc.ref, { ownerPhoto: photo }));
+                    await batch.commit();
+                }
+            } catch (error) {
+                console.error('Unable to synchronize PIC photo to projects:', error);
+            }
+        },
         employeePresenceLabel(emp) {
             return this.isEmployeeOnline(emp) ? 'Online' : 'Offline';
         },
@@ -2164,6 +2185,7 @@ createApp({
             this.stopPresenceTracking();
             this.presenceNow = Date.now();
             await this.setCurrentPresence(true);
+            await this.syncCurrentOwnerPhoto();
             this.presenceHeartbeatTimer = setInterval(() => {
                 this.presenceNow = Date.now();
                 this.setCurrentPresence(true);
@@ -2763,6 +2785,7 @@ createApp({
                 const photoUrl = await this.prepareImageAttachment(file, 120 * 1024, 720);
                 await setDoc(doc(db, 'users', this.userProfile.uid), { photo: photoUrl }, { merge: true });
                 this.userProfile.photo = photoUrl;
+                await this.syncCurrentOwnerPhoto();
                 this.logAudit('UPDATE', 'Uploaded profile photo');
                 this.showNotify('Profile photo uploaded and saved successfully.');
             } catch (error) {

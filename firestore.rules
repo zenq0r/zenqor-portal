@@ -406,11 +406,16 @@ service cloud.firestore {
           ])
       ) || (
         isAuthenticated() &&
-          resource.data.ownerEmail == request.auth.token.email &&
-          request.resource.data.ownerEmpNo == resource.data.ownerEmpNo &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'ownerPresenceStatus', 'ownerPresenceUpdatedAt', 'ownerLastSeen'
-          ])
+        resource.data.ownerEmail == request.auth.token.email &&
+        request.resource.data.ownerEmpNo == resource.data.ownerEmpNo &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'ownerPresenceStatus', 'ownerPresenceUpdatedAt', 'ownerLastSeen'
+        ])
+      ) || (
+        isAuthenticated() &&
+        resource.data.ownerEmail == request.auth.token.email &&
+        request.resource.data.ownerEmpNo == resource.data.ownerEmpNo &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerPhoto'])
       );
       allow delete: if isProjectManager();
     }
