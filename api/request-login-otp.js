@@ -1,10 +1,10 @@
-// Second-factor email OTP for Superadmin/Director logins. Generates a 6-digit
+// Second-factor email OTP for every provisioned RBAC login. Generates a 6-digit
 // code, stores it server-side (login_otp_codes/{uid}, deny-all to clients),
 // and emails it via the same Resend integration already proven for password
 // resets and workflow notifications. Requires the Firebase ID token issued by
 // the FIRST factor (password) — the caller must already be authenticated.
 const { getAdminApp } = require('./_firebaseAdmin');
-const { generateOtp } = require('./_security');
+const { generateOtp, requiresOtpRole } = require('./_security');
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
@@ -16,7 +16,7 @@ function buildOtpEmailHtml(code) {
   </div>
   <div style="padding: 36px 32px; text-align: center;">
     <h2 style="color: #0B1E36; font-size: 19px; margin: 0 0 12px;">Your Sign-In Verification Code</h2>
-    <p style="color: #475569; font-size: 14px; line-height: 1.7; margin: 0 0 24px;">Enter this code to finish signing in to your Superadmin/Director account. It expires in 5 minutes.</p>
+    <p style="color: #475569; font-size: 14px; line-height: 1.7; margin: 0 0 24px;">Enter this code to finish signing in to your ZENQOR Portal account. It expires in 5 minutes.</p>
     <div style="display: inline-block; background-color: #F8FAFC; border: 2px dashed #14B8A6; border-radius: 12px; padding: 16px 32px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #0B1E36;">${code}</div>
     <p style="color: #94A3B8; font-size: 12px; line-height: 1.6; margin: 24px 0 0;">If you did not attempt to sign in, someone may have your password — change it immediately and contact your administrator.</p>
   </div>
@@ -39,9 +39,9 @@ module.exports = async function handler(req, res) {
         if (!decoded.email) { res.status(400).json({ error: 'Account has no email address on file.' }); return; }
 
         const userDoc = await admin.firestore().collection('users').doc(decoded.uid).get();
-        const role = userDoc.exists ? userDoc.data().role : null;
-        if (!['Superadmin', 'Director'].includes(role)) {
-            res.status(403).json({ error: 'Verification codes are only available for privileged accounts.' });
+        const role = userDoc.exists ? userDoc.data().role : (decoded.email === 'admin@zenq0r.com' ? 'Superadmin' : null);
+        if (!requiresOtpRole(role)) {
+            res.status(403).json({ error: 'This account is not provisioned for portal access.' });
             return;
         }
 

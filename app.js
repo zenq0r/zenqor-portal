@@ -94,7 +94,7 @@ createApp({
                 password: ''
             },
             loginError: '',
-            // Superadmin/Director second-factor email OTP (see handleLogin/completeLogin).
+            // Mandatory second-factor email OTP for every provisioned RBAC role.
             loginOtp: { show: false, code: '', error: '', sending: false, verifying: false, email: '' },
             pendingLoginContext: null,
             currentTab: 'dashboard',
@@ -2349,13 +2349,12 @@ createApp({
                     return;
                 }
 
-                // Second factor for the two highest-privilege roles: password alone
-                // (already verified above) isn't trusted to finish the login — an
-                // emailed one-time code is required before the portal session starts.
+                // Password alone is not trusted to finish any provisioned RBAC login.
+                // Every role must verify an emailed one-time code before the portal starts.
                 // The Firebase Auth session is already live at this point (signOut on
                 // cancel below un-does it); this gate only controls when the PORTAL
                 // itself trusts the sign-in as complete.
-                if (['Superadmin', 'Director'].includes(role)) {
+                if (Object.prototype.hasOwnProperty.call(RBAC_ROLES, role)) {
                     this.pendingLoginContext = { firebaseUser, userData, role, name, photo, mustChangePassword };
                     this.loginOtp = { show: true, code: '', error: '', sending: true, verifying: false, email: firebaseUser.email };
                     this.loginLoading = false;
@@ -2408,7 +2407,7 @@ createApp({
             try { await signOut(auth); } catch (error) { console.error('Sign-out during OTP cancel failed:', error); }
         },
         async completeLogin({ firebaseUser, userData, role, name, photo, mustChangePassword }) {
-            if (['Superadmin', 'Director'].includes(role)) {
+            if (Object.prototype.hasOwnProperty.call(RBAC_ROLES, role)) {
                 try { sessionStorage.setItem('zenqorOtpVerifiedUid', firebaseUser.uid); } catch (error) { console.error('Failed to persist OTP-verified marker:', error); }
             }
             this.userProfile = { name: name, email: firebaseUser.email, role: role, uid: firebaseUser.uid, photo: photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '', customAccess: userData?.customAccess || {} };
@@ -3643,13 +3642,13 @@ createApp({
                         await signOut(auth);
                         return;
                     }
-                    if (['Superadmin', 'Director'].includes(role)) {
+                    if (Object.prototype.hasOwnProperty.call(RBAC_ROLES, role)) {
                         let otpVerifiedUid = null;
                         try { otpVerifiedUid = sessionStorage.getItem('zenqorOtpVerifiedUid'); } catch (error) { console.error('Failed to read OTP-verified marker:', error); }
                         if (otpVerifiedUid !== firebaseUser.uid) {
                             // signInWithEmailAndPassword() fires this listener immediately, before the
                             // OTP challenge in handleLogin()/verifyLoginOtp() has run. Do not auto-complete
-                            // the login here for OTP-gated roles — only completeLogin() (called after a
+                            // the login here for any RBAC role — only completeLogin() (called after a
                             // verified OTP) may finish signing this user in.
                             this.loginLoading = false;
                             this.authLoading = false;

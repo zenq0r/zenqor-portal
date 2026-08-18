@@ -1,4 +1,4 @@
-// Verifies the second-factor email OTP requested via request-login-otp.js.
+// Verifies the second-factor email OTP required for every provisioned RBAC role.
 // One-time use, 5-minute expiry, tied to the requesting user's own UID via
 // their Firebase ID token — a code can't be used to verify a different account.
 const { getAdminApp } = require('./_firebaseAdmin');

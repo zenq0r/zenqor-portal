@@ -350,7 +350,7 @@
                     <div class="mx-auto w-14 h-14 rounded-2xl bg-brand-dark dark:bg-brand-blue text-white flex items-center justify-center text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
                     <div>
                         <h3 class="text-base font-extrabold text-brand-dark dark:text-white">Verify Your Identity</h3>
-                        <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Superadmin and Director accounts require a second verification step. {{ loginOtp.sending ? 'Sending a code to' : 'We sent a 6-digit code to' }} <span class="font-bold">{{ loginOtp.email }}</span>.</p>
+                        <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">All portal accounts require a second verification step. {{ loginOtp.sending ? 'Sending a code to' : 'We sent a 6-digit code to' }} <span class="font-bold">{{ loginOtp.email }}</span>.</p>
                     </div>
                     <form @submit.prevent="verifyLoginOtp" class="space-y-3">
                         <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" v-model="loginOtp.code" :disabled="loginOtp.sending" placeholder="000000" autocomplete="one-time-code" class="w-full text-center text-2xl font-black tracking-[0.5em] px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-brand-blue focus:outline-none">

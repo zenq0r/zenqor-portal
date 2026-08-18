@@ -2,12 +2,17 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
-const { generateOtp, isAllowedPortalUrl, normalizeEmail } = require('../api/_security');
+const { generateOtp, isAllowedPortalUrl, normalizeEmail, requiresOtpRole } = require('../api/_security');
 const { getClientIp, parseUserAgent } = require('../api/_auditMetadata');
 const { normalizeRetention, retentionDurationMs } = require('../api/_auditRetention');
 
 test('OTP is always a six-digit string', () => {
     for (let i = 0; i < 100; i += 1) assert.match(generateOtp(), /^\d{6}$/);
+});
+
+test('OTP is mandatory for every provisioned RBAC role', () => {
+    ['Superadmin', 'Director', 'HR', 'Account', 'IT', 'Staff', 'Client'].forEach(role => assert.equal(requiresOtpRole(role), true));
+    assert.equal(requiresOtpRole('Unknown'), false);
 });
 
 test('portal URL validation rejects lookalike and insecure domains', () => {
