@@ -4,7 +4,7 @@
 // resets and workflow notifications. Requires the Firebase ID token issued by
 // the FIRST factor (password) — the caller must already be authenticated.
 const { getAdminApp } = require('./_firebaseAdmin');
-const { generateOtp, requiresOtpRole } = require('./_security');
+const { generateOtp, hashOtp, requiresOtpRole } = require('./_security');
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
@@ -54,7 +54,7 @@ module.exports = async function handler(req, res) {
             return;
         }
         await otpRef.set({
-            code,
+            codeHash: hashOtp(code),
             email: decoded.email,
             createdAt: new Date(now).toISOString(),
             expiresAt: new Date(now + OTP_TTL_MS).toISOString(),

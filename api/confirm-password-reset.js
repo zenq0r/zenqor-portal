@@ -1,5 +1,6 @@
 const { getAdminApp } = require('./_firebaseAdmin');
 const { revokeTrustedDevices } = require('./_trustedDevice');
+const { hashResetToken } = require('./_security');
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
@@ -17,7 +18,8 @@ module.exports = async function handler(req, res) {
 
         const admin = getAdminApp();
         const db = admin.firestore();
-        const docRef = db.collection('password_reset_tokens').doc(token);
+        let docRef = db.collection('password_reset_tokens').doc(hashResetToken(token));
+        if (!(await docRef.get()).exists) docRef = db.collection('password_reset_tokens').doc(token);
         const claim = await db.runTransaction(async transaction => {
             const doc = await transaction.get(docRef);
             if (!doc.exists) return { error: 'This reset link is invalid. Please request a new one.' };

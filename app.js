@@ -476,6 +476,8 @@ createApp({
                 clientEmail: '',
                 clientContactPerson: '',
                 clientPosition: '',
+                customerId: '',
+                additionalClientEmailsText: '',
                 items: [{ desc: '', qty: 1, price: 0 }],
                 discount: 0
             },
@@ -583,6 +585,9 @@ createApp({
             return {
                 clientName: linkedProject?.clientName || this.userProfile.name || 'Client Account',
                 clientSSM: linkedProject?.clientSSM || '',
+                // Projects retain a tier snapshot for the portal fallback. The
+                // authoritative value still comes from customers/{id} when it is
+                // available (for example, after staff retag a client).
                 clientTier: linkedProject?.clientTier || 'Standard',
                 clientEmail: linkedProject?.clientEmail || this.userProfile.email || ''
             };
@@ -1312,6 +1317,10 @@ createApp({
                 clientPortalUid: source.clientPortalUid,
                 clientName: source.clientName,
                 clientEmail: String(source.clientEmail || '').trim().toLowerCase(),
+                // Keep a tier snapshot on the project. Client accounts cannot read
+                // the full customer directory, so this remains a safe fallback if
+                // their individual customer record has not loaded yet.
+                clientTier: this.clientTierForId(source.clientDirectoryId, source.clientTier),
                 ownerEmpNo: source.ownerEmpNo,
                 ownerName: source.ownerName,
                 ownerEmail: String(source.ownerEmail || '').trim().toLowerCase(),
@@ -2762,7 +2771,14 @@ createApp({
                     body: JSON.stringify(targetUid ? { uid: targetUid } : {})
                 });
                 if (!resp.ok) { console.warn('Claims sync failed:', await resp.text()); return; }
-                if (!targetUid || targetUid === auth.currentUser.uid) await auth.currentUser.getIdToken(true);
+                const data = await resp.json().catch(() => ({}));
+                if (!targetUid || targetUid === auth.currentUser.uid) {
+                    await auth.currentUser.getIdToken(true);
+                    // The API resolves this server-side from the authorized customer
+                    // record. Retaining it locally lets a Client subscribe only to
+                    // their own customer document, never the entire directory.
+                    this.userProfile.clientDirectoryId = data?.claims?.clientDirectoryId || '';
+                }
             } catch (error) {
                 console.warn('Claims sync error:', error);
             }
@@ -2891,16 +2907,41 @@ createApp({
             try { this.company.address = this.formattedCompanyAddress(); this.company = this.normalizeOfficialRecord(this.company); this.company.email = String(this.company.email || '').trim().toLowerCase(); await setDoc(doc(db, "settings", "company_profile"), { ...this.company }, { merge: true }); this.logAudit('UPDATE', 'Updated settings'); this.showNotify('Settings updated!'); } catch (error) { this.showNotify('Unable to save company settings.'); }
         },
 
+        loadCustomerIntoDocument(cust) {
+            if (!cust?.id) return;
+            const previousCustomerId = this.docForm.customerId || '';
+            const switchedCompany = previousCustomerId !== cust.id;
+            const clientFields = ['clientName', 'clientPhone', 'clientSSM', 'clientAddress', 'clientAddress1', 'clientAddress2', 'clientAddress3', 'clientCity', 'clientState', 'clientPostcode', 'clientEmail', 'clientContactPerson', 'clientPosition'];
+
+            // Assign every client field explicitly, including empty values. This
+            // prevents an optional field from the previous company leaking into the
+            // document for the newly selected company.
+            clientFields.forEach(field => { this.docForm[field] = cust[field] || ''; });
+            this.docForm.clientAddress1 = cust.clientAddress1 || cust.clientAddress || '';
+            this.docForm.clientAddress = cust.clientAddress || this.docForm.clientAddress1;
+            this.docForm.clientCountry = cust.clientCountry || 'Malaysia';
+            this.docForm.customerId = cust.id;
+            this.docForm.additionalClientEmailsText = Array.isArray(cust.additionalClientEmails) ? cust.additionalClientEmails.join(', ') : '';
+            this.clientSavedForDocument = true;
+
+            // A saved document must never be overwritten just because the user
+            // switches to another company to prepare the next one. Keep the entered
+            // line items and payment details, but start a fresh document identity.
+            if (switchedCompany && this.editingDocId) {
+                this.editingDocId = null;
+                this.generateDocNo(true);
+                this.showNotify('New client loaded. A new document number was prepared; line items were kept.');
+                return;
+            }
+            this.showNotify('Saved client loaded. You can continue with the current document items.');
+        },
         selectCustomerForDoc(e) {
-            const cust = this.customers.find(c => c.clientName === e.target.value);
+            const cust = this.customers.find(c => c.id === e.target.value);
             if (cust) {
-                Object.keys(cust).forEach(k => { if (this.docForm.hasOwnProperty(k)) this.docForm[k] = cust[k]; });
-                this.docForm.customerId = cust.id || '';
-                this.docForm.additionalClientEmailsText = Array.isArray(cust.additionalClientEmails) ? cust.additionalClientEmails.join(', ') : '';
-                this.clientSavedForDocument = true;
-                this.showNotify(`Saved client loaded. You can now add document items.`);
+                this.loadCustomerIntoDocument(cust);
             } else {
                 this.docForm.customerId = '';
+                this.docForm.additionalClientEmailsText = '';
                 this.clientSavedForDocument = false;
             }
         },
@@ -2928,11 +2969,7 @@ createApp({
             } catch (error) { console.error('Client save failed:', error); this.showNotify('Unable to save client information.'); return false; }
         },
         selectCustomerFromTable(cust) {
-            ['clientName','clientPhone','clientSSM','clientAddress','clientAddress1','clientAddress2','clientAddress3','clientCity','clientState','clientPostcode','clientCountry','clientEmail','clientContactPerson','clientPosition'].forEach(k => { this.docForm[k] = cust[k] || (k === 'clientCountry' ? 'Malaysia' : ''); });
-            this.docForm.clientAddress1 = cust.clientAddress1 || cust.clientAddress || '';
-            this.docForm.customerId = cust.id || '';
-            this.docForm.additionalClientEmailsText = Array.isArray(cust.additionalClientEmails) ? cust.additionalClientEmails.join(', ') : '';
-            this.showNotify(`Client loaded.`);
+            this.loadCustomerIntoDocument(cust);
         },
         openClientView(cust) {
             this.clientView.client = {
@@ -3523,12 +3560,19 @@ createApp({
         },
         addDocItem() { this.docForm.items.push({ desc: '', qty: 1, price: 0 }); },
         removeDocItem(idx) { this.docForm.items.splice(idx, 1); },
-        generateDocNo() {
+        generateDocNo(includeCurrentNumber = false) {
             if (this.editingDocId) return;
             const prefix = this.docForm.type === 'Invoice' ? 'INV' : 'QT';
             const relevantDocs = this.docHistory.filter(d => d.type === this.docForm.type && String(d.docNo || '').includes(`-${this.currentYear}-`));
             let maxNum = 1000;
             relevantDocs.forEach(d => { if (d.docNo) { const num = parseInt(d.docNo.split('-').pop(), 10); if (!isNaN(num) && num > maxNum) maxNum = num; } });
+            // The realtime document list can arrive a moment after a save. When a
+            // user immediately changes client, also consider the number already in
+            // the form so the next document cannot reuse it during that short gap.
+            if (includeCurrentNumber) {
+                const currentNum = parseInt(String(this.docForm.docNo || '').split('-').pop(), 10);
+                if (!isNaN(currentNum) && currentNum > maxNum) maxNum = currentNum;
+            }
             this.docForm.docNo = `${prefix}-${this.currentYear}-${String(maxNum + 1).padStart(5, '0')}`;
         },
 
@@ -3698,12 +3742,10 @@ createApp({
             const canReadAllPayslips = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
             const canReadAllClaims = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
             const canReadAllEmployees = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
-            // Every signed-in user — staff and Client Portal alike — can see the internal
-            // user directory (names + photos only, no credentials). Needed so profile
-            // photos resolve correctly everywhere they're shown, including the "Person In
-            // Charge" avatar clients see on their own project (previously staff-only,
-            // which left it blank/initials-only for Client Portal viewers).
-            const canReadUserDirectory = true;
+            // Internal user-directory metadata is staff-only. Client project cards already
+            // carry the assigned PIC's public project fields, so exposing every portal user
+            // record to a Client account is unnecessary and violates least privilege.
+            const canReadUserDirectory = role !== 'Client';
             const canReadAuditLogs = ['Superadmin', 'Director', 'IT'].includes(role);
             const documentsSource = canReadAllDocuments
                 ? collection(db, 'docs')
@@ -3766,6 +3808,12 @@ createApp({
                     : Promise.resolve(),
                 (this.hasAccess('client-directory') || this.hasAccess('doc-generator'))
                     ? subscribeWithReadySignal(collection(db, "customers"), (snapshot) => { this.customers = snapshot.docs.map(d => { const data = d.data(); return { id: d.id, ...data, clientAddress1: data.clientAddress1 || data.clientAddress || '' }; }); }, 'clients')
+                    : role === 'Client' && this.userProfile.clientDirectoryId
+                        ? subscribeWithReadySignal(doc(db, 'customers', this.userProfile.clientDirectoryId), (snapshot) => {
+                            this.customers = snapshot.exists()
+                                ? [{ id: snapshot.id, ...snapshot.data(), clientAddress1: snapshot.data().clientAddress1 || snapshot.data().clientAddress || '' }]
+                                : [];
+                        }, 'client profile')
                     : Promise.resolve(),
                 documentsSource
                     ? subscribeWithReadySignal(documentsSource, (snapshot) => { this.docHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); this.generateDocNo(); this.refreshDashboardCharts(); }, 'documents')

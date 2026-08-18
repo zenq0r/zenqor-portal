@@ -6,6 +6,9 @@
 // a signed-in caller cannot use this to relay mail to an arbitrary address.
 const { getAdminApp } = require('./_firebaseAdmin');
 const { isAllowedPortalUrl, normalizeEmail } = require('./_security');
+const { enforceRateLimit } = require('./_rateLimit');
+
+const PORTAL_ROLES = new Set(['Superadmin', 'Director', 'HR', 'Account', 'IT', 'Staff', 'Client']);
 
 function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -31,13 +34,16 @@ function buildEmailHtml({ heading, message, ctaLabel, ctaUrl }) {
 </div>`;
 }
 
-async function isKnownRecipient(db, email) {
+async function isAllowedRecipient(db, email, callerRole) {
     const lower = email.toLowerCase();
     const [byUserEmail, byClientEmail, byAdditionalClientEmail] = await Promise.all([
         db.collection('users').where('email', '==', lower).limit(1).get(),
         db.collection('customers').where('clientEmail', '==', lower).limit(1).get(),
         db.collection('customers').where('additionalClientEmails', 'array-contains', lower).limit(1).get()
     ]);
+    if (callerRole === 'Client') {
+        return !byUserEmail.empty && byUserEmail.docs.some(doc => doc.data().role !== 'Client');
+    }
     return !byUserEmail.empty || !byClientEmail.empty || !byAdditionalClientEmail.empty;
 }
 
@@ -50,15 +56,31 @@ module.exports = async function handler(req, res) {
         if (!idToken) { res.status(401).json({ error: 'Missing authorization token.' }); return; }
 
         const admin = getAdminApp();
-        await admin.auth().verifyIdToken(idToken); // just needs to be a real signed-in user
+        const decoded = await admin.auth().verifyIdToken(idToken);
         const db = admin.firestore();
+        const callerDoc = await db.collection('users').doc(decoded.uid).get();
+        const callerRole = callerDoc.exists ? callerDoc.data().role : (decoded.email === 'admin@zenq0r.com' ? 'Superadmin' : null);
+        if (!PORTAL_ROLES.has(callerRole)) { res.status(403).json({ error: 'This account is not provisioned for notifications.' }); return; }
+
+        const rate = await enforceRateLimit(db, { scope: 'notify', key: decoded.uid, limit: 15, windowMs: 5 * 60 * 1000 });
+        if (!rate.allowed) {
+            res.setHeader('Retry-After', String(rate.retryAfterSeconds));
+            res.status(429).json({ error: 'Too many notification requests. Please try again shortly.' });
+            return;
+        }
 
         const { to, subject, heading, message, ctaLabel, ctaUrl } = req.body || {};
         const candidates = [...new Set((Array.isArray(to) ? to : [to]).map(normalizeEmail).filter(Boolean))].slice(0, 20);
         if (!candidates.length) { res.status(400).json({ error: 'At least one valid recipient email is required.' }); return; }
-        if (!subject || !heading || !message) { res.status(400).json({ error: 'subject, heading and message are required.' }); return; }
+        if (typeof subject !== 'string' || !subject.trim() || subject.length > 200 ||
+            typeof heading !== 'string' || !heading.trim() || heading.length > 160 ||
+            typeof message !== 'string' || !message.trim() || message.length > 5000 ||
+            (ctaLabel != null && (typeof ctaLabel !== 'string' || ctaLabel.length > 80))) {
+            res.status(400).json({ error: 'Notification content is missing or exceeds the allowed length.' });
+            return;
+        }
 
-        const knownChecks = await Promise.all(candidates.map(e => isKnownRecipient(db, e)));
+        const knownChecks = await Promise.all(candidates.map(e => isAllowedRecipient(db, e, callerRole)));
         const recipients = candidates.filter((_, i) => knownChecks[i]);
         if (!recipients.length) { res.status(400).json({ error: 'No recipient matches a known staff or client account.' }); return; }
 

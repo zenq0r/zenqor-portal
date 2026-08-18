@@ -2,13 +2,28 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
-const { generateOtp, isAllowedPortalUrl, normalizeEmail, requiresOtpRole } = require('../api/_security');
+const fs = require('node:fs');
+const { generateOtp, hashOtp, hashResetToken, isAllowedPortalUrl, normalizeEmail, requiresOtpRole } = require('../api/_security');
 const { getClientIp, parseUserAgent } = require('../api/_auditMetadata');
 const { normalizeRetention, retentionDurationMs } = require('../api/_auditRetention');
 const { clearTrustedCookie, hashToken, parseCookie, trustedCookie, trustedDurationMs } = require('../api/_trustedDevice');
+const { rateLimitId } = require('../api/_rateLimit');
 
 test('OTP is always a six-digit string', () => {
     for (let i = 0; i < 100; i += 1) assert.match(generateOtp(), /^\d{6}$/);
+});
+
+test('OTP codes are hashed before server-side storage', () => {
+    const code = '123456';
+    assert.equal(hashOtp(code).length, 64);
+    assert.equal(hashOtp(code), hashOtp(code));
+    assert.equal(hashOtp(code).includes(code), false);
+});
+
+test('password reset tokens are not stored using the raw link secret', () => {
+    const token = 'raw-password-reset-secret';
+    assert.equal(hashResetToken(token).length, 64);
+    assert.equal(hashResetToken(token).includes(token), false);
 });
 
 test('OTP is mandatory for every provisioned RBAC role', () => {
@@ -70,4 +85,19 @@ test('trusted-device tokens are hashed and cookies use strict security flags', (
     assert.match(cookie, /SameSite=Strict/);
     assert.equal(parseCookie(`other=x; ${cookie}`), rawToken);
     assert.match(clearTrustedCookie(), /Max-Age=0/);
+});
+
+test('API rate-limit identifiers are deterministic and do not expose user identifiers', () => {
+    const id = rateLimitId('notify', 'client-uid-123');
+    assert.equal(id.length, 64);
+    assert.equal(id, rateLimitId('notify', 'client-uid-123'));
+    assert.notEqual(id, rateLimitId('audit-log', 'client-uid-123'));
+    assert.equal(id.includes('client-uid-123'), false);
+});
+
+test('Client accounts cannot subscribe to or read the internal user directory', () => {
+    const appSource = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+    const rulesSource = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
+    assert.match(appSource, /const canReadUserDirectory = role !== 'Client'/);
+    assert.match(rulesSource, /allow read: if isAuthenticated\(\) && \(!isClient\(\) \|\| request\.auth\.uid == userId\)/);
 });

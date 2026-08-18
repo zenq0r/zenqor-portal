@@ -5,6 +5,7 @@ const { getAdminApp } = require('./_firebaseAdmin');
 const crypto = require('crypto');
 const { getClientIp, parseUserAgent } = require('./_auditMetadata');
 const { hashToken, trustedCookie, trustedDurationMs } = require('./_trustedDevice');
+const { hashOtp } = require('./_security');
 
 const MAX_ATTEMPTS = 5;
 
@@ -37,7 +38,9 @@ module.exports = async function handler(req, res) {
             if (new Date(data.expiresAt).getTime() < Date.now()) return { error: 'This code has expired. Please sign in again.' };
             const attempts = Number(data.attempts || 0);
             if (attempts >= MAX_ATTEMPTS) return { error: 'Too many incorrect attempts. Please sign in again.' };
-            if (!safeEqual(data.code, code.trim())) {
+            const submittedHash = hashOtp(code.trim());
+            const storedHash = data.codeHash || (data.code ? hashOtp(data.code) : '');
+            if (!storedHash || !safeEqual(storedHash, submittedHash)) {
                 transaction.update(docRef, { attempts: attempts + 1 });
                 return { error: attempts + 1 >= MAX_ATTEMPTS ? 'Too many incorrect attempts. Please sign in again.' : 'Incorrect code. Please try again.' };
             }

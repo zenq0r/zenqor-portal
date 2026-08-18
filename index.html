@@ -550,7 +550,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
+                    <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-4 md:p-6 space-y-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
                             <div>
                                 <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
@@ -562,7 +562,7 @@
                                 <label for="doc-client-select" class="sr-only">Select Client</label>
                                 <select id="doc-client-select" name="docClientSelect" @change="selectCustomerForDoc($event)" class="p-2 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-700 text-brand-dark dark:text-white w-full sm:w-60 focus:ring-2 focus:ring-brand-gold">
                                     <option value="">-- Auto-Fill Client --</option>
-                                    <option v-for="(cust, cIdx) in customers" :key="cIdx" :value="cust.clientName">{{ cust.clientName }}</option>
+                                    <option v-for="cust in customers" :key="cust.id" :value="cust.id">{{ cust.clientName }}{{ cust.clientSSM ? ` · ${cust.clientSSM}` : '' }}</option>
                                 </select>
                                 <button v-if="canManageClients" type="button" @click="saveCustomerToDatabase" class="bg-brand-gold hover:bg-yellow-400 text-brand-dark font-extrabold px-3 py-2 rounded-xl text-xs shadow transition">
                                     Save Client
@@ -793,7 +793,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
+                    <div class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-4 md:p-6 space-y-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
                             <div>
                                 <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
@@ -939,7 +939,7 @@
                     </div>
 
                     <!-- ===================== EXPENSE CLAIM FORM ===================== -->
-                    <div v-if="claimFormMode === 'Claim'" class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
+                    <div v-if="claimFormMode === 'Claim'" class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-4 md:p-6 space-y-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
                             <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
                                 <i class="fa-solid fa-file-circle-plus text-brand-gold mr-2 text-base"></i>
@@ -1036,7 +1036,7 @@
                     </div>
 
                     <!-- ===================== PAYMENT VOUCHER FORM ===================== -->
-                    <div v-else class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-6 space-y-6">
+                    <div v-else class="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md p-4 md:p-6 space-y-5">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
                             <h3 class="text-xs font-extrabold text-brand-dark dark:text-white tracking-wider uppercase flex items-center">
                                 <i class="fa-solid fa-file-circle-plus text-brand-gold mr-2 text-base"></i>
@@ -1367,7 +1367,7 @@
                 </div>
 
                 <!-- DASHBOARD MODULE -->
-                <div v-show="currentTab === 'dashboard'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8">
+                <div v-show="currentTab === 'dashboard'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
 
                     <section v-if="userProfile.role !== 'Client'" class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
                         <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h3 class="text-sm font-extrabold text-brand-dark dark:text-white">Project Progress</h3><p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Live project workflow overview.</p></div><button type="button" @click="switchTab('project-activities')" class="rounded-lg bg-brand-dark px-3 py-2 text-[10px] font-bold text-white hover:bg-brand-blue">View All Projects <i class="fa-solid fa-arrow-right ml-1"></i></button></div>
@@ -1839,7 +1839,7 @@
                 </div>
 
                 <!-- CLIENT DIRECTORY MODULE -->
-                <div v-show="currentTab === 'client-directory'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
+                <div v-show="currentTab === 'client-directory'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-3">
                             <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
@@ -1921,7 +1921,7 @@
                 </div>
 
                 <!-- HR EMPLOYEES MODULE -->
-                <div v-show="currentTab === 'hr-employees'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
+                <div v-show="currentTab === 'hr-employees'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-3">
                             <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
@@ -2018,7 +2018,7 @@
                 </div>
 
                 <!-- REPORTS MODULE -->
-                <div v-show="currentTab === 'reports'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
+                <div v-show="currentTab === 'reports'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-3">
                             <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
@@ -2632,7 +2632,7 @@
                 </div>
 
                 <!-- AUDIT LOGS MODULE -->
-                <div v-show="currentTab === 'audit-logs'" class="p-8 max-w-7xl mx-auto w-full space-y-6">
+                <div v-show="currentTab === 'audit-logs'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-3">
                             <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
@@ -2705,7 +2705,7 @@
                 </div>
 
                 <!-- SETTINGS & PROFILE MODULE -->
-                <div v-show="['settings', 'profile'].includes(currentTab)" class="p-8 max-w-4xl mx-auto w-full space-y-6">
+                <div v-show="['settings', 'profile'].includes(currentTab)" class="p-4 md:p-8 max-w-4xl mx-auto w-full space-y-6">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-3">
                             <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">

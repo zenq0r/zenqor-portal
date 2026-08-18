@@ -1,5 +1,5 @@
 // ============================================================
-// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.7)
+// ZENQOR TECHNOLOGIES - firestore.rules (SECURE v3.8)
 // ============================================================
 // PERUBAHAN v3.1:
 //   - getUserRole() kini baca dokumen guna UID (request.auth.uid)
@@ -119,12 +119,10 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Mana-mana pengguna yang sudah log masuk (staff ATAU Client) boleh baca rekod
-      // pengguna lain — supaya nama/gambar profil setiap pekerja terpapar dengan betul
-      // di seluruh portal (cth. avatar "Person In Charge" yang client lihat pada
-      // projek sendiri). Tiada kata laluan/kelayakan sensitif disimpan di sini —
-      // Firebase Auth uruskan itu berasingan.
-      allow read: if isAuthenticated();
+      // Staff require the internal directory for assignments and workflow routing.
+      // Clients may read only their own portal profile; project records already contain
+      // the public PIC fields needed by the Client workspace.
+      allow read: if isAuthenticated() && (!isClient() || request.auth.uid == userId);
       allow create: if (
         request.auth.uid == userId &&
         hasMatchingPendingAccess() &&
@@ -233,6 +231,11 @@ service cloud.firestore {
 
     // Hashed trusted-device tokens are server-only authentication credentials.
     match /trusted_login_devices/{tokenHash} {
+      allow read, write: if false;
+    }
+
+    // Per-account API abuse counters are maintained only by server-side Admin SDK code.
+    match /security_rate_limits/{limitId} {
       allow read, write: if false;
     }
 

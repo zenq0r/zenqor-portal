@@ -6,6 +6,14 @@ function generateOtp() {
     return String(crypto.randomInt(100000, 1000000));
 }
 
+function hashOtp(code) {
+    return crypto.createHash('sha256').update(String(code)).digest('hex');
+}
+
+function hashResetToken(token) {
+    return crypto.createHash('sha256').update(String(token)).digest('hex');
+}
+
 function isAllowedPortalUrl(value) {
     if (typeof value !== 'string') return false;
     try {
@@ -27,4 +35,4 @@ function requiresOtpRole(role) {
     return RBAC_OTP_ROLES.includes(role);
 }
 
-module.exports = { RBAC_OTP_ROLES, generateOtp, isAllowedPortalUrl, normalizeEmail, requiresOtpRole };
+module.exports = { RBAC_OTP_ROLES, generateOtp, hashOtp, hashResetToken, isAllowedPortalUrl, normalizeEmail, requiresOtpRole };

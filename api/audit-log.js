@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { getAdminApp } = require('./_firebaseAdmin');
 const { getClientIp, parseUserAgent } = require('./_auditMetadata');
 const { DEFAULT_RETENTION, retentionDurationMs } = require('./_auditRetention');
+const { enforceRateLimit } = require('./_rateLimit');
 
 const ALLOWED_ACTIONS = new Set([
     'LOGIN', 'LOGOUT', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'BACKUP',
@@ -20,6 +21,12 @@ module.exports = async function handler(req, res) {
         const decoded = await admin.auth().verifyIdToken(idToken);
         const userDoc = await admin.firestore().collection('users').doc(decoded.uid).get();
         const userData = userDoc.exists ? userDoc.data() : {};
+        const rate = await enforceRateLimit(admin.firestore(), { scope: 'audit-log', key: decoded.uid, limit: 120, windowMs: 60 * 1000 });
+        if (!rate.allowed) {
+            res.setHeader('Retry-After', String(rate.retryAfterSeconds));
+            res.status(429).json({ error: 'Audit event rate limit exceeded.' });
+            return;
+        }
         const { action, details, module } = req.body || {};
         const normalizedAction = String(action || '').trim().toUpperCase();
         if (!ALLOWED_ACTIONS.has(normalizedAction)) { res.status(400).json({ error: 'Invalid audit action.' }); return; }

@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { getAdminApp } = require('./_firebaseAdmin');
 const { sendResetEmail } = require('./_resetEmail');
+const { hashResetToken, normalizeEmail } = require('./_security');
 
 const TOKEN_TTL_MS = 30 * 60 * 1000;
 const THROTTLE_MS = 2 * 60 * 1000;
@@ -14,7 +15,8 @@ module.exports = async function handler(req, res) {
             res.status(400).json({ error: 'A valid email address is required.' });
             return;
         }
-        const normalizedEmail = email.trim();
+        const normalizedEmail = normalizeEmail(email);
+        if (!normalizedEmail) { res.status(400).json({ error: 'A valid email address is required.' }); return; }
 
         const admin = getAdminApp();
         const db = admin.firestore();
@@ -42,7 +44,7 @@ module.exports = async function handler(req, res) {
                 const token = crypto.randomBytes(32).toString('hex');
                 const now = new Date();
                 const expiresAt = new Date(now.getTime() + TOKEN_TTL_MS);
-                const tokenRef = db.collection('password_reset_tokens').doc(token);
+                const tokenRef = db.collection('password_reset_tokens').doc(hashResetToken(token));
                 await tokenRef.set({
                     uid: userRecord.uid,
                     email: normalizedEmail.toLowerCase(),

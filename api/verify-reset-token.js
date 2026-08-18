@@ -1,4 +1,5 @@
 const { getAdminApp } = require('./_firebaseAdmin');
+const { hashResetToken } = require('./_security');
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
@@ -12,7 +13,9 @@ module.exports = async function handler(req, res) {
 
         const admin = getAdminApp();
         const db = admin.firestore();
-        const doc = await db.collection('password_reset_tokens').doc(token).get();
+        let doc = await db.collection('password_reset_tokens').doc(hashResetToken(token)).get();
+        // Transitional fallback for reset links issued before token hashing shipped.
+        if (!doc.exists) doc = await db.collection('password_reset_tokens').doc(token).get();
 
         if (!doc.exists) {
             res.status(200).json({ valid: false, reason: 'This reset link is invalid. Please request a new one.' });
