@@ -89,7 +89,7 @@ const RBAC_ROLES = {
     'HR': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
     'Account': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'profile'],
     'IT': ['dashboard', 'project-activities', 'audit-logs', 'settings', 'profile'],
-    'Client': ['dashboard', 'project-activities', 'client-portal', 'profile'],
+    'Client': ['project-activities', 'client-portal', 'profile'],
     'Staff': ['dashboard', 'project-activities', 'claims', 'profile']
 };
 
@@ -97,6 +97,15 @@ const RBAC_ROLES = {
 // Every signed-in user whose stored `lastSeenChangelogVersion` (in Firestore, users/{uid}) doesn't
 // match APP_CHANGELOG[0].version will automatically see the "What's New" onboarding message once.
 const APP_CHANGELOG = [
+    {
+        version: '2026.08.18-client-dashboard',
+        title: 'A Better Client Workspace',
+        notes: [
+            'The redesigned Client Portal is now the main Dashboard for every Client account.',
+            'The old Client dashboard has been retired to remove duplicate information.',
+            'New sidebar shortcuts provide direct access to projects, documents, updates, account security and support.'
+        ]
+    },
     {
         version: '2026.08.14',
         title: "What's New in ZENQOR Portal",
@@ -140,6 +149,7 @@ createApp({
             loginOtp: { show: false, code: '', error: '', sending: false, verifying: false, email: '', trustDevice: true },
             pendingLoginContext: null,
             currentTab: 'dashboard',
+            clientPortalSection: 'home',
             mobileMenuOpen: false,
             desktopSidebarOpen: false,
             chartTimeFilter: 'monthly',
@@ -2270,11 +2280,28 @@ createApp({
             this.currentTab = tabName; this.mobileMenuOpen = false; this.desktopSidebarOpen = false;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
+        openClientPortalSection(section = 'home') {
+            this.clientPortalSection = section;
+            const scrollToSection = () => {
+                const target = document.getElementById(`client-portal-${section}`);
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            };
+            if (this.currentTab !== 'client-portal') {
+                this.switchTab('client-portal');
+                this.$nextTick(scrollToSection);
+                return;
+            }
+            this.mobileMenuOpen = false;
+            this.desktopSidebarOpen = false;
+            this.$nextTick(scrollToSection);
+        },
         returnToDashboard() {
-            this.switchTab('dashboard');
+            if (this.userProfile.role === 'Client') this.openClientPortalSection('home');
+            else this.switchTab('dashboard');
         },
         restoreTabFromHistory(tabName) {
-            const safeTab = typeof tabName === 'string' && this.hasAccess(tabName) ? tabName : 'dashboard';
+            const homeTab = this.userProfile.role === 'Client' ? 'client-portal' : 'dashboard';
+            const safeTab = typeof tabName === 'string' && this.hasAccess(tabName) ? tabName : homeTab;
             this.currentTab = safeTab;
             this.mobileMenuOpen = false;
             this.desktopSidebarOpen = false;
@@ -2597,7 +2624,8 @@ createApp({
             this.resetAllForms(); this.isLoggedIn = true; this.desktopSidebarOpen = false; this.mobileMenuOpen = false;
             await this.logAudit('LOGIN', `User logged in with role ${this.getRoleDisplayName(role)}`);
             this.showNotify(`Welcome back (${this.getRoleDisplayName(role)}): ${name}`);
-            this.currentTab = mustChangePassword ? 'profile' : 'dashboard';
+            this.currentTab = mustChangePassword ? 'profile' : (role === 'Client' ? 'client-portal' : 'dashboard');
+            window.history.replaceState({ zenqorPortal: true, tab: this.currentTab }, '', window.location.href);
             if (mustChangePassword) { this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
             else this.maybeShowOnboarding();
             await this.initFirebaseRealtime();
@@ -3865,7 +3893,8 @@ createApp({
                     this.resetAllForms();
                     this.isLoggedIn = true;
                     if (mustChangePassword) { this.currentTab = 'profile'; this.changePasswordModal.required = true; this.changePasswordModal.show = true; }
-                    else this.maybeShowOnboarding();
+                    else { this.currentTab = role === 'Client' ? 'client-portal' : 'dashboard'; this.maybeShowOnboarding(); }
+                    window.history.replaceState({ zenqorPortal: true, tab: this.currentTab }, '', window.location.href);
                     await this.initFirebaseRealtime();
                     await this.startPresenceTracking();
                     this.loginLoading = false;
