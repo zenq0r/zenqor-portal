@@ -89,7 +89,7 @@ const RBAC_ROLES = {
     'HR': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
     'Account': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'profile'],
     'IT': ['dashboard', 'project-activities', 'audit-logs', 'settings', 'profile'],
-    'Client': ['project-activities', 'client-portal', 'profile'],
+    'Client': ['project-activities', 'client-portal', 'client-documents', 'client-updates', 'client-support', 'profile'],
     'Staff': ['dashboard', 'project-activities', 'claims', 'profile']
 };
 
@@ -98,12 +98,12 @@ const RBAC_ROLES = {
 // match APP_CHANGELOG[0].version will automatically see the "What's New" onboarding message once.
 const APP_CHANGELOG = [
     {
-        version: '2026.08.18-client-dashboard',
+        version: '2026.08.18-client-pages',
         title: 'A Better Client Workspace',
         notes: [
             'The redesigned Client Portal is now the main Dashboard for every Client account.',
             'The old Client dashboard has been retired to remove duplicate information.',
-            'New sidebar shortcuts provide direct access to projects, documents, updates, account security and support.'
+            'Documents, updates, account security and support now open as independent pages with browser Back support.'
         ]
     },
     {
@@ -149,7 +149,6 @@ createApp({
             loginOtp: { show: false, code: '', error: '', sending: false, verifying: false, email: '', trustDevice: true },
             pendingLoginContext: null,
             currentTab: 'dashboard',
-            clientPortalSection: 'home',
             mobileMenuOpen: false,
             desktopSidebarOpen: false,
             chartTimeFilter: 'monthly',
@@ -321,6 +320,9 @@ createApp({
                 { key: 'hr-employees', label: 'HR Employees' },
                 { key: 'reports', label: 'Reports' },
                 { key: 'client-portal', label: 'Client Portal (Staff View)' },
+                { key: 'client-documents', label: 'Client Documents & Billing' },
+                { key: 'client-updates', label: 'Client Project Updates' },
+                { key: 'client-support', label: 'Client Help & Support' },
                 { key: 'audit-logs', label: 'Audit Logs' },
                 { key: 'settings', label: 'Settings' },
                 { key: 'profile', label: 'Profile' }
@@ -588,10 +590,12 @@ createApp({
         myClientPaidCount() { return this.clientPortalDocs.filter(d => d.type === 'Invoice' && d.status === 'Paid').length; },
         myClientUnpaidCount() { return this.clientPortalDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').length; },
         clientActiveProjectsCount() { return this.projects.filter(project => project.status !== 'Completed & Done').length; },
-        clientRecentUpdates() {
+        clientUpdatesTimeline() {
             return [...this.projectClientUpdates]
-                .sort((a, b) => String(b.createdAt || b.updateDate || '').localeCompare(String(a.createdAt || a.updateDate || '')))
-                .slice(0, 4);
+                .sort((a, b) => String(b.createdAt || b.updateDate || '').localeCompare(String(a.createdAt || a.updateDate || '')));
+        },
+        clientRecentUpdates() {
+            return this.clientUpdatesTimeline.slice(0, 4);
         },
         clientRecentDocuments() {
             return [...this.myClientDocs].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 5);
@@ -2015,6 +2019,10 @@ createApp({
         hasAccess(moduleName) {
             const override = this.userProfile.customAccess && this.userProfile.customAccess[moduleName];
             if (override && typeof override.view === 'boolean') return override.view;
+            if (['client-documents', 'client-updates', 'client-support'].includes(moduleName)) {
+                const portalOverride = this.userProfile.customAccess && this.userProfile.customAccess['client-portal'];
+                if (portalOverride && typeof portalOverride.view === 'boolean') return portalOverride.view;
+            }
             const allowedModules = RBAC_ROLES[this.userProfile.role] || ['dashboard'];
             return allowedModules.includes(moduleName);
         },
@@ -2280,23 +2288,8 @@ createApp({
             this.currentTab = tabName; this.mobileMenuOpen = false; this.desktopSidebarOpen = false;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
-        openClientPortalSection(section = 'home') {
-            this.clientPortalSection = section;
-            const scrollToSection = () => {
-                const target = document.getElementById(`client-portal-${section}`);
-                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            };
-            if (this.currentTab !== 'client-portal') {
-                this.switchTab('client-portal');
-                this.$nextTick(scrollToSection);
-                return;
-            }
-            this.mobileMenuOpen = false;
-            this.desktopSidebarOpen = false;
-            this.$nextTick(scrollToSection);
-        },
         returnToDashboard() {
-            if (this.userProfile.role === 'Client') this.openClientPortalSection('home');
+            if (this.userProfile.role === 'Client') this.switchTab('client-portal');
             else this.switchTab('dashboard');
         },
         restoreTabFromHistory(tabName) {
