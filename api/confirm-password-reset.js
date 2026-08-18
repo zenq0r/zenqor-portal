@@ -1,4 +1,5 @@
 const { getAdminApp } = require('./_firebaseAdmin');
+const { revokeTrustedDevices } = require('./_trustedDevice');
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
@@ -30,6 +31,7 @@ module.exports = async function handler(req, res) {
 
         try {
             await admin.auth().updateUser(claim.uid, { password: newPassword });
+            await revokeTrustedDevices(db, claim.uid);
             await docRef.update({ used: true, processing: false, usedAt: new Date().toISOString() });
         } catch (updateError) {
             await docRef.update({ processing: false }).catch(() => {});

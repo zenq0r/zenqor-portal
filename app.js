@@ -75,7 +75,9 @@ createApp({
             isLoggedIn: false,
             authLoading: true,
             loginLoading: false,
+            interactiveLoginInProgress: false,
             logoutConfirm: false,
+            forgetTrustedDeviceOnLogout: false,
             postLogoutChoice: false,
             passwordResetFlow: { active: false, oobCode: '', email: '', verifying: true, valid: false, error: '', newPassword: '', confirmPassword: '', loading: false, success: false },
             forgotPasswordFlow: { active: false, email: '', loading: false, sent: false, error: '' },
@@ -95,7 +97,7 @@ createApp({
             },
             loginError: '',
             // Mandatory second-factor email OTP for every provisioned RBAC role.
-            loginOtp: { show: false, code: '', error: '', sending: false, verifying: false, email: '' },
+            loginOtp: { show: false, code: '', error: '', sending: false, verifying: false, email: '', trustDevice: true },
             pendingLoginContext: null,
             currentTab: 'dashboard',
             mobileMenuOpen: false,
@@ -2170,6 +2172,7 @@ createApp({
             this.claimsChartInstance = null;
         },
         requestLogout() {
+            this.forgetTrustedDeviceOnLogout = false;
             this.logoutConfirm = true;
         },
         selectAuthView(view) {
@@ -2311,6 +2314,7 @@ createApp({
         async handleLogin() {
             this.loginError = '';
             this.loginLoading = true;
+            this.interactiveLoginInProgress = true;
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, this.loginForm.email, this.loginForm.password);
                 const firebaseUser = userCredential.user;
@@ -2355,8 +2359,14 @@ createApp({
                 // cancel below un-does it); this gate only controls when the PORTAL
                 // itself trusts the sign-in as complete.
                 if (Object.prototype.hasOwnProperty.call(RBAC_ROLES, role)) {
-                    this.pendingLoginContext = { firebaseUser, userData, role, name, photo, mustChangePassword };
-                    this.loginOtp = { show: true, code: '', error: '', sending: true, verifying: false, email: firebaseUser.email };
+                    const loginContext = { firebaseUser, userData, role, name, photo, mustChangePassword };
+                    this.pendingLoginContext = loginContext;
+                    if (await this.checkTrustedDevice(firebaseUser)) {
+                        this.pendingLoginContext = null;
+                        await this.completeLogin(loginContext);
+                        return;
+                    }
+                    this.loginOtp = { show: true, code: '', error: '', sending: true, verifying: false, email: firebaseUser.email, trustDevice: true };
                     this.loginLoading = false;
                     await this.requestLoginOtp();
                     return;
@@ -2366,6 +2376,8 @@ createApp({
             } catch (error) {
                 this.loginError = 'Invalid email or password credentials / System Error.';
                 this.loginLoading = false;
+            } finally {
+                this.interactiveLoginInProgress = false;
             }
         },
         async requestLoginOtp() {
@@ -2381,13 +2393,27 @@ createApp({
                 this.loginOtp.sending = false;
             }
         },
+        async checkTrustedDevice(firebaseUser) {
+            try {
+                const idToken = await firebaseUser.getIdToken();
+                const resp = await fetch('/api/check-trusted-device', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}` }
+                });
+                const data = await resp.json().catch(() => ({}));
+                return resp.ok && data.trusted === true;
+            } catch (error) {
+                console.warn('Trusted-device check failed; OTP will be required:', error);
+                return false;
+            }
+        },
         async verifyLoginOtp() {
             if (!this.loginOtp.code || this.loginOtp.code.trim().length !== 6) { this.loginOtp.error = 'Enter the 6-digit code from your email.'; return; }
             this.loginOtp.verifying = true;
             this.loginOtp.error = '';
             try {
                 const idToken = await this.pendingLoginContext.firebaseUser.getIdToken();
-                const resp = await fetch('/api/verify-login-otp', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` }, body: JSON.stringify({ code: this.loginOtp.code.trim() }) });
+                const resp = await fetch('/api/verify-login-otp', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` }, body: JSON.stringify({ code: this.loginOtp.code.trim(), trustDevice: this.loginOtp.trustDevice === true }) });
                 const data = await resp.json().catch(() => ({}));
                 if (!resp.ok || !data.valid) throw new Error(data.error || 'Invalid or expired code.');
                 this.loginOtp.show = false;
@@ -2433,6 +2459,10 @@ createApp({
             try { await this.logAudit('LOGOUT', 'User logged out'); } catch (error) { console.error('Audit log failed during logout:', error); }
             try { await this.setCurrentEmployeePresence(false); } catch (error) { console.error('Presence update failed during logout:', error); }
             this.stopPresenceTracking();
+            if (this.forgetTrustedDeviceOnLogout) {
+                try { await this.revokeTrustedDeviceAccess(); }
+                catch (error) { console.error('Trusted-device revocation failed during logout:', error); }
+            }
             try {
                 await signOut(auth);
             } catch (error) {
@@ -2443,6 +2473,7 @@ createApp({
                 this.isLoggedIn = false; this.loginLoading = false; this.portalDataReady = false; this.portalDataReadyPromise = null; this.userProfile = { name: '', email: '', role: '', photo: '' };
                 this.resetAllForms(); this.currentTab = 'dashboard'; this.loginForm = { email: '', password: '' }; this.searchQuery = ''; this.authView = 'landing';
                 try { sessionStorage.removeItem('zenqorOtpVerifiedUid'); } catch (error) { console.error('Failed to clear OTP-verified marker:', error); }
+                this.forgetTrustedDeviceOnLogout = false;
                 this.postLogoutChoice = true;
             }
         },
@@ -2464,12 +2495,24 @@ createApp({
                 const user = auth.currentUser;
                 const credential = EmailAuthProvider.credential(user.email, currentPassword);
                 await reauthenticateWithCredential(user, credential);
+                await this.revokeTrustedDeviceAccess();
                 await updatePassword(user, newPassword);
                 await setDoc(doc(db, "users", user.uid), { mustChangePassword: false }, { merge: true });
                 this.userProfile.mustChangePassword = false;
                 this.changePasswordModal.show = false; this.changePasswordModal.required = false; this.changePasswordModal.currentPassword = ''; this.changePasswordModal.newPassword = ''; this.changePasswordModal.confirmPassword = '';
                 this.logAudit('UPDATE', 'User changed their password'); this.showNotify('Password updated successfully!');
             } catch (error) { this.changePasswordModal.error = 'Current password is incorrect or System error.'; } finally { this.changePasswordModal.loading = false; }
+        },
+
+        async revokeTrustedDeviceAccess() {
+            const firebaseUser = auth.currentUser;
+            if (!firebaseUser) return;
+            const idToken = await firebaseUser.getIdToken();
+            const resp = await fetch('/api/revoke-trusted-devices', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${idToken}` }
+            });
+            if (!resp.ok) throw new Error('Unable to forget trusted devices.');
         },
 
         async saveMyProfile() {
@@ -3620,6 +3663,7 @@ createApp({
 
         onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
+                if (this.interactiveLoginInProgress) { this.authLoading = false; return; }
                 if (this.isLoggedIn && this.userProfile.uid === firebaseUser.uid) { this.authLoading = false; return; }
                 try {
                     this.loginLoading = true;
@@ -3646,13 +3690,16 @@ createApp({
                         let otpVerifiedUid = null;
                         try { otpVerifiedUid = sessionStorage.getItem('zenqorOtpVerifiedUid'); } catch (error) { console.error('Failed to read OTP-verified marker:', error); }
                         if (otpVerifiedUid !== firebaseUser.uid) {
-                            // signInWithEmailAndPassword() fires this listener immediately, before the
-                            // OTP challenge in handleLogin()/verifyLoginOtp() has run. Do not auto-complete
-                            // the login here for any RBAC role — only completeLogin() (called after a
-                            // verified OTP) may finish signing this user in.
-                            this.loginLoading = false;
-                            this.authLoading = false;
-                            return;
+                            const trusted = await this.checkTrustedDevice(firebaseUser);
+                            if (!trusted) {
+                                // A password sign-in fires this listener before handleLogin() has
+                                // completed its OTP challenge. Only an existing trusted-device
+                                // cookie may resume a portal session here without a fresh OTP.
+                                this.loginLoading = false;
+                                this.authLoading = false;
+                                return;
+                            }
+                            try { sessionStorage.setItem('zenqorOtpVerifiedUid', firebaseUser.uid); } catch (error) { console.error('Failed to persist trusted-device marker:', error); }
                         }
                     }
                     this.userProfile = { name, email: firebaseUser.email, role, uid: firebaseUser.uid, photo, mustChangePassword, themePreference: userData?.themePreference || 'light', lastSeenChangelogVersion: userData?.lastSeenChangelogVersion || '', customAccess: userData?.customAccess || {} };

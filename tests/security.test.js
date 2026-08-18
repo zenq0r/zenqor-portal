@@ -5,6 +5,7 @@ const path = require('node:path');
 const { generateOtp, isAllowedPortalUrl, normalizeEmail, requiresOtpRole } = require('../api/_security');
 const { getClientIp, parseUserAgent } = require('../api/_auditMetadata');
 const { normalizeRetention, retentionDurationMs } = require('../api/_auditRetention');
+const { clearTrustedCookie, hashToken, parseCookie, trustedCookie, trustedDurationMs } = require('../api/_trustedDevice');
 
 test('OTP is always a six-digit string', () => {
     for (let i = 0; i < 100; i += 1) assert.match(generateOtp(), /^\d{6}$/);
@@ -51,4 +52,22 @@ test('audit retention validates supported units and calculates expiry duration',
     assert.equal(retentionDurationMs({ value: 3, unit: 'week' }), 21 * 24 * 60 * 60 * 1000);
     assert.equal(normalizeRetention(0, 'day'), null);
     assert.equal(normalizeRetention(1, 'minute'), null);
+});
+
+test('trusted-device duration is shorter for sensitive roles', () => {
+    const day = 24 * 60 * 60 * 1000;
+    ['Superadmin', 'Director', 'HR', 'Account', 'IT'].forEach(role => assert.equal(trustedDurationMs(role), 7 * day));
+    ['Staff', 'Client'].forEach(role => assert.equal(trustedDurationMs(role), 30 * day));
+});
+
+test('trusted-device tokens are hashed and cookies use strict security flags', () => {
+    const rawToken = 'secret-device-token';
+    assert.equal(hashToken(rawToken).length, 64);
+    assert.equal(hashToken(rawToken).includes(rawToken), false);
+    const cookie = trustedCookie(rawToken, 3600);
+    assert.match(cookie, /HttpOnly/);
+    assert.match(cookie, /Secure/);
+    assert.match(cookie, /SameSite=Strict/);
+    assert.equal(parseCookie(`other=x; ${cookie}`), rawToken);
+    assert.match(clearTrustedCookie(), /Max-Age=0/);
 });

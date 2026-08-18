@@ -231,6 +231,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Hashed trusted-device tokens are server-only authentication credentials.
+    match /trusted_login_devices/{tokenHash} {
+      allow read, write: if false;
+    }
+
     match /payslips/{payslipId} {
       allow read: if isAuthenticated() && (
         isAdmin() || isHR() || isAccount() ||
