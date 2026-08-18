@@ -603,7 +603,15 @@
 
                                 <div>
                                     <p class="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center"><i class="fa-solid fa-location-dot w-4 text-center text-brand-gold"></i><span class="ml-1.5">Address</span></p>
-                                    <div><label for="doc-client-address" class="sr-only">Full Client Address</label><input id="doc-client-address" name="clientAddress" type="text" v-model="docForm.clientAddress" @input="clientSavedForDocument = false" required placeholder="Building No., Street, City, State..." class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <div class="sm:col-span-2"><label for="doc-client-address1" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Address Line 1 *</label><input id="doc-client-address1" name="clientAddress1" type="text" v-model="docForm.clientAddress1" @input="clientSavedForDocument = false" required placeholder="Building / Lot No. and Street" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                        <div class="sm:col-span-2"><label for="doc-client-address2" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Address Line 2</label><input id="doc-client-address2" name="clientAddress2" type="text" v-model="docForm.clientAddress2" @input="clientSavedForDocument = false" placeholder="Building / Area / Industrial Park" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                        <div class="sm:col-span-2"><label for="doc-client-address3" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Address Line 3</label><input id="doc-client-address3" name="clientAddress3" type="text" v-model="docForm.clientAddress3" @input="clientSavedForDocument = false" placeholder="Optional locality / district" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                        <div><label for="doc-client-postcode" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Postcode *</label><input id="doc-client-postcode" name="clientPostcode" type="text" inputmode="numeric" maxlength="5" v-model="docForm.clientPostcode" @input="detectClientPostcode" required placeholder="43000" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                        <div><label for="doc-client-city" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">City *</label><input id="doc-client-city" name="clientCity" type="text" v-model="docForm.clientCity" @input="clientSavedForDocument = false" required placeholder="Kajang" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                        <div><label for="doc-client-state" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">State *</label><input id="doc-client-state" name="clientState" type="text" v-model="docForm.clientState" @input="clientSavedForDocument = false" required placeholder="Selangor" class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                        <div><label for="doc-client-country" class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Country *</label><input id="doc-client-country" name="clientCountry" type="text" v-model="docForm.clientCountry" @input="clientSavedForDocument = false" required class="w-full p-2 border border-slate-200 dark:border-slate-600 dark:bg-slate-700/60 dark:text-white rounded-xl text-xs bg-slate-50"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1861,7 +1869,7 @@
                                             <span v-if="cust.clientEmail" class="text-slate-500 dark:text-slate-400 block"><i class="fa-solid fa-envelope text-[10px] mr-1"></i>{{ cust.clientEmail }}</span>
                                         </td>
                                         <td class="py-3 px-3 text-slate-600 dark:text-slate-300">
-                                            <span>{{ cust.clientAddress }}</span>
+                                            <span class="whitespace-pre-line">{{ formattedClientAddress(cust) || '—' }}</span>
                                         </td>
                                         <td class="py-2.5 px-3 text-center">
                                             <div class="flex items-center justify-center gap-1">
@@ -2652,7 +2660,13 @@
                                 <div class="md:col-span-2 border-b dark:border-slate-700 pb-2"><h3 class="font-extrabold text-brand-dark dark:text-white">Company Profile</h3><p class="text-xs text-slate-400 mt-1">Global information used across company documents.</p></div>
                                 <div><label for="setting-comp-name" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Company Name</label><input id="setting-comp-name" name="companyName" type="text" v-model="company.name" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs font-bold"></div>
                                 <div><label for="setting-comp-ssm" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Business Registration No.</label><input id="setting-comp-ssm" name="companySSM" type="text" v-model="company.ssm" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
-                                <div class="md:col-span-2"><label for="setting-comp-addr" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Full Address</label><textarea id="setting-comp-addr" name="companyAddr" rows="3" v-model="company.address" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></textarea></div>
+                                <div class="md:col-span-2"><label for="setting-comp-addr1" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Address Line 1</label><input id="setting-comp-addr1" name="companyAddress1" type="text" v-model="company.address1" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div class="md:col-span-2"><label for="setting-comp-addr2" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Address Line 2</label><input id="setting-comp-addr2" name="companyAddress2" type="text" v-model="company.address2" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div class="md:col-span-2"><label for="setting-comp-addr3" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Address Line 3</label><input id="setting-comp-addr3" name="companyAddress3" type="text" v-model="company.address3" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div><label for="setting-comp-postcode" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Postcode</label><input id="setting-comp-postcode" name="companyPostcode" type="text" inputmode="numeric" maxlength="5" v-model="company.postcode" @input="detectCompanyPostcode" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div><label for="setting-comp-city" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">City</label><input id="setting-comp-city" name="companyCity" type="text" v-model="company.city" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div><label for="setting-comp-state" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">State</label><input id="setting-comp-state" name="companyState" type="text" v-model="company.state" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
+                                <div><label for="setting-comp-country" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Country</label><input id="setting-comp-country" name="companyCountry" type="text" v-model="company.country" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
                                 <div><label for="setting-comp-phone" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Company Phone</label><input id="setting-comp-phone" name="companyPhone" type="tel" v-model="company.phone" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
                                 <div><label for="setting-comp-email" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Company Email</label><input id="setting-comp-email" name="companyEmail" type="email" v-model="company.email" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
                                 <div class="md:col-span-2"><label for="setting-comp-web" class="block text-xs font-bold uppercase mb-1 dark:text-slate-300">Website</label><input id="setting-comp-web" name="companyWebsite" type="text" v-model="company.website" class="w-full p-2 border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl text-xs"></div>
@@ -2874,7 +2888,7 @@
                     <div><p class="font-bold text-slate-400 dark:text-slate-500">Position</p><p class="mt-1 font-semibold text-slate-700 dark:text-slate-200">{{ clientView.client.clientPosition }}</p></div>
                     <div><p class="font-bold text-slate-400 dark:text-slate-500">Email</p><p class="mt-1 font-semibold text-slate-700 dark:text-slate-200 break-all">{{ clientView.client.clientEmail }}</p></div>
                     <div><p class="font-bold text-slate-400 dark:text-slate-500">Phone</p><p class="mt-1 font-semibold text-slate-700 dark:text-slate-200">{{ clientView.client.clientPhone }}</p></div>
-                    <div class="sm:col-span-2"><p class="font-bold text-slate-400 dark:text-slate-500">Registered Address</p><p class="mt-1 rounded-lg border border-slate-200 dark:border-slate-700 p-3 font-semibold text-slate-700 dark:text-slate-200">{{ clientView.client.clientAddress }}<br>{{ clientView.client.clientPostcode }} {{ clientView.client.clientCity }}, {{ clientView.client.clientState }}<br>{{ clientView.client.clientCountry }}</p></div>
+                    <div class="sm:col-span-2"><p class="font-bold text-slate-400 dark:text-slate-500">Registered Address</p><p class="mt-1 whitespace-pre-line rounded-lg border border-slate-200 dark:border-slate-700 p-3 font-semibold text-slate-700 dark:text-slate-200">{{ formattedClientAddress(clientView.client) || '—' }}</p></div>
                     <div v-if="clientView.client.id" class="sm:col-span-2 border-t border-slate-200 dark:border-slate-700 pt-4">
                         <div class="mb-3 flex items-center justify-between gap-3">
                             <div><p class="text-[10px] font-extrabold uppercase tracking-widest text-brand-blue">Client Documents</p><p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">All JPG, PNG and PDF files collected for this client, viewable by their Client Portal too.</p></div>
@@ -3114,7 +3128,7 @@
                     <div>
                         <h1 class="text-2xl font-extrabold text-brand-dark tracking-tight leading-none">ZENQOR TECHNOLOGIES</h1>
                         <p class="font-bold text-slate-700 text-xs mt-1">Business Registration No.: {{ company.ssm }}</p>
-                        <p class="text-slate-600 mt-0.5 whitespace-pre-line text-xs leading-normal">{{ company.address }}</p>
+                        <p class="text-slate-600 mt-0.5 whitespace-pre-line text-xs leading-normal">{{ formattedCompanyAddress() }}</p>
                         <p class="text-slate-600 text-xs mt-0.5">Tel: {{ company.phone }} | Email: {{ company.email }} | Web: {{ company.website || 'www.zenq0r.com' }}</p>
                     </div>
                 </div>
@@ -3141,8 +3155,7 @@
                     <h3 class="text-xs font-bold uppercase text-brand-gold border-b-2 border-brand-dark inline-block mb-2">QUOTATION FOR (BILL TO):</h3>
                     <p class="font-extrabold text-base text-brand-dark">{{ docForm.clientName }}</p>
                     <p class="text-xs font-semibold text-slate-700">{{ docForm.clientSSM }} | Tel: {{ docForm.clientPhone }}</p>
-                    <p class="text-xs text-slate-600 mt-1">{{ docForm.clientAddress }}</p>
-                    <p v-if="docForm.clientCity || docForm.clientState" class="text-xs text-slate-600">{{ docForm.clientCity }} {{ docForm.clientPostcode }}, {{ docForm.clientState }}</p>
+                    <p class="text-xs text-slate-600 mt-1 whitespace-pre-line">{{ formattedClientAddress(docForm) }}</p>
                     <p v-if="docForm.clientEmail" class="text-xs text-slate-600">Email: {{ docForm.clientEmail }}</p>
                 </div>
                 <div class="text-right">
@@ -3218,7 +3231,7 @@
                     <div>
                         <h1 class="text-2xl font-extrabold text-brand-dark tracking-tight leading-none">ZENQOR TECHNOLOGIES</h1>
                         <p class="font-bold text-slate-700 text-xs mt-1">Business Registration No.: {{ company.ssm }}</p>
-                        <p class="text-slate-600 mt-0.5 whitespace-pre-line text-xs leading-normal">{{ company.address }}</p>
+                        <p class="text-slate-600 mt-0.5 whitespace-pre-line text-xs leading-normal">{{ formattedCompanyAddress() }}</p>
                         <p class="text-slate-600 text-xs mt-0.5">Tel: {{ company.phone }} | Email: {{ company.email }} | Web: {{ company.website || 'www.zenq0r.com' }}</p>
                     </div>
                 </div>
@@ -3247,8 +3260,7 @@
                     <h3 class="text-xs font-bold uppercase text-brand-blue border-b-2 border-brand-dark inline-block mb-2">INVOICE TO (BILL TO):</h3>
                     <p class="font-extrabold text-base text-brand-dark">{{ docForm.clientName }}</p>
                     <p class="text-xs font-semibold text-slate-700">{{ docForm.clientSSM }} | Tel: {{ docForm.clientPhone }}</p>
-                    <p class="text-xs text-slate-600 mt-1">{{ docForm.clientAddress }}</p>
-                    <p v-if="docForm.clientCity || docForm.clientState" class="text-xs text-slate-600">{{ docForm.clientCity }} {{ docForm.clientPostcode }}, {{ docForm.clientState }}</p>
+                    <p class="text-xs text-slate-600 mt-1 whitespace-pre-line">{{ formattedClientAddress(docForm) }}</p>
                     <p v-if="docForm.clientEmail" class="text-xs text-slate-600">Email: {{ docForm.clientEmail }}</p>
                 </div>
                 <div class="text-right">
@@ -3322,7 +3334,7 @@
                         <div class="company-brand-text">
                             <h1>{{ company.name }}</h1>
                             <p>Business Registration No.: {{ company.ssm }}</p>
-                            <p>{{ company.address }} | Tel: {{ company.phone }} | Web: {{ company.website || 'www.zenq0r.com' }}</p>
+                            <p class="whitespace-pre-line">{{ formattedCompanyAddress() }}<br>Tel: {{ company.phone }} | Web: {{ company.website || 'www.zenq0r.com' }}</p>
                         </div>
                     </div>
                     <div class="payslip-title">

@@ -30,6 +30,46 @@ import {
 
 const { createApp } = Vue;
 
+const MALAYSIA_POSTCODE_PREFIXES = [
+    ['463', 'Petaling Jaya', 'Selangor'], ['460', 'Petaling Jaya', 'Selangor'], ['461', 'Petaling Jaya', 'Selangor'], ['462', 'Petaling Jaya', 'Selangor'],
+    ['430', 'Kajang', 'Selangor'], ['432', 'Cheras', 'Selangor'], ['433', 'Seri Kembangan', 'Selangor'], ['435', 'Semenyih', 'Selangor'],
+    ['400', 'Shah Alam', 'Selangor'], ['401', 'Shah Alam', 'Selangor'], ['402', 'Shah Alam', 'Selangor'], ['403', 'Shah Alam', 'Selangor'], ['404', 'Shah Alam', 'Selangor'],
+    ['410', 'Klang', 'Selangor'], ['411', 'Klang', 'Selangor'], ['412', 'Klang', 'Selangor'], ['420', 'Pelabuhan Klang', 'Selangor'],
+    ['470', 'Sungai Buloh', 'Selangor'], ['471', 'Puchong', 'Selangor'], ['475', 'Subang Jaya', 'Selangor'], ['476', 'Subang Jaya', 'Selangor'], ['478', 'Petaling Jaya', 'Selangor'],
+    ['500', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['501', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['502', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['503', 'Kuala Lumpur', 'W.P. Kuala Lumpur'],
+    ['504', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['505', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['506', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['507', 'Kuala Lumpur', 'W.P. Kuala Lumpur'],
+    ['510', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['511', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['512', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['520', 'Kuala Lumpur', 'W.P. Kuala Lumpur'],
+    ['530', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['531', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['532', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['533', 'Kuala Lumpur', 'W.P. Kuala Lumpur'],
+    ['551', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['560', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['561', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['570', 'Kuala Lumpur', 'W.P. Kuala Lumpur'],
+    ['580', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['590', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['600', 'Kuala Lumpur', 'W.P. Kuala Lumpur'], ['620', 'Putrajaya', 'W.P. Putrajaya'], ['621', 'Putrajaya', 'W.P. Putrajaya'], ['622', 'Putrajaya', 'W.P. Putrajaya'],
+    ['800', 'Johor Bahru', 'Johor'], ['801', 'Johor Bahru', 'Johor'], ['802', 'Johor Bahru', 'Johor'], ['803', 'Johor Bahru', 'Johor'], ['811', 'Johor Bahru', 'Johor'],
+    ['750', 'Melaka', 'Melaka'], ['751', 'Melaka', 'Melaka'], ['752', 'Melaka', 'Melaka'], ['753', 'Melaka', 'Melaka'], ['754', 'Melaka', 'Melaka'],
+    ['700', 'Seremban', 'Negeri Sembilan'], ['701', 'Seremban', 'Negeri Sembilan'], ['702', 'Seremban', 'Negeri Sembilan'], ['703', 'Seremban', 'Negeri Sembilan'],
+    ['300', 'Ipoh', 'Perak'], ['301', 'Ipoh', 'Perak'], ['302', 'Ipoh', 'Perak'], ['303', 'Ipoh', 'Perak'], ['304', 'Ipoh', 'Perak'], ['314', 'Ipoh', 'Perak'],
+    ['100', 'George Town', 'Pulau Pinang'], ['101', 'George Town', 'Pulau Pinang'], ['102', 'George Town', 'Pulau Pinang'], ['103', 'George Town', 'Pulau Pinang'], ['104', 'George Town', 'Pulau Pinang'], ['116', 'Jelutong', 'Pulau Pinang'],
+    ['050', 'Alor Setar', 'Kedah'], ['051', 'Alor Setar', 'Kedah'], ['052', 'Alor Setar', 'Kedah'], ['053', 'Alor Setar', 'Kedah'], ['054', 'Alor Setar', 'Kedah'],
+    ['150', 'Kota Bharu', 'Kelantan'], ['151', 'Kota Bharu', 'Kelantan'], ['152', 'Kota Bharu', 'Kelantan'], ['153', 'Kota Bharu', 'Kelantan'],
+    ['200', 'Kuala Terengganu', 'Terengganu'], ['201', 'Kuala Terengganu', 'Terengganu'], ['202', 'Kuala Terengganu', 'Terengganu'], ['203', 'Kuala Terengganu', 'Terengganu'],
+    ['250', 'Kuantan', 'Pahang'], ['251', 'Kuantan', 'Pahang'], ['252', 'Kuantan', 'Pahang'], ['253', 'Kuantan', 'Pahang'], ['930', 'Kuching', 'Sarawak'], ['931', 'Kuching', 'Sarawak'], ['932', 'Kuching', 'Sarawak'], ['933', 'Kuching', 'Sarawak'], ['934', 'Kuching', 'Sarawak'],
+    ['880', 'Kota Kinabalu', 'Sabah'], ['881', 'Kota Kinabalu', 'Sabah'], ['882', 'Kota Kinabalu', 'Sabah'], ['883', 'Kota Kinabalu', 'Sabah'], ['884', 'Kota Kinabalu', 'Sabah'], ['870', 'Labuan', 'W.P. Labuan']
+];
+
+function lookupMalaysiaPostcode(value) {
+    const postcode = String(value || '').replace(/\D/g, '').slice(0, 5);
+    if (postcode.length !== 5) return { postcode, city: '', state: '' };
+    const exact = MALAYSIA_POSTCODE_PREFIXES.find(([prefix]) => postcode.startsWith(prefix));
+    if (exact) return { postcode, city: exact[1], state: exact[2] };
+    const code = Number(postcode.slice(0, 2));
+    const ranges = [
+        [1, 2, 'Perlis'], [5, 9, 'Kedah'], [10, 14, 'Pulau Pinang'], [15, 18, 'Kelantan'], [20, 24, 'Terengganu'],
+        [25, 28, 'Pahang'], [30, 36, 'Perak'], [39, 39, 'Pahang'], [40, 48, 'Selangor'], [49, 49, 'Pahang'],
+        [50, 60, 'W.P. Kuala Lumpur'], [62, 62, 'W.P. Putrajaya'], [63, 68, 'Selangor'], [69, 69, 'Pahang'],
+        [70, 73, 'Negeri Sembilan'], [75, 78, 'Melaka'], [79, 86, 'Johor'], [87, 87, 'W.P. Labuan'], [88, 91, 'Sabah'], [93, 98, 'Sarawak']
+    ];
+    const stateRange = ranges.find(([from, to]) => code >= from && code <= to);
+    return { postcode, city: '', state: stateRange?.[2] || '' };
+}
+
 const STATUTORY_RATES = {
     regular: {
         epf: { employeePct: 0.11, employerPctBelow5k: 0.13, employerPctAbove5k: 0.12, threshold: 5000 },
@@ -169,6 +209,13 @@ createApp({
                 name: "ZENQOR TECHNOLOGIES",
                 ssm: "202603157897 (JM1045730-D)",
                 address: "SURIA RESIDENCE (BLOK A), JALAN RESIDENCE SEK 3\nBANDAR MAHKOTA CHERAS, 43200 CHERAS, SELANGOR",
+                address1: 'SURIA RESIDENCE (BLOK A)',
+                address2: 'JALAN RESIDENCE SEK 3',
+                address3: 'BANDAR MAHKOTA CHERAS',
+                postcode: '43200',
+                city: 'Cheras',
+                state: 'Selangor',
+                country: 'Malaysia',
                 phone: "+60 11-6501 2569",
                 email: "admin@zenq0r.com",
                 website: "www.zenq0r.com",
@@ -407,6 +454,9 @@ createApp({
                 clientPhone: '',
                 clientSSM: '',
                 clientAddress: '',
+                clientAddress1: '',
+                clientAddress2: '',
+                clientAddress3: '',
                 clientCity: '',
                 clientState: '',
                 clientPostcode: '',
@@ -1477,7 +1527,7 @@ createApp({
             this.docForm = {
                 type: 'Invoice', docNo: '', status: 'Unpaid', paymentMethod: 'Bank Transfer (EFT)', paymentBank: '', paymentReceiver: '', paymentRefNo: '', paymentAttachment: '',
                 date: new Date().toISOString().substr(0, 10), dueDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().substr(0, 10),
-                customerId: '', clientName: '', clientPhone: '', clientSSM: '', clientAddress: '', clientCity: '', clientState: '', clientPostcode: '', clientCountry: 'Malaysia', clientEmail: '', clientContactPerson: '', clientPosition: '', additionalClientEmailsText: '',
+                customerId: '', clientName: '', clientPhone: '', clientSSM: '', clientAddress: '', clientAddress1: '', clientAddress2: '', clientAddress3: '', clientCity: '', clientState: '', clientPostcode: '', clientCountry: 'Malaysia', clientEmail: '', clientContactPerson: '', clientPosition: '', additionalClientEmailsText: '',
                 items: [{ desc: '', qty: 1, price: 0 }], discount: 0
             };
             this.payForm = {
@@ -1506,6 +1556,52 @@ createApp({
         isOfficialEmail(email) {
             if (!email) return false;
             return email.toLowerCase().trim().endsWith('@' + this.officialEmailDomain.toLowerCase());
+        },
+        detectClientPostcode() {
+            const result = lookupMalaysiaPostcode(this.docForm.clientPostcode);
+            this.docForm.clientPostcode = result.postcode;
+            if (result.city) this.docForm.clientCity = result.city;
+            if (result.state) this.docForm.clientState = result.state;
+            if (result.postcode.length === 5) this.docForm.clientCountry = 'Malaysia';
+            this.clientSavedForDocument = false;
+        },
+        detectCompanyPostcode() {
+            const result = lookupMalaysiaPostcode(this.company.postcode);
+            this.company.postcode = result.postcode;
+            if (result.city) this.company.city = result.city;
+            if (result.state) this.company.state = result.state;
+            if (result.postcode.length === 5) this.company.country = 'Malaysia';
+        },
+        addressLines(record, prefix = 'client') {
+            const key = name => prefix === 'company' ? name : `client${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+            const legacy = String(record?.[key('address')] || '').trim();
+            const line1 = String(record?.[key('address1')] || legacy).trim();
+            const cityLine = [record?.[key('postcode')], record?.[key('city')]].map(value => String(value || '').trim()).filter(value => value && value !== '-').join(' ');
+            return [line1, record?.[key('address2')], record?.[key('address3')], cityLine, record?.[key('state')], record?.[key('country')]]
+                .map(value => String(value || '').trim()).filter(value => value && value !== '-')
+                .reduce((lines, value) => {
+                    const existing = lines.join(' ').toLowerCase();
+                    if (!existing.includes(value.toLowerCase())) lines.push(value);
+                    return lines;
+                }, []);
+        },
+        formattedClientAddress(record = this.docForm) {
+            return this.addressLines(record, 'client').join('\n');
+        },
+        formattedCompanyAddress() {
+            return this.addressLines(this.company, 'company').join('\n') || String(this.company.address || '').trim();
+        },
+        hydrateCompanyAddress(data) {
+            const company = { ...data };
+            const legacyLines = String(company.address || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+            company.address1 = company.address1 || legacyLines[0] || '';
+            company.address2 = company.address2 || legacyLines[1] || '';
+            company.address3 = company.address3 || legacyLines[2] || '';
+            company.postcode = String(company.postcode || '').replace(/\D/g, '').slice(0, 5);
+            company.city = company.city || '';
+            company.state = company.state || '';
+            company.country = company.country || 'Malaysia';
+            return company;
         },
         async validateImageFile(file) {
             if (!file) throw new Error('No image file was selected.');
@@ -2748,7 +2844,7 @@ createApp({
 
         async saveSettings() {
             if (!this.canManageCompanySettings) { this.showNotify('You do not have permission to update company settings.'); return; }
-            try { this.company = this.normalizeOfficialRecord(this.company); this.company.email = String(this.company.email || '').trim().toLowerCase(); await setDoc(doc(db, "settings", "company_profile"), { ...this.company }, { merge: true }); this.logAudit('UPDATE', 'Updated settings'); this.showNotify('Settings updated!'); } catch (error) { this.showNotify('Unable to save company settings.'); }
+            try { this.company.address = this.formattedCompanyAddress(); this.company = this.normalizeOfficialRecord(this.company); this.company.email = String(this.company.email || '').trim().toLowerCase(); await setDoc(doc(db, "settings", "company_profile"), { ...this.company }, { merge: true }); this.logAudit('UPDATE', 'Updated settings'); this.showNotify('Settings updated!'); } catch (error) { this.showNotify('Unable to save company settings.'); }
         },
 
         selectCustomerForDoc(e) {
@@ -2766,7 +2862,8 @@ createApp({
         },
         async saveCustomerToDatabase() {
             if (!this.canManageClients) { this.showNotify('You do not have permission to save client records.'); return false; }
-            if (!this.docForm.clientName || !this.docForm.clientPhone || !this.docForm.clientAddress) return alert('Enter Client Name, Phone, and Address.');
+            if (!this.docForm.clientName || !this.docForm.clientPhone || !(this.docForm.clientAddress1 || this.docForm.clientAddress)) return alert('Enter Client Name, Phone, and Address Line 1.');
+            if (!/^\d{5}$/.test(String(this.docForm.clientPostcode || '')) || !this.docForm.clientCity || !this.docForm.clientState) return alert('Enter a valid 5-digit postcode, City, and State.');
             try {
                 // Existing records keep whatever ID they already have (legacy records are
                 // still name-derived — left untouched to avoid a data migration). New
@@ -2778,7 +2875,8 @@ createApp({
                 const docId = this.docForm.customerId || doc(collection(db, "customers")).id;
                 const additionalClientEmails = String(this.docForm.additionalClientEmailsText || '')
                     .split(',').map(e => e.trim().toLowerCase()).filter(e => e && e.includes('@'));
-                const newCust = this.normalizeOfficialRecord({ clientName: this.docForm.clientName, clientPhone: this.docForm.clientPhone, clientSSM: this.docForm.clientSSM, clientAddress: this.docForm.clientAddress, clientCity: this.docForm.clientCity, clientState: this.docForm.clientState, clientPostcode: this.docForm.clientPostcode, clientCountry: this.docForm.clientCountry, clientEmail: String(this.docForm.clientEmail || '').trim().toLowerCase(), clientContactPerson: this.docForm.clientContactPerson, clientPosition: this.docForm.clientPosition, additionalClientEmails });
+                const clientAddress1 = String(this.docForm.clientAddress1 || this.docForm.clientAddress || '').trim();
+                const newCust = this.normalizeOfficialRecord({ clientName: this.docForm.clientName, clientPhone: this.docForm.clientPhone, clientSSM: this.docForm.clientSSM, clientAddress: clientAddress1, clientAddress1, clientAddress2: this.docForm.clientAddress2, clientAddress3: this.docForm.clientAddress3, clientCity: this.docForm.clientCity, clientState: this.docForm.clientState, clientPostcode: this.docForm.clientPostcode, clientCountry: this.docForm.clientCountry, clientEmail: String(this.docForm.clientEmail || '').trim().toLowerCase(), clientContactPerson: this.docForm.clientContactPerson, clientPosition: this.docForm.clientPosition, additionalClientEmails });
                 if (isNewRecord) newCust.createdAt = new Date().toISOString();
                 this.docForm.customerId = docId;
                 Object.assign(this.docForm, newCust);
@@ -2786,7 +2884,8 @@ createApp({
             } catch (error) { console.error('Client save failed:', error); this.showNotify('Unable to save client information.'); return false; }
         },
         selectCustomerFromTable(cust) {
-            ['clientName','clientPhone','clientSSM','clientAddress','clientCity','clientState','clientPostcode','clientCountry','clientEmail','clientContactPerson','clientPosition'].forEach(k => { this.docForm[k] = cust[k] || (k === 'clientCountry' ? 'Malaysia' : ''); });
+            ['clientName','clientPhone','clientSSM','clientAddress','clientAddress1','clientAddress2','clientAddress3','clientCity','clientState','clientPostcode','clientCountry','clientEmail','clientContactPerson','clientPosition'].forEach(k => { this.docForm[k] = cust[k] || (k === 'clientCountry' ? 'Malaysia' : ''); });
+            this.docForm.clientAddress1 = cust.clientAddress1 || cust.clientAddress || '';
             this.docForm.customerId = cust.id || '';
             this.docForm.additionalClientEmailsText = Array.isArray(cust.additionalClientEmails) ? cust.additionalClientEmails.join(', ') : '';
             this.showNotify(`Client loaded.`);
@@ -2795,8 +2894,8 @@ createApp({
             this.clientView.client = {
                 id: cust.id || '', clientName: cust.clientName || '-', clientSSM: cust.clientSSM || '-', clientContactPerson: cust.clientContactPerson || '-',
                 clientPosition: cust.clientPosition || '-', clientEmail: cust.clientEmail || '-', clientPhone: cust.clientPhone || '-',
-                clientAddress: cust.clientAddress || '-', clientCity: cust.clientCity || '-', clientState: cust.clientState || '-',
-                clientPostcode: cust.clientPostcode || '-', clientCountry: cust.clientCountry || '-', clientTier: cust.clientTier || 'Standard'
+                clientAddress: cust.clientAddress || '', clientAddress1: cust.clientAddress1 || cust.clientAddress || '', clientAddress2: cust.clientAddress2 || '', clientAddress3: cust.clientAddress3 || '', clientCity: cust.clientCity || '', clientState: cust.clientState || '',
+                clientPostcode: cust.clientPostcode || '', clientCountry: cust.clientCountry || 'Malaysia', clientTier: cust.clientTier || 'Standard'
             };
             this.clientView.show = true;
             if (cust.id) this.loadClientDocuments(cust.id, cust.clientName, cust.clientEmail);
@@ -3616,13 +3715,13 @@ createApp({
 
             const initialLoads = [
                 this.canManageCompanySettings
-                    ? subscribeWithReadySignal(doc(db, "settings", "company_profile"), (snapshot) => { if (snapshot.exists()) this.company = snapshot.data(); }, 'company settings')
+                    ? subscribeWithReadySignal(doc(db, "settings", "company_profile"), (snapshot) => { if (snapshot.exists()) this.company = this.hydrateCompanyAddress(snapshot.data()); }, 'company settings')
                     : Promise.resolve(),
                 employeesSource
                     ? subscribeWithReadySignal(employeesSource, (snapshot) => { this.employees = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'employees')
                     : Promise.resolve(),
                 (this.hasAccess('client-directory') || this.hasAccess('doc-generator'))
-                    ? subscribeWithReadySignal(collection(db, "customers"), (snapshot) => { this.customers = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'clients')
+                    ? subscribeWithReadySignal(collection(db, "customers"), (snapshot) => { this.customers = snapshot.docs.map(d => { const data = d.data(); return { id: d.id, ...data, clientAddress1: data.clientAddress1 || data.clientAddress || '' }; }); }, 'clients')
                     : Promise.resolve(),
                 documentsSource
                     ? subscribeWithReadySignal(documentsSource, (snapshot) => { this.docHistory = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); this.generateDocNo(); this.refreshDashboardCharts(); }, 'documents')
