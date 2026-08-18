@@ -565,6 +565,16 @@ createApp({
             if (!email) return null;
             return this.customers.find(c => String(c.clientEmail || '').trim().toLowerCase() === email) || null;
         },
+        clientPortalIdentity() {
+            if (this.myClientRecord) return this.myClientRecord;
+            const linkedProject = this.projects.find(project => project.clientDirectoryId || project.clientName) || null;
+            return {
+                clientName: linkedProject?.clientName || this.userProfile.name || 'Client Account',
+                clientSSM: linkedProject?.clientSSM || '',
+                clientTier: linkedProject?.clientTier || 'Standard',
+                clientEmail: linkedProject?.clientEmail || this.userProfile.email || ''
+            };
+        },
         myClientPaidCount() { return this.clientPortalDocs.filter(d => d.type === 'Invoice' && d.status === 'Paid').length; },
         myClientUnpaidCount() { return this.clientPortalDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').length; },
         clientActiveProjectsCount() { return this.projects.filter(project => project.status !== 'Completed & Done').length; },
