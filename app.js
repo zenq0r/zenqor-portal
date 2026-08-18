@@ -577,9 +577,21 @@ createApp({
 
         myClientDocs() { return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email); },
         myClientRecord() {
+            // clientDirectoryId (from the Client custom claim) is the authoritative
+            // link — match on it first. Email matching is a fallback for legacy
+            // accounts without that claim, and must also check additionalClientEmails
+            // so a client signed in under a secondary email still resolves.
+            if (this.userProfile.clientDirectoryId) {
+                const byId = this.customers.find(c => c.id === this.userProfile.clientDirectoryId);
+                if (byId) return byId;
+            }
             const email = String(this.userProfile.email || '').trim().toLowerCase();
             if (!email) return null;
-            return this.customers.find(c => String(c.clientEmail || '').trim().toLowerCase() === email) || null;
+            return this.customers.find(c => {
+                const emails = [c.clientEmail, ...(Array.isArray(c.additionalClientEmails) ? c.additionalClientEmails : [])]
+                    .map(e => String(e || '').trim().toLowerCase());
+                return emails.includes(email);
+            }) || null;
         },
         clientPortalIdentity() {
             if (this.myClientRecord) return this.myClientRecord;
