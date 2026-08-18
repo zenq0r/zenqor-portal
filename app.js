@@ -706,7 +706,29 @@ createApp({
             return records.filter(project => [project.projectRef, project.title, project.clientName, project.ownerName, project.status, project.description].some(value => String(value || '').toLowerCase().includes(queryText)));
         },
         projectClientAccessUsers() {
-            return this.users.filter(user => user.role === 'Client').sort((a, b) => String(a.name || a.email).localeCompare(String(b.name || b.email)));
+            const clientUsers = this.users.filter(user => user.role === 'Client' && String(user.email || '').trim());
+            const customer = this.customers.find(item => item.id === this.projectModal.form.clientDirectoryId);
+            if (!customer) return clientUsers.sort((a, b) => String(a.name || a.email).localeCompare(String(b.name || b.email)));
+            const authorizedEmails = new Set([
+                customer.clientEmail,
+                ...(Array.isArray(customer.additionalClientEmails) ? customer.additionalClientEmails : [])
+            ].map(email => String(email || '').trim().toLowerCase()).filter(Boolean));
+            return clientUsers
+                .filter(user => authorizedEmails.has(String(user.email || '').trim().toLowerCase()))
+                .sort((a, b) => String(a.name || a.email).localeCompare(String(b.name || b.email)));
+        },
+        unlinkedProjectClientEmails() {
+            const customer = this.customers.find(item => item.id === this.projectModal.form.clientDirectoryId);
+            if (!customer) return [];
+            const portalEmails = new Set(this.users
+                .filter(user => user.role === 'Client')
+                .map(user => String(user.email || '').trim().toLowerCase())
+                .filter(Boolean));
+            return [...new Set([
+                customer.clientEmail,
+                ...(Array.isArray(customer.additionalClientEmails) ? customer.additionalClientEmails : [])
+            ].map(email => String(email || '').trim().toLowerCase()).filter(Boolean))]
+                .filter(email => !portalEmails.has(email));
         },
         projectStaffOptions() {
             return this.employees.filter(employee => employee.email && employee.empNo).sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
@@ -1096,13 +1118,22 @@ createApp({
         },
         selectProjectClientDirectory(event) {
             const customer = this.customers.find(item => item.id === event.target.value);
-            if (!customer) return;
+            if (!customer) {
+                this.projectModal.form.clientDirectoryId = '';
+                this.projectModal.form.clientPortalUid = '';
+                this.projectModal.form.clientName = '';
+                this.projectModal.form.clientEmail = '';
+                this.projectModal.form.clientSSM = '';
+                this.projectModal.form.clientTier = 'Standard';
+                return;
+            }
             this.projectModal.form.clientDirectoryId = customer.id;
             this.projectModal.form.clientName = customer.clientName || '';
             this.projectModal.form.clientSSM = customer.clientSSM || '';
             this.projectModal.form.clientTier = customer.clientTier || 'Standard';
-            const directoryEmail = String(customer.clientEmail || '').trim().toLowerCase();
-            const matchingAccess = this.projectClientAccessUsers.find(user => String(user.email || '').trim().toLowerCase() === directoryEmail)
+            const authorizedEmails = [customer.clientEmail, ...(Array.isArray(customer.additionalClientEmails) ? customer.additionalClientEmails : [])]
+                .map(email => String(email || '').trim().toLowerCase()).filter(Boolean);
+            const matchingAccess = this.projectClientAccessUsers.find(user => authorizedEmails.includes(String(user.email || '').trim().toLowerCase()))
                 || this.projectClientAccessUsers.find(user => String(user.name || '').trim().toLowerCase() === String(customer.clientName || '').trim().toLowerCase());
             this.projectModal.form.clientPortalUid = matchingAccess?.id || '';
             this.projectModal.form.clientEmail = matchingAccess?.email || '';
@@ -1183,6 +1214,8 @@ createApp({
 
             if (!source.projectRef?.trim() || !source.title?.trim()) { this.showNotify('Project reference and title are required.'); return; }
             if (!source.clientDirectoryId || !source.clientPortalUid || !source.clientEmail) { this.showNotify('Select a Client Directory record and its matching Client Portal Access account.'); return; }
+            const authorizedClientAccount = this.projectClientAccessUsers.find(user => user.id === source.clientPortalUid && String(user.email || '').trim().toLowerCase() === String(source.clientEmail || '').trim().toLowerCase());
+            if (!authorizedClientAccount) { this.showNotify('The selected Client Portal account is not authorized in this Client Directory. Save its email under Client Portal Access first.'); return; }
             if (!source.ownerEmpNo || !source.ownerEmail) { this.showNotify('Select a Person In Charge from HR Employee Management.'); return; }
             const projectId = source.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
             const payload = this.normalizeOfficialRecord({
