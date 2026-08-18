@@ -202,6 +202,8 @@ createApp({
             presencePageHideHandler: null,
             presencePageShowHandler: null,
             presenceVisibilityHandler: null,
+            presenceNotificationsReady: false,
+            portalUserOnlineStates: {},
             legacyClaimMigrationRunning: false,
 
             changePasswordModal: {
@@ -2081,6 +2083,49 @@ createApp({
             const lastUpdate = this.getPresenceTime(emp.presenceUpdatedAt || emp.lastSeen);
             return emp.presenceStatus === 'Online' && lastUpdate > 0 && (this.presenceNow - lastUpdate) < 90000;
         },
+        isPortalUserOnline(user) {
+            const lastUpdate = this.getPresenceTime(user?.presenceUpdatedAt || user?.lastSeen);
+            return user?.presenceStatus === 'Online' && lastUpdate > 0 && (this.presenceNow - lastUpdate) < 90000;
+        },
+        processPortalPresenceNotifications(users) {
+            const nextStates = {};
+            users.forEach(user => {
+                const userId = String(user?.id || '');
+                if (!userId) return;
+                const isOnline = this.isPortalUserOnline(user);
+                nextStates[userId] = isOnline;
+                // The initial directory snapshot establishes the baseline only. It
+                // must not flood every staff member with alerts for people already
+                // online when they sign in themselves.
+                if (this.presenceNotificationsReady && this.userProfile.role !== 'Client' && userId !== this.userProfile.uid && isOnline && !this.portalUserOnlineStates[userId]) {
+                    const type = user.role === 'Client' ? 'Client' : 'Staff';
+                    this.showNotify(`${user.name || user.email || type} (${type}) is now online.`);
+                }
+            });
+            this.portalUserOnlineStates = nextStates;
+            this.presenceNotificationsReady = true;
+        },
+        async setCurrentPortalPresence(isOnline) {
+            if (!auth.currentUser || !this.userProfile.uid) return false;
+            const timestamp = new Date().toISOString();
+            try {
+                await setDoc(doc(db, 'users', this.userProfile.uid), {
+                    presenceStatus: isOnline ? 'Online' : 'Offline',
+                    isOnline: !!isOnline,
+                    presenceUpdatedAt: timestamp,
+                    lastSeen: timestamp
+                }, { merge: true });
+                return true;
+            } catch (error) {
+                console.error('Unable to update portal presence:', error);
+                return false;
+            }
+        },
+        async setCurrentPresence(isOnline) {
+            await this.setCurrentPortalPresence(isOnline);
+            if (this.userProfile.role !== 'Client') return this.setCurrentEmployeePresence(isOnline);
+            return true;
+        },
         employeePresenceLabel(emp) {
             return this.isEmployeeOnline(emp) ? 'Online' : 'Offline';
         },
@@ -2118,15 +2163,15 @@ createApp({
         async startPresenceTracking() {
             this.stopPresenceTracking();
             this.presenceNow = Date.now();
-            await this.setCurrentEmployeePresence(true);
+            await this.setCurrentPresence(true);
             this.presenceHeartbeatTimer = setInterval(() => {
                 this.presenceNow = Date.now();
-                this.setCurrentEmployeePresence(true);
+                this.setCurrentPresence(true);
             }, 30000);
             this.presenceClockTimer = setInterval(() => { this.presenceNow = Date.now(); }, 15000);
-            this.presencePageHideHandler = () => { this.setCurrentEmployeePresence(false); };
-            this.presencePageShowHandler = () => { if (this.isLoggedIn) this.setCurrentEmployeePresence(true); };
-            this.presenceVisibilityHandler = () => { if (!document.hidden && this.isLoggedIn) this.setCurrentEmployeePresence(true); };
+            this.presencePageHideHandler = () => { this.setCurrentPresence(false); };
+            this.presencePageShowHandler = () => { if (this.isLoggedIn) this.setCurrentPresence(true); };
+            this.presenceVisibilityHandler = () => { if (!document.hidden && this.isLoggedIn) this.setCurrentPresence(true); };
             window.addEventListener('pagehide', this.presencePageHideHandler);
             window.addEventListener('pageshow', this.presencePageShowHandler);
             document.addEventListener('visibilitychange', this.presenceVisibilityHandler);
@@ -2143,6 +2188,8 @@ createApp({
             this.presencePageHideHandler = null;
             this.presencePageShowHandler = null;
             this.presenceVisibilityHandler = null;
+            this.presenceNotificationsReady = false;
+            this.portalUserOnlineStates = {};
         },
         showNotify(msg) {
             this.notification = { show: true, message: msg };
@@ -2639,7 +2686,7 @@ createApp({
         async handleLogout() {
             this.logoutConfirm = false;
             try { await this.logAudit('LOGOUT', 'User logged out'); } catch (error) { console.error('Audit log failed during logout:', error); }
-            try { await this.setCurrentEmployeePresence(false); } catch (error) { console.error('Presence update failed during logout:', error); }
+            try { await this.setCurrentPresence(false); } catch (error) { console.error('Presence update failed during logout:', error); }
             this.stopPresenceTracking();
             if (this.forgetTrustedDeviceOnLogout) {
                 try { await this.revokeTrustedDeviceAccess(); }
@@ -3783,6 +3830,7 @@ createApp({
             const userSubscription = canReadUserDirectory
                 ? subscribeWithReadySignal(collection(db, 'users'), (snapshot) => {
                     this.users = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+                    this.processPortalPresenceNotifications(this.users);
                     const currentUser = this.users.find(user => user.id === this.userProfile.uid);
                     if (currentUser) {
                         this.userProfile.role = currentUser.role || this.userProfile.role;
