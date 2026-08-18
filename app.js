@@ -567,6 +567,19 @@ createApp({
         },
         myClientPaidCount() { return this.clientPortalDocs.filter(d => d.type === 'Invoice' && d.status === 'Paid').length; },
         myClientUnpaidCount() { return this.clientPortalDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').length; },
+        clientActiveProjectsCount() { return this.projects.filter(project => project.status !== 'Completed & Done').length; },
+        clientRecentUpdates() {
+            return [...this.projectClientUpdates]
+                .sort((a, b) => String(b.createdAt || b.updateDate || '').localeCompare(String(a.createdAt || a.updateDate || '')))
+                .slice(0, 4);
+        },
+        clientRecentDocuments() {
+            return [...this.myClientDocs].sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 5);
+        },
+        clientProfileCompletion() {
+            const values = [this.userProfile.name, this.userProfile.email, this.userProfile.photo];
+            return Math.round((values.filter(Boolean).length / values.length) * 100);
+        },
         myUnpaidInvoicesCount() { return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').length; },
         myUnpaidInvoicesAmount() { return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status !== 'Paid').reduce((sum, d) => sum + (Number(d.amount) || 0), 0); },
         myPaidInvoicesAmount() { return this.myClientDocs.filter(d => d.type === 'Invoice' && d.status === 'Paid').reduce((sum, d) => sum + (Number(d.amount) || 0), 0); },

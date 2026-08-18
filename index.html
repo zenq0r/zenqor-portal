@@ -1458,18 +1458,16 @@
                         <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-dark via-brand-dark to-blue-900 p-6 text-white shadow-lg">
                             <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <p class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand-gold">Client Portal</p>
+                                    <div class="flex flex-wrap items-center gap-2"><p class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand-gold">Client Portal</p><span class="rounded-full bg-white/10 px-2 py-1 text-[9px] font-bold text-blue-100"><i class="fa-solid fa-shield-halved mr-1 text-emerald-300"></i>Secure Workspace</span></div>
                                     <h2 class="mt-1 text-2xl font-extrabold tracking-tight">Welcome back, {{ userProfile.name }}</h2>
-                                    <p class="mt-1 text-xs text-blue-100">Here's a snapshot of your projects and official documents today.</p>
+                                    <p class="mt-1 text-xs text-blue-100">Here's your live project, document and account snapshot.</p>
                                 </div>
-                                <button @click="switchTab('client-portal')" class="shrink-0 bg-white text-brand-dark hover:bg-slate-100 font-bold px-4 py-2.5 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
-                                    <i class="fa-solid fa-folder-open"></i><span>Open Client Portal</span>
-                                </button>
+                                <div class="flex flex-wrap gap-2"><button @click="switchTab('project-activities')" class="shrink-0 border border-white/20 bg-white/10 text-white hover:bg-white/20 font-bold px-4 py-2.5 rounded-xl transition text-xs"><i class="fa-solid fa-diagram-project mr-2"></i>Track Projects</button><button @click="switchTab('client-portal')" class="shrink-0 bg-white text-brand-dark hover:bg-slate-100 font-bold px-4 py-2.5 rounded-xl shadow-lg transition text-xs"><i class="fa-solid fa-folder-open mr-2"></i>Open Documents</button></div>
                             </div>
                             <i class="fa-solid fa-building absolute -right-4 -bottom-6 text-[120px] text-white/5"></i>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                             <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
                                 <div>
                                     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Documents</p>
@@ -1496,7 +1494,27 @@
                                 </div>
                                 <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 flex items-center justify-center text-lg font-bold"><i class="fa-solid fa-sack-dollar"></i></div>
                             </div>
+
+                            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div><p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Active Projects</p><h3 class="text-2xl font-extrabold text-violet-600 dark:text-violet-400 mt-1">{{ clientActiveProjectsCount }}</h3><p class="text-[10px] text-slate-400 mt-1">{{ projects.length }} total project(s)</p></div>
+                                <div class="w-11 h-11 rounded-xl bg-violet-50 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 flex items-center justify-center text-lg font-bold"><i class="fa-solid fa-diagram-project"></i></div>
+                            </div>
                         </div>
+
+                        <section class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                            <button type="button" @click="switchTab('project-activities')" class="group flex items-center gap-4 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-blue-900 dark:from-blue-950/40 dark:to-slate-800"><span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-blue text-white shadow"><i class="fa-solid fa-route"></i></span><span><span class="block text-xs font-extrabold text-brand-dark dark:text-white">Track Project Journey</span><span class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400">View milestones, PIC and target dates</span></span><i class="fa-solid fa-arrow-right ml-auto text-slate-300 transition group-hover:translate-x-1 group-hover:text-brand-blue"></i></button>
+                            <button type="button" @click="switchTab('client-portal')" class="group flex items-center gap-4 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-emerald-900 dark:from-emerald-950/30 dark:to-slate-800"><span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow"><i class="fa-solid fa-cloud-arrow-up"></i></span><span><span class="block text-xs font-extrabold text-brand-dark dark:text-white">Documents Centre</span><span class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400">View billing and upload requested files</span></span><i class="fa-solid fa-arrow-right ml-auto text-slate-300 transition group-hover:translate-x-1 group-hover:text-emerald-600"></i></button>
+                            <button type="button" @click="switchTab('profile')" class="group flex items-center gap-4 rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-amber-900 dark:from-amber-950/30 dark:to-slate-800"><span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow"><i class="fa-solid fa-user-shield"></i></span><span><span class="block text-xs font-extrabold text-brand-dark dark:text-white">Account &amp; Security</span><span class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400">Profile completeness: {{ clientProfileCompletion }}%</span></span><i class="fa-solid fa-arrow-right ml-auto text-slate-300 transition group-hover:translate-x-1 group-hover:text-amber-500"></i></button>
+                        </section>
+
+                        <section class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                            <div class="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+                                <div class="mb-4 flex items-center justify-between"><div><h3 class="text-sm font-extrabold text-brand-dark dark:text-white">Recent Project Updates</h3><p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Latest messages from your project team.</p></div><span class="rounded-full bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 text-[9px] font-bold text-brand-blue dark:text-blue-300">{{ clientRecentUpdates.length }} recent</span></div>
+                                <div v-if="clientRecentUpdates.length" class="space-y-3"><button v-for="update in clientRecentUpdates" :key="`dashboard-update-${update.id}`" type="button" @click="switchTab('project-activities')" class="flex w-full items-start gap-3 rounded-xl border border-slate-100 dark:border-slate-700 p-3 text-left transition hover:border-brand-blue hover:bg-blue-50/40 dark:hover:bg-slate-700/40"><span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" :class="update.senderRole === 'Client' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300' : 'bg-blue-100 text-brand-blue dark:bg-blue-950/50 dark:text-blue-300'"><i class="fa-solid" :class="update.senderRole === 'Client' ? 'fa-reply' : 'fa-bullhorn'"></i></span><span class="min-w-0"><span class="flex flex-wrap items-center gap-1.5"><span class="text-[9px] font-extrabold uppercase tracking-wider text-brand-blue">{{ update.projectRef }}</span><span class="text-[9px] text-slate-400">· {{ update.updateType }}</span></span><span class="mt-1 block truncate text-[11px] font-semibold text-slate-700 dark:text-slate-200">{{ update.message }}</span><span class="mt-1 block text-[9px] text-slate-400">{{ formatDateTime(update.createdAt || update.updateDate) }}</span></span></button></div>
+                                <div v-else class="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30 px-5 py-6 text-center"><i class="fa-regular fa-comments text-xl text-slate-300 dark:text-slate-600"></i><p class="mt-2 text-[10px] font-bold text-slate-400">Project updates will appear here once your project starts.</p></div>
+                            </div>
+                            <div class="relative overflow-hidden rounded-2xl bg-brand-dark p-5 text-white shadow-sm"><div class="relative z-10"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-300"><i class="fa-solid fa-shield-halved"></i></span><h3 class="mt-4 text-sm font-extrabold">Your workspace is protected</h3><p class="mt-2 text-[10px] leading-relaxed text-slate-300">Secure sign-in, trusted-device verification and role-based access help protect your company records.</p><div class="mt-4 space-y-2 text-[10px] font-semibold"><p><i class="fa-solid fa-circle-check mr-2 text-emerald-400"></i>Identity verified</p><p><i class="fa-solid fa-circle-check mr-2 text-emerald-400"></i>Private company workspace</p><p><i class="fa-solid fa-circle-check mr-2 text-emerald-400"></i>Activity securely logged</p></div></div><i class="fa-solid fa-fingerprint absolute -bottom-8 -right-5 text-[110px] text-white/5"></i></div>
+                        </section>
 
                         <section class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
                             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1520,15 +1538,14 @@
                                     <p class="mt-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-300 dark:text-slate-600">Step {{ projectStages.indexOf(project.status) + 1 }} of {{ projectStages.length }}</p>
                                 </button>
                                 <p v-if="projects.length > 3" class="text-center text-[10px] font-bold text-slate-400 dark:text-slate-500">+{{ projects.length - 3 }} more project(s) — view all for full tracker</p>
-                                <div v-if="!projects.length" class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40 p-8 text-center">
-                                    <i class="fa-regular fa-folder-open text-xl text-slate-300 dark:text-slate-600"></i>
-                                    <p class="mt-2 text-[10px] font-bold text-slate-400 dark:text-slate-500">No project has been assigned to your account yet.</p>
+                                <div v-if="!projects.length" class="overflow-hidden rounded-xl border border-blue-100 dark:border-slate-700 bg-gradient-to-r from-blue-50 via-white to-emerald-50 dark:from-blue-950/30 dark:via-slate-800 dark:to-emerald-950/20 p-5">
+                                    <div class="flex flex-col gap-5 lg:flex-row lg:items-center"><div class="flex items-start gap-3 lg:w-1/3"><span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-blue text-white shadow"><i class="fa-solid fa-rocket"></i></span><div><p class="text-xs font-extrabold text-brand-dark dark:text-white">Your workspace is ready</p><p class="mt-1 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">Your project tracker will activate automatically when the Zenqor team assigns your first project.</p></div></div><div class="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-3"><div class="rounded-xl bg-white/80 dark:bg-slate-900/40 p-3"><span class="text-[9px] font-extrabold text-emerald-600">01 · COMPLETE</span><p class="mt-1 text-[10px] font-bold text-slate-700 dark:text-slate-200">Portal account activated</p></div><div class="rounded-xl bg-white/80 dark:bg-slate-900/40 p-3"><span class="text-[9px] font-extrabold text-amber-600">02 · NEXT</span><p class="mt-1 text-[10px] font-bold text-slate-700 dark:text-slate-200">Project assignment</p></div><div class="rounded-xl bg-white/80 dark:bg-slate-900/40 p-3"><span class="text-[9px] font-extrabold text-slate-400">03 · UPCOMING</span><p class="mt-1 text-[10px] font-bold text-slate-700 dark:text-slate-200">Live milestones &amp; updates</p></div></div></div>
                                 </div>
                             </div>
                         </section>
 
                         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
-                            <h3 class="text-sm font-extrabold text-brand-dark dark:text-white mb-4">Your Company Official Documents</h3>
+                            <div class="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h3 class="text-sm font-extrabold text-brand-dark dark:text-white">Your Company Official Documents</h3><p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Your five most recent quotations and invoices.</p></div><button v-if="myClientDocs.length" type="button" @click="switchTab('client-portal')" class="rounded-lg bg-slate-100 dark:bg-slate-700 px-3 py-2 text-[10px] font-bold text-slate-600 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600">View All Documents <i class="fa-solid fa-arrow-right ml-1"></i></button></div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left border-collapse">
                                     <thead>
@@ -1542,7 +1559,7 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
-                                        <tr v-for="d in myClientDocs" :key="d.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                        <tr v-for="d in clientRecentDocuments" :key="d.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                             <td class="py-3 px-4">{{ d.date }}</td>
                                             <td class="py-3 px-4"><span class="px-2 py-0.5 rounded font-bold" :class="d.type==='Invoice'?'bg-blue-100 text-blue-800':'bg-amber-100 text-amber-800'">{{ d.type }}</span></td>
                                             <td class="py-3 px-4 font-bold text-brand-dark dark:text-white">{{ d.docNo }}</td>
@@ -1550,6 +1567,7 @@
                                             <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded font-bold" :class="d.status==='Paid'?'bg-emerald-100 text-emerald-800':'bg-red-100 text-red-800'">{{ d.status || 'Unpaid' }}</span></td>
                                             <td class="py-3 px-4 text-center"><button @click="viewRecord(d)" class="bg-brand-dark text-white px-3 py-1 rounded-lg text-xs font-bold"><i class="fa-solid fa-print mr-1"></i>Print</button></td>
                                         </tr>
+                                        <tr v-if="!clientRecentDocuments.length"><td colspan="6" class="py-10 text-center"><span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-brand-blue dark:bg-blue-950/40 dark:text-blue-300"><i class="fa-regular fa-file-lines"></i></span><p class="mt-3 text-xs font-extrabold text-slate-600 dark:text-slate-300">No official documents yet</p><p class="mt-1 text-[10px] text-slate-400">Quotations and invoices issued to your company will appear here automatically.</p></td></tr>
                                     </tbody>
                                 </table>
                             </div>
