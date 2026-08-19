@@ -264,17 +264,13 @@
             </div>
         </div>
 
-        <!-- SESSION RESTORE GATE — Firebase Auth restoring a persisted session (and the
-             follow-up Firestore/OTP/claims checks in onAuthStateChanged) is asynchronous, so
-             without this the login screen below would flash on every refresh even for an
-             already-signed-in user, right up until that work finishes. -->
-        <div v-else-if="authLoading" class="min-h-screen flex flex-col items-center justify-center bg-brand-dark gap-4">
-            <img src="./logo.png" alt="" class="w-16 h-16 object-contain opacity-90">
-            <i class="fa-solid fa-circle-notch fa-spin text-2xl text-brand-blue"></i>
-        </div>
-
-        <!-- LOGIN SYSTEM & RBAC GUARD -->
-        <div v-else-if="!isLoggedIn" class="relative min-h-screen flex items-center justify-center bg-brand-dark px-4 py-8 overflow-hidden">
+        <!-- LOGIN SYSTEM & RBAC GUARD — also doubles as the session-restore wait state:
+             Firebase Auth restoring a persisted session (and the follow-up Firestore/OTP/
+             claims checks in onAuthStateChanged) is asynchronous, so authLoading stays true
+             for a moment on every refresh even for an already-signed-in user. Rather than a
+             separate spinner screen, this same landing page is shown throughout — it just
+             transitions straight to the dashboard once ready, with nothing to flash past. -->
+        <div v-else-if="authLoading || !isLoggedIn" class="relative min-h-screen flex items-center justify-center bg-brand-dark px-4 py-8 overflow-hidden">
 
             <!-- WORDMARK WATERMARK — proprietary in-house system, not a rented/subscribed SaaS -->
             <div class="pointer-events-none select-none absolute inset-0 flex items-center justify-center opacity-[0.06]">
