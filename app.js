@@ -3844,6 +3844,23 @@ createApp({
             const user = this.users.find(u => u.id === uid);
             return user?.name || fallbackName || '';
         },
+        // Same idea as approverNameLive, but for "who requested/submitted this claim or
+        // voucher" — matched by empNo against the live employees directory (not `users`,
+        // since empNo/dept are HR-managed attributes) rather than a name snapshot frozen
+        // at submission time. Applies regardless of approval status: unlike the amount,
+        // category or dates on a claim (which must stay exactly as approved — a real
+        // financial record), the requester's own name is just an identity reference, same
+        // reasoning as the approver's name.
+        requesterNameLive(empNo, fallbackName) {
+            if (!empNo) return fallbackName || '';
+            const employee = this.employees.find(e => e.id === empNo || e.empNo === empNo);
+            return employee?.name || fallbackName || '';
+        },
+        requesterDeptLive(empNo, fallbackDept) {
+            if (!empNo) return fallbackDept || '';
+            const employee = this.employees.find(e => e.id === empNo || e.empNo === empNo);
+            return employee?.dept || fallbackDept || '';
+        },
         // Bulk approval — HR/Account only. Director decisions always require a
         // per-record supporting document attachment (see approveClaim/
         // approvePaymentVoucher), so bulk-approving isn't offered for Director;

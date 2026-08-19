@@ -1213,7 +1213,7 @@
                                             <span class="text-slate-400 font-mono text-[10px] block">REF: {{ clm.receiptNo }}</span>
                                         </td>
                                         <td class="py-3 px-3">
-                                            <span class="font-bold text-brand-dark dark:text-white block">{{ clm.name }}</span>
+                                            <span class="font-bold text-brand-dark dark:text-white block">{{ requesterNameLive(clm.empNo, clm.name) }}</span>
                                             <span class="text-slate-400 text-[10px] block">{{ clm.empNo }}</span>
                                         </td>
                                         <td class="py-3 px-3">
@@ -1327,7 +1327,7 @@
                                         </td>
                                         <td class="py-3 px-3">
                                             <span class="font-bold text-brand-dark dark:text-white block">{{ pv.payeeName }}</span>
-                                            <span class="text-slate-400 text-[10px] block">{{ pv.payeeType }} · Requested by {{ pv.name }}</span>
+                                            <span class="text-slate-400 text-[10px] block">{{ pv.payeeType }} · Requested by {{ requesterNameLive(pv.empNo, pv.name) }}</span>
                                         </td>
                                         <td class="py-3 px-3">
                                             <span class="font-bold text-brand-blue dark:text-blue-400 block">{{ pv.category }}</span>
@@ -3013,7 +3013,7 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-3"><i class="fa-solid fa-user mr-2 text-brand-blue"></i>{{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Requested By' : 'Applicant' }}</h4><p class="font-bold text-slate-800 dark:text-slate-100">{{ claimPreview.claim.name }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.empNo }} · {{ claimPreview.claim.dept || '-' }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.empEmail }}</p></section>
+                        <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-3"><i class="fa-solid fa-user mr-2 text-brand-blue"></i>{{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Requested By' : 'Applicant' }}</h4><p class="font-bold text-slate-800 dark:text-slate-100">{{ requesterNameLive(claimPreview.claim.empNo, claimPreview.claim.name) }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.empNo }} · {{ requesterDeptLive(claimPreview.claim.empNo, claimPreview.claim.dept) || '-' }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.empEmail }}</p></section>
                         <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide mb-3"><i class="fa-solid fa-money-bill-wave mr-2 text-emerald-600"></i>{{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Payment Details' : 'Expense Details' }}</h4><p class="font-bold text-slate-800 dark:text-slate-100">{{ claimPreview.claim.category }}</p><p class="text-slate-500 mt-1">{{ claimPreview.claim.subCategory }}</p><p class="text-xl font-extrabold text-brand-dark dark:text-white mt-3">{{ formatCurrency(claimPreview.claim.amount) }}</p></section>
                     </div>
 
