@@ -3815,6 +3815,18 @@ createApp({
             if (!Array.isArray(record?.approvalHistory)) return null;
             return [...record.approvalHistory].reverse().find(entry => entry.role === role) || null;
         },
+        // approvedByName/rejectedByName (top-level and inside approvalHistory entries) are
+        // a name snapshot taken at the moment of that decision — unlike a payslip's
+        // frozen payroll figures, "who approved this" is just an identity reference, so
+        // if that person's name is later corrected in HR Employees (a typo fix, a legal
+        // name change), the approval trail should show their current name rather than
+        // whatever was on file that day. Falls back to the snapshot if the approver's
+        // account can't be found live (e.g. the account was later deleted).
+        approverNameLive(uid, fallbackName) {
+            if (!uid) return fallbackName || '';
+            const user = this.users.find(u => u.id === uid);
+            return user?.name || fallbackName || '';
+        },
         // Bulk approval — HR/Account only. Director decisions always require a
         // per-record supporting document attachment (see approveClaim/
         // approvePaymentVoucher), so bulk-approving isn't offered for Director;

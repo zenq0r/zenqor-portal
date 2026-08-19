@@ -1216,7 +1216,7 @@
                                                 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300': clm.status === 'Approved',
                                                 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': clm.status === 'Rejected'
                                             }" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase">{{ clm.status }}</span>
-                                            <p v-if="clm.approvedByName" class="mt-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">Approved by {{ clm.approvedByName }} ({{ clm.approvedByRole }})</p>
+                                            <p v-if="clm.approvedByName" class="mt-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">Approved by {{ approverNameLive(clm.approvedByUid, clm.approvedByName) }} ({{ clm.approvedByRole }})</p>
                                             <p v-if="clm.approvedAt" class="text-[10px] text-slate-400">{{ formatDateTime(clm.approvedAt) }}</p>
                                          </td>
                                          <td class="py-3 px-3">
@@ -1329,7 +1329,7 @@
                                                 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300': pv.status === 'Approved',
                                                 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': pv.status === 'Rejected'
                                             }" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase">{{ pv.status }}</span>
-                                            <p v-if="pv.approvedByName" class="mt-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">Approved by {{ pv.approvedByName }} ({{ pv.approvedByRole }})</p>
+                                            <p v-if="pv.approvedByName" class="mt-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">Approved by {{ approverNameLive(pv.approvedByUid, pv.approvedByName) }} ({{ pv.approvedByRole }})</p>
                                             <p v-if="pv.approvedAt" class="text-[10px] text-slate-400">{{ formatDateTime(pv.approvedAt) }}</p>
                                          </td>
                                          <td class="py-3 px-3">
@@ -3018,7 +3018,7 @@
                                     {{ step.label }}
                                 </p>
                                 <template v-if="claimStageStamp(claimPreview.claim, step.role) && !claimStageStamp(claimPreview.claim, step.role).bypassed">
-                                    <p class="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold mt-1">Approved by {{ claimStageStamp(claimPreview.claim, step.role).approvedByName }}</p>
+                                    <p class="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold mt-1">Approved by {{ approverNameLive(claimStageStamp(claimPreview.claim, step.role).approvedByUid, claimStageStamp(claimPreview.claim, step.role).approvedByName) }}</p>
                                     <p class="text-[9px] text-slate-400 mt-0.5">{{ formatDateTime(claimStageStamp(claimPreview.claim, step.role).approvedAt) }}</p>
                                 </template>
                                 <template v-else-if="claimStageStamp(claimPreview.claim, step.role) && claimStageStamp(claimPreview.claim, step.role).bypassed">
@@ -3028,12 +3028,12 @@
                             </div>
                         </div>
                         <div v-if="claimPreview.claim.approvedByName" class="mt-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3 text-emerald-800 dark:text-emerald-200">
-                            <p class="font-bold">Approved by {{ claimPreview.claim.approvedByName }} ({{ claimPreview.claim.approvedByRole }}).</p>
+                            <p class="font-bold">Approved by {{ approverNameLive(claimPreview.claim.approvedByUid, claimPreview.claim.approvedByName) }} ({{ claimPreview.claim.approvedByRole }}).</p>
                             <p v-if="claimPreview.claim.approvalPath" class="mt-1 font-extrabold">{{ claimPreview.claim.approvalPath }}</p>
                             <p v-if="claimPreview.claim.bypassedReviews && claimPreview.claim.bypassedReviews.length" class="mt-1 text-[10px]">HR/Finance stages bypassed: {{ claimPreview.claim.bypassedReviews.join(', ') }}. No further review required.</p>
                             <p class="text-[10px] mt-1">{{ formatDateTime(claimPreview.claim.approvedAt) }}</p>
                         </div>
-                        <p v-if="claimPreview.claim.rejectedByName" class="mt-4 text-red-600 dark:text-red-300 font-bold">Rejected by {{ claimPreview.claim.rejectedByName }} ({{ claimPreview.claim.rejectedByRole }}) on {{ formatDateTime(claimPreview.claim.rejectedAt) }}.</p>
+                        <p v-if="claimPreview.claim.rejectedByName" class="mt-4 text-red-600 dark:text-red-300 font-bold">Rejected by {{ approverNameLive(claimPreview.claim.rejectedByUid, claimPreview.claim.rejectedByName) }} ({{ claimPreview.claim.rejectedByRole }}) on {{ formatDateTime(claimPreview.claim.rejectedAt) }}.</p>
                     </section>
 
                     <section class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700"><div class="flex items-center justify-between gap-3"><div><h4 class="font-extrabold text-brand-dark dark:text-white uppercase tracking-wide"><i class="fa-solid fa-paperclip mr-2 text-brand-gold"></i>{{ claimPreview.claim.documentType === 'Payment Voucher' ? 'Supporting Document' : 'Receipt Attachment' }}</h4><p class="text-slate-400 mt-1">{{ claimPreview.claim.receiptAttachmentName || 'Attached receipt' }}</p></div><button v-if="claimPreview.claim.receiptAttachment" type="button" @click="openAttachment(claimPreview.claim.receiptAttachment, 'Receipt attachment')" class="bg-brand-dark hover:bg-brand-blue text-white px-3 py-2 rounded-lg font-bold text-xs"><i class="fa-solid fa-eye mr-1"></i>View Attachment</button></div><img v-if="isSupportedImageAttachment(claimPreview.claim.receiptAttachment)" :src="claimPreview.claim.receiptAttachment" alt="Claim receipt preview" class="mt-4 max-h-72 rounded-lg border border-slate-200 mx-auto"></section>
