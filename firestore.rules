@@ -600,14 +600,25 @@ service cloud.firestore {
         request.resource.data.name is string && request.resource.data.name.size() <= 200 &&
         request.resource.data.email is string && request.resource.data.email.size() <= 200 &&
         request.resource.data.message is string && request.resource.data.message.size() <= 5000 &&
-        request.resource.data.status == 'UNREAD';
+        request.resource.data.status == 'UNREAD' &&
+        // phone/company/subject/createdAt are optional, but if present they must still be
+        // bounded — otherwise an anonymous submitter could smuggle an oversized/wrong-typed
+        // value into any of these allowlisted keys, since hasOnly() only restricts which
+        // keys exist, not what they contain.
+        (!('phone' in request.resource.data) || (request.resource.data.phone is string && request.resource.data.phone.size() <= 50)) &&
+        (!('company' in request.resource.data) || (request.resource.data.company is string && request.resource.data.company.size() <= 200)) &&
+        (!('subject' in request.resource.data) || (request.resource.data.subject is string && request.resource.data.subject.size() <= 200)) &&
+        (!('createdAt' in request.resource.data) || request.resource.data.createdAt is string);
       allow read, update, delete: if isAdmin();
     }
 
     // Pageview analytics — anyone can log a visit, only admins read the log.
     match /analytics_events/{document=**} {
       allow create: if request.resource.data.keys().hasOnly(['page', 'referrer', 'lang', 'timestamp']) &&
-        request.resource.data.page is string && request.resource.data.page.size() <= 300;
+        request.resource.data.page is string && request.resource.data.page.size() <= 300 &&
+        (!('referrer' in request.resource.data) || (request.resource.data.referrer is string && request.resource.data.referrer.size() <= 500)) &&
+        (!('lang' in request.resource.data) || (request.resource.data.lang is string && request.resource.data.lang.size() <= 10)) &&
+        (!('timestamp' in request.resource.data) || request.resource.data.timestamp is string);
       allow read: if isAdmin();
     }
   }
