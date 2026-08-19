@@ -3303,6 +3303,16 @@ createApp({
             const customer = this.customers.find(c => c.id === clientDirectoryId);
             return customer?.clientSSM || fallbackSSM || '';
         },
+        // Mirrors clientTierForId/clientSsmForId — projects.clientName is a snapshot
+        // taken when the project was linked, so renaming a client in the Client
+        // Directory wouldn't otherwise show up on already-created projects. This
+        // resolves live against the current customers record, falling back to the
+        // snapshot only if the client record itself is unavailable (deleted, or the
+        // customers list hasn't loaded for this role yet).
+        clientNameForId(clientDirectoryId, fallbackName = '') {
+            const customer = this.customers.find(c => c.id === clientDirectoryId);
+            return customer?.clientName || fallbackName || '';
+        },
         clientProjectCount(clientDirectoryId) {
             if (!clientDirectoryId) return 0;
             return this.projects.filter(p => p.clientDirectoryId === clientDirectoryId).length;
@@ -3638,41 +3648,46 @@ createApp({
             const employeeId = String(employee.empNo || '').trim();
             if (!employeeId) throw new Error('Employee ID is required to synchronize linked records.');
 
-            const [claimsSnapshot, vouchersSnapshot, payslipsSnapshot, projectsSnapshot] = await Promise.all([
+            // Projects stay live (an active PIC assignment should always show current
+            // identity), but claims/vouchers/payslips are point-in-time payroll and
+            // audit records: once a claim/voucher is Approved (or a payslip is issued
+            // at all — this app has no "draft" payslip state, every payslip record IS
+            // the issued document), it must keep showing the employee's name/position/
+            // department exactly as they were on that date. Retroactively rewriting an
+            // approved claim or an old payslip just because the employee was later
+            // promoted or moved departments would falsify the historical record — so
+            // only still-pending claims/vouchers are synced, and payslips are never
+            // touched by this cascade at all.
+            const [claimsSnapshot, vouchersSnapshot, projectsSnapshot] = await Promise.all([
                 getDocs(query(collection(db, 'claims'), where('empNo', '==', employeeId))),
                 getDocs(query(collection(db, 'payment_vouchers'), where('empNo', '==', employeeId))),
-                getDocs(query(collection(db, 'payslips'), where('raw.empNo', '==', employeeId))),
                 getDocs(query(collection(db, 'projects'), where('ownerEmpNo', '==', employeeId)))
             ]);
             const writes = [];
-            claimsSnapshot.forEach(record => writes.push({
-                ref: record.ref,
-                data: {
-                    name: employee.name || '',
-                    position: employee.position || '',
-                    dept: employee.dept || '',
-                    empEmail: employee.email || ''
-                }
-            }));
-            vouchersSnapshot.forEach(record => writes.push({
-                ref: record.ref,
-                data: {
-                    name: employee.name || '',
-                    position: employee.position || '',
-                    dept: employee.dept || '',
-                    empEmail: employee.email || ''
-                }
-            }));
-            payslipsSnapshot.forEach(record => writes.push({
-                ref: record.ref,
-                data: {
-                    name: employee.name || '',
-                    'raw.name': employee.name || '',
-                    'raw.position': employee.position || '',
-                    'raw.dept': employee.dept || '',
-                    'raw.empEmail': employee.email || ''
-                }
-            }));
+            claimsSnapshot.forEach(record => {
+                if (record.data().status === 'Approved') return;
+                writes.push({
+                    ref: record.ref,
+                    data: {
+                        name: employee.name || '',
+                        position: employee.position || '',
+                        dept: employee.dept || '',
+                        empEmail: employee.email || ''
+                    }
+                });
+            });
+            vouchersSnapshot.forEach(record => {
+                if (record.data().status === 'Approved') return;
+                writes.push({
+                    ref: record.ref,
+                    data: {
+                        name: employee.name || '',
+                        position: employee.position || '',
+                        dept: employee.dept || '',
+                        empEmail: employee.email || ''
+                    }
+                });
+            });
             projectsSnapshot.forEach(record => writes.push({
                 ref: record.ref,
                 data: {
