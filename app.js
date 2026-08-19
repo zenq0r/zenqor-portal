@@ -11,6 +11,7 @@ import {
     setDoc,
     updateDoc,
     deleteDoc,
+    deleteField,
     onSnapshot,
     getDocs,
     writeBatch,
@@ -83,12 +84,142 @@ const STATUTORY_RATES = {
     }
 };
 
+// Every translatable data-i18n key on zenqor-tech (mirrors translations.en in
+// zenqor-tech/script.js) — lets the Website Content > Page Text editor override any
+// piece of copy on any zenqor-tech page by writing content/site_text.{key} = {en, ms}.
+// Labels are auto-derived from the key name, not hand-curated, so keep this list and
+// script.js's translations.en in sync manually if a new key is added there.
+const SITE_TEXT_KEYS = [
+    { key: 'nav_home', label: 'Nav Home', group: 'Navigation' },
+    { key: 'nav_services', label: 'Nav Services', group: 'Navigation' },
+    { key: 'nav_portfolio', label: 'Nav Portfolio', group: 'Navigation' },
+    { key: 'nav_about', label: 'Nav About', group: 'Navigation' },
+    { key: 'nav_faq', label: 'Nav Faq', group: 'Navigation' },
+    { key: 'nav_contact', label: 'Nav Contact', group: 'Navigation' },
+    { key: 'nav_port_gaming', label: 'Nav Port Gaming', group: 'Navigation' },
+    { key: 'nav_port_web', label: 'Nav Port Web', group: 'Navigation' },
+    { key: 'nav_return', label: 'Nav Return', group: 'Navigation' },
+    { key: 'nav_legal', label: 'Nav Legal', group: 'Navigation' },
+    { key: 'nav_data', label: 'Nav Data', group: 'Navigation' },
+    { key: 'hero_badge', label: 'Hero Badge', group: 'Home - Hero & Stats' },
+    { key: 'hero_title', label: 'Hero Title', group: 'Home - Hero & Stats' },
+    { key: 'hero_sub', label: 'Hero - Subtitle', group: 'Home - Hero & Stats' },
+    { key: 'btn_portfolio', label: 'Btn Portfolio', group: 'Home - Hero & Stats' },
+    { key: 'btn_contact', label: 'Btn Contact', group: 'Home - Hero & Stats' },
+    { key: 'stat_1', label: 'Stat 1', group: 'Home - Hero & Stats' },
+    { key: 'stat_2', label: 'Stat 2', group: 'Home - Hero & Stats' },
+    { key: 'stat_3', label: 'Stat 3', group: 'Home - Hero & Stats' },
+    { key: 'stat_gov', label: 'Stat Gov', group: 'Home - Hero & Stats' },
+    { key: 'stat_4', label: 'Stat 4', group: 'Home - Hero & Stats' },
+    { key: 'trust_badge_1', label: 'Trust Badge 1', group: 'Home - Hero & Stats' },
+    { key: 'trust_badge_2', label: 'Trust Badge 2', group: 'Home - Hero & Stats' },
+    { key: 'trust_badge_3', label: 'Trust Badge 3', group: 'Home - Hero & Stats' },
+    { key: 'trust_badge_4', label: 'Trust Badge 4', group: 'Home - Hero & Stats' },
+    { key: 'testimonials_title', label: 'Testimonials Title', group: 'Home - Testimonials' },
+    { key: 'testimonials_sub', label: 'Testimonials - Subtitle', group: 'Home - Testimonials' },
+    { key: 'process_title', label: 'Process Title', group: 'Home - How We Work' },
+    { key: 'process_sub', label: 'Process - Subtitle', group: 'Home - How We Work' },
+    { key: 'process_1_t', label: 'Process 1 - Title', group: 'Home - How We Work' },
+    { key: 'process_1_d', label: 'Process 1 - Description', group: 'Home - How We Work' },
+    { key: 'process_2_t', label: 'Process 2 - Title', group: 'Home - How We Work' },
+    { key: 'process_2_d', label: 'Process 2 - Description', group: 'Home - How We Work' },
+    { key: 'process_3_t', label: 'Process 3 - Title', group: 'Home - How We Work' },
+    { key: 'process_3_d', label: 'Process 3 - Description', group: 'Home - How We Work' },
+    { key: 'process_4_t', label: 'Process 4 - Title', group: 'Home - How We Work' },
+    { key: 'process_4_d', label: 'Process 4 - Description', group: 'Home - How We Work' },
+    { key: 'process_note', label: 'Process Note', group: 'Home - How We Work' },
+    { key: 'cookie_text', label: 'Cookie Text', group: 'Cookie Banner' },
+    { key: 'cookie_accept', label: 'Cookie Accept', group: 'Cookie Banner' },
+    { key: 'cookie_decline', label: 'Cookie Decline', group: 'Cookie Banner' },
+    { key: 'about_title', label: 'About Title', group: 'About Page' },
+    { key: 'about_sub', label: 'About - Subtitle', group: 'About Page' },
+    { key: 'tech_1', label: 'Tech 1', group: 'About Page' },
+    { key: 'tech_2', label: 'Tech 2', group: 'About Page' },
+    { key: 'tech_3', label: 'Tech 3', group: 'About Page' },
+    { key: 'tech_4', label: 'Tech 4', group: 'About Page' },
+    { key: 'tech_1_li1', label: 'Tech 1 - List Item 1', group: 'About Page' },
+    { key: 'tech_1_li2', label: 'Tech 1 - List Item 2', group: 'About Page' },
+    { key: 'tech_1_li3', label: 'Tech 1 - List Item 3', group: 'About Page' },
+    { key: 'tech_2_li1', label: 'Tech 2 - List Item 1', group: 'About Page' },
+    { key: 'tech_2_li2', label: 'Tech 2 - List Item 2', group: 'About Page' },
+    { key: 'tech_2_li3', label: 'Tech 2 - List Item 3', group: 'About Page' },
+    { key: 'tech_3_li1', label: 'Tech 3 - List Item 1', group: 'About Page' },
+    { key: 'tech_3_li2', label: 'Tech 3 - List Item 2', group: 'About Page' },
+    { key: 'tech_3_li3', label: 'Tech 3 - List Item 3', group: 'About Page' },
+    { key: 'tech_4_li1', label: 'Tech 4 - List Item 1', group: 'About Page' },
+    { key: 'tech_4_li2', label: 'Tech 4 - List Item 2', group: 'About Page' },
+    { key: 'tech_4_li3', label: 'Tech 4 - List Item 3', group: 'About Page' },
+    { key: 'agencies_title', label: 'Agencies Title', group: 'About Page' },
+    { key: 'agencies_sub', label: 'Agencies - Subtitle', group: 'About Page' },
+    { key: 'srv_main_title', label: 'Srv Main Title', group: 'Services Page' },
+    { key: 'srv_main_sub', label: 'Srv Main - Subtitle', group: 'Services Page' },
+    { key: 'srv_1_t', label: 'Srv 1 - Title', group: 'Services Page' },
+    { key: 'srv_1_d', label: 'Srv 1 - Description', group: 'Services Page' },
+    { key: 'srv_2_t', label: 'Srv 2 - Title', group: 'Services Page' },
+    { key: 'srv_2_d', label: 'Srv 2 - Description', group: 'Services Page' },
+    { key: 'srv_3_t', label: 'Srv 3 - Title', group: 'Services Page' },
+    { key: 'srv_3_d', label: 'Srv 3 - Description', group: 'Services Page' },
+    { key: 'srv_4_t', label: 'Srv 4 - Title', group: 'Services Page' },
+    { key: 'srv_4_d', label: 'Srv 4 - Description', group: 'Services Page' },
+    { key: 'srv_5_t', label: 'Srv 5 - Title', group: 'Services Page' },
+    { key: 'srv_5_d', label: 'Srv 5 - Description', group: 'Services Page' },
+    { key: 'srv_6_t', label: 'Srv 6 - Title', group: 'Services Page' },
+    { key: 'srv_6_d', label: 'Srv 6 - Description', group: 'Services Page' },
+    { key: 'con_title', label: 'Con Title', group: 'Contact Page' },
+    { key: 'con_sub', label: 'Con - Subtitle', group: 'Contact Page' },
+    { key: 'hq_title', label: 'Hq Title', group: 'Contact Page' },
+    { key: 'hq_addr', label: 'Hq Addr', group: 'Contact Page' },
+    { key: 'email_caption', label: 'Email Caption', group: 'Contact Page' },
+    { key: 'ph_name', label: 'Ph Name', group: 'Contact Page' },
+    { key: 'ph_email', label: 'Ph Email', group: 'Contact Page' },
+    { key: 'ph_msg', label: 'Ph Msg', group: 'Contact Page' },
+    { key: 'ph_phone', label: 'Ph Phone', group: 'Contact Page' },
+    { key: 'ph_company', label: 'Ph Company', group: 'Contact Page' },
+    { key: 'opt_def', label: 'Opt Def', group: 'Contact Page' },
+    { key: 'opt_1', label: 'Opt 1', group: 'Contact Page' },
+    { key: 'opt_2', label: 'Opt 2', group: 'Contact Page' },
+    { key: 'opt_3', label: 'Opt 3', group: 'Contact Page' },
+    { key: 'opt_4', label: 'Opt 4', group: 'Contact Page' },
+    { key: 'btn_submit', label: 'Btn Submit', group: 'Contact Page' },
+    { key: 'btn_processing', label: 'Btn Processing', group: 'Contact Page' },
+    { key: 'biz_hours_title', label: 'Biz Hours Title', group: 'Contact Page' },
+    { key: 'biz_hours_weekday', label: 'Biz Hours Weekday', group: 'Contact Page' },
+    { key: 'biz_hours_weekend', label: 'Biz Hours Weekend', group: 'Contact Page' },
+    { key: 'loading_services', label: 'Loading Services', group: 'Loading / Error Messages' },
+    { key: 'loading_portfolio', label: 'Loading Portfolio', group: 'Loading / Error Messages' },
+    { key: 'error_db', label: 'Error Db', group: 'Loading / Error Messages' },
+    { key: 'faq_page_title', label: 'Faq Page Title', group: 'FAQ Page' },
+    { key: 'faq_sub', label: 'Faq - Subtitle', group: 'FAQ Page' },
+    { key: 'faq_1_q', label: 'Faq 1 - Question', group: 'FAQ Page' },
+    { key: 'faq_1_a', label: 'Faq 1 - Answer', group: 'FAQ Page' },
+    { key: 'faq_2_q', label: 'Faq 2 - Question', group: 'FAQ Page' },
+    { key: 'faq_2_a', label: 'Faq 2 - Answer', group: 'FAQ Page' },
+    { key: 'faq_3_q', label: 'Faq 3 - Question', group: 'FAQ Page' },
+    { key: 'faq_3_a', label: 'Faq 3 - Answer', group: 'FAQ Page' },
+    { key: 'pg_hero_title', label: 'Pg Hero Title', group: 'Licensing & Permits Page (Hero)' },
+    { key: 'pg_hero_sub', label: 'Pg Hero - Subtitle', group: 'Licensing & Permits Page (Hero)' },
+    { key: 'pw_hero_title', label: 'Pw Hero Title', group: 'Digital Systems Page (Hero)' },
+    { key: 'pw_hero_sub', label: 'Pw Hero - Subtitle', group: 'Digital Systems Page (Hero)' },
+    { key: 'tos_content', label: 'Tos Content', group: 'Legal Notices' },
+    { key: 'rp_content', label: 'Rp Content', group: 'Return & Refund Policy' },
+    { key: 'dp_title', label: 'Dp Title', group: 'Data Policy' },
+    { key: 'dp_desc1', label: 'Dp Desc1', group: 'Data Policy' },
+    { key: 'dp_desc2', label: 'Dp Desc2', group: 'Data Policy' },
+    { key: 'footer_copy', label: 'Footer Copy', group: 'Footer' },
+];
+
 const RBAC_ROLES = {
-    'Director': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
-    'Superadmin': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'audit-logs', 'settings', 'profile'],
+    // 'website-content' manages the public zenqor-tech site's Firestore-backed
+    // Portfolio galleries (portfolio_web = Digital Systems, portfolio_gaming =
+    // Licensing & Permits), the Services page, and page-text overrides
+    // (content/site_text). Restricted to Superadmin/Director/IT only — see
+    // isContentAdmin() in firestore.rules, which grants write on exactly these
+    // collections to that same set of roles (not the full isAdmin() surface).
+    'Director': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'website-content', 'audit-logs', 'settings', 'profile'],
+    'Superadmin': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'website-content', 'audit-logs', 'settings', 'profile'],
     'HR': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
     'Account': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'profile'],
-    'IT': ['dashboard', 'project-activities', 'audit-logs', 'settings', 'profile'],
+    'IT': ['dashboard', 'project-activities', 'website-content', 'audit-logs', 'settings', 'profile'],
     'Client': ['project-activities', 'client-portal', 'client-documents', 'client-updates', 'client-support', 'profile'],
     'Staff': ['dashboard', 'project-activities', 'claims', 'profile']
 };
@@ -263,6 +394,24 @@ createApp({
             expandedClientGroups: new Set(),
             projectPreview: { show: false, project: null },
             clientDocuments: { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false, error: '' },
+            // Public-site content management: Firestore-backed content consumed directly by
+            // zenqor-tech — Portfolio galleries (portfolio_web = Digital Systems,
+            // portfolio_gaming = Licensing & Permits), the Services page, and page-text
+            // overrides (content/site_text, any data-i18n key on any page). Once any doc
+            // exists in a portfolio_web/portfolio_gaming/services collection, the matching
+            // public page shows ONLY Firestore items — fallback content stops showing.
+            websiteContentTab: 'portfolio_web',
+            websiteContent: { portfolio_web: [], portfolio_gaming: [], services: [] },
+            websiteContentModal: {
+                show: false,
+                isEdit: false,
+                collectionName: 'portfolio_web',
+                id: '',
+                form: { tag: '', title: '', desc: '', imgUrl: '', icon: '', name: '' }
+            },
+            siteTextOverrides: {},
+            siteTextFilter: { group: 'all', search: '' },
+            siteTextModal: { show: false, key: '', label: '', form: { en: '', ms: '' } },
             projectStages: ['Project Planning', 'Pending Documentation', 'In Progress', 'Pending By Government', 'Completed & Done'],
             projectModal: {
                 show: false,
@@ -325,6 +474,7 @@ createApp({
                 { key: 'client-documents', label: 'Client Documents & Billing' },
                 { key: 'client-updates', label: 'Client Project Updates' },
                 { key: 'client-support', label: 'Client Help & Support' },
+                { key: 'website-content', label: 'Website Content (zenqor-tech Portfolio, Services, Page Text)' },
                 { key: 'audit-logs', label: 'Audit Logs' },
                 { key: 'settings', label: 'Settings' },
                 { key: 'profile', label: 'Profile' }
@@ -575,23 +725,23 @@ createApp({
         myPendingClaimsCount() { return [...this.myClaims, ...this.myPaymentVouchers].filter(c => c.status && c.status.includes('Pending')).length; },
         myApprovedClaimsAmount() { return [...this.myClaims, ...this.myPaymentVouchers].filter(c => c.status === 'Approved').reduce((sum, c) => sum + (Number(c.amount) || 0), 0); },
 
-        myClientDocs() { return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email); },
+        // A secondary authorized contact's own email never matches raw.clientEmail
+        // (always the primary contact's), so prefer matching by the shared
+        // clientDirectoryId claim — same linkage the docs query itself now uses.
+        myClientDocs() {
+            return this.docHistory.filter(d => d.raw && (
+                this.userProfile.clientDirectoryId
+                    ? d.raw.customerId === this.userProfile.clientDirectoryId
+                    : d.raw.clientEmail === this.userProfile.email
+            ));
+        },
         myClientRecord() {
-            // clientDirectoryId (from the Client custom claim) is the authoritative
-            // link — match on it first. Email matching is a fallback for legacy
-            // accounts without that claim, and must also check additionalClientEmails
-            // so a client signed in under a secondary email still resolves.
             if (this.userProfile.clientDirectoryId) {
-                const byId = this.customers.find(c => c.id === this.userProfile.clientDirectoryId);
-                if (byId) return byId;
+                return this.customers.find(c => c.id === this.userProfile.clientDirectoryId) || null;
             }
             const email = String(this.userProfile.email || '').trim().toLowerCase();
             if (!email) return null;
-            return this.customers.find(c => {
-                const emails = [c.clientEmail, ...(Array.isArray(c.additionalClientEmails) ? c.additionalClientEmails : [])]
-                    .map(e => String(e || '').trim().toLowerCase());
-                return emails.includes(email);
-            }) || null;
+            return this.customers.find(c => String(c.clientEmail || '').trim().toLowerCase() === email) || null;
         },
         clientPortalIdentity() {
             if (this.myClientRecord) return this.myClientRecord;
@@ -690,7 +840,11 @@ createApp({
 
         clientPortalDocs() {
             if (this.userProfile.role === 'Client' || this.userProfile.role === 'Staff') {
-                return this.docHistory.filter(d => d.raw && d.raw.clientEmail === this.userProfile.email);
+                return this.docHistory.filter(d => d.raw && (
+                    this.userProfile.clientDirectoryId
+                        ? d.raw.customerId === this.userProfile.clientDirectoryId
+                        : d.raw.clientEmail === this.userProfile.email
+                ));
             }
             return this.docHistory;
         },
@@ -931,7 +1085,10 @@ createApp({
             return this.canManageProjects || (this.userProfile.role !== 'Client' && String(project?.ownerEmail || '').trim().toLowerCase() === email);
         },
         canReplyAsClient(project) {
-            return this.userProfile.role === 'Client' && String(project?.clientPortalUid || '') === String(this.userProfile.uid || '');
+            // A secondary authorized contact's uid never matches the project's single
+            // clientPortalUid (always the primary contact's), so authorize by the shared
+            // clientDirectoryId claim instead of comparing uids directly.
+            return this.userProfile.role === 'Client' && Boolean(this.userProfile.clientDirectoryId) && String(project?.clientDirectoryId || '') === String(this.userProfile.clientDirectoryId || '');
         },
         canEditClientUpdate(update) {
             return this.canManageProjects || String(update?.senderUid || '') === String(this.userProfile.uid || '');
@@ -978,6 +1135,7 @@ createApp({
                 projectId: project.id,
                 projectRef: project.projectRef,
                 projectTitle: project.title,
+                clientDirectoryId: project.clientDirectoryId,
                 clientPortalUid: project.clientPortalUid,
                 clientEmail: project.clientEmail,
                 updateType: form.updateType,
@@ -1016,6 +1174,7 @@ createApp({
                 projectId: project.id,
                 projectRef: project.projectRef,
                 projectTitle: project.title,
+                clientDirectoryId: project.clientDirectoryId,
                 clientPortalUid: this.userProfile.uid,
                 clientEmail: project.clientEmail,
                 updateType: 'Client Reply',
@@ -1865,9 +2024,12 @@ createApp({
             this.clientDocuments.error = '';
             try {
                 const baseCol = collection(db, 'client_documents');
-                const q = this.userProfile.role === 'Client'
-                    ? query(baseCol, where('clientDirectoryId', '==', clientDirectoryId), where('clientEmail', '==', this.userProfile.email))
-                    : query(baseCol, where('clientDirectoryId', '==', clientDirectoryId));
+                // Firestore Rules independently re-verify access via customerEmailMatches()
+                // against the linked customers record, so this query only needs to scope
+                // by clientDirectoryId — filtering on the primary contact's own clientEmail
+                // here would incorrectly hide these documents from an authorized secondary
+                // client contact (see customers/{id}.additionalClientEmails).
+                const q = query(baseCol, where('clientDirectoryId', '==', clientDirectoryId));
                 const snapshot = await getDocs(q);
                 if (this.clientDocuments.clientDirectoryId !== clientDirectoryId) return;
                 this.clientDocuments.items = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || '')));
@@ -2062,6 +2224,10 @@ createApp({
         hasModulePermission(moduleName, action) {
             const override = this.userProfile.customAccess && this.userProfile.customAccess[moduleName];
             if (override && typeof override[action] === 'boolean') return override[action];
+            // website-content grants IT full edit+delete (firestore.rules' isContentAdmin()
+            // covers IT for these public-site collections too), unlike every other module
+            // where 'delete' defaults to Superadmin/Director only.
+            if (action === 'delete' && moduleName === 'website-content') return this.hasAccess(moduleName);
             if (action === 'delete') return ['Superadmin', 'Director'].includes(this.userProfile.role);
             return this.hasAccess(moduleName);
         },
@@ -3109,7 +3275,12 @@ createApp({
         // Project Activities (delivery velocity) — a signal only possible with HR + Client data unified.
         clientHealthScore(cust) {
             if (!cust) return { score: 0, label: 'No Data', className: 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400' };
-            const clientInvoices = this.docHistory.filter(d => d.type === 'Invoice' && d.name === cust.clientName);
+            // Match by the linked customer record id, not the display name — two distinct
+            // clients can share the same clientName (see saveCustomerToDatabase's own guard
+            // against this), which would otherwise silently conflate their invoice totals.
+            const clientInvoices = cust.id
+                ? this.docHistory.filter(d => d.type === 'Invoice' && d.raw && d.raw.customerId === cust.id)
+                : this.docHistory.filter(d => d.type === 'Invoice' && d.name === cust.clientName);
             const totalInvoiced = clientInvoices.reduce((s, d) => s + (Number(d.amount) || 0), 0);
             const totalPaid = clientInvoices.filter(d => d.status === 'Paid').reduce((s, d) => s + (Number(d.amount) || 0), 0);
             const paymentScore = totalInvoiced > 0 ? Math.round((totalPaid / totalInvoiced) * 50) : 35;
@@ -3147,6 +3318,129 @@ createApp({
             if (newest === null) return false;
             const ageMs = Date.now() - newest;
             return ageMs >= 0 && ageMs <= 3 * 24 * 60 * 60 * 1000;
+        },
+
+        // ── Website Content (zenqor-tech Portfolio, Services, Page Text) ────────
+        websiteContentLabel(collectionName) {
+            if (collectionName === 'portfolio_gaming') return 'Licensing & Permits';
+            if (collectionName === 'services') return 'Services';
+            return 'Digital Systems';
+        },
+        openWebsiteContentModal(collectionName, item = null) {
+            if (!this.hasModulePermission('website-content', 'edit')) { this.showNotify('You do not have permission to manage website content.'); return; }
+            this.websiteContentModal = {
+                show: true,
+                isEdit: Boolean(item),
+                collectionName,
+                id: item?.id || '',
+                form: { tag: item?.tag || '', title: item?.title || '', desc: item?.desc || '', imgUrl: item?.imgUrl || '', icon: item?.icon || '', name: item?.name || '' }
+            };
+        },
+        closeWebsiteContentModal() {
+            this.websiteContentModal = { show: false, isEdit: false, collectionName: 'portfolio_web', id: '', form: { tag: '', title: '', desc: '', imgUrl: '', icon: '', name: '' } };
+        },
+        async saveWebsiteContentItem() {
+            if (!this.hasModulePermission('website-content', 'edit')) { this.showNotify('You do not have permission to manage website content.'); return; }
+            const collectionName = this.websiteContentModal.collectionName;
+            const isServices = collectionName === 'services';
+            const form = this.websiteContentModal.form;
+            const desc = form.desc.trim();
+            let payload;
+            if (isServices) {
+                const icon = form.icon.trim();
+                const name = form.name.trim();
+                if (!icon || !name || !desc) { this.showNotify('Fill in Icon, Name and Description.'); return; }
+                if (!/^fa[a-z]?\s+fa-[\w-]+$/i.test(icon)) { this.showNotify('Icon must be a Font Awesome class, e.g. "fas fa-building".'); return; }
+                payload = { icon, name, desc };
+            } else {
+                const tag = form.tag.trim();
+                const title = form.title.trim();
+                const imgUrl = form.imgUrl.trim();
+                if (!tag || !title || !desc || !imgUrl) { this.showNotify('Fill in Tag, Title, Description and Image URL.'); return; }
+                if (!/^https:\/\//i.test(imgUrl)) { this.showNotify('Image URL must start with https:// (paste a direct link to a hosted image).'); return; }
+                payload = { tag, title, desc, imgUrl };
+            }
+            const label = isServices ? payload.name : payload.title;
+            try {
+                payload.updatedAt = new Date().toISOString();
+                payload.updatedByUid = this.userProfile.uid;
+                payload.updatedByEmail = this.userProfile.email;
+                if (this.websiteContentModal.isEdit) {
+                    await setDoc(doc(db, collectionName, this.websiteContentModal.id), payload, { merge: true });
+                    this.logAudit('UPDATE', `Updated ${this.websiteContentLabel(collectionName)} item "${label}"`);
+                    this.showNotify('Website content updated.');
+                } else {
+                    const newId = doc(collection(db, collectionName)).id;
+                    await setDoc(doc(db, collectionName, newId), { ...payload, createdAt: new Date().toISOString(), createdByUid: this.userProfile.uid, createdByEmail: this.userProfile.email });
+                    this.logAudit('CREATE', `Added ${this.websiteContentLabel(collectionName)} item "${label}"`);
+                    this.showNotify('Website content published to the live site.');
+                }
+                this.closeWebsiteContentModal();
+            } catch (error) {
+                console.error('Website content save failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'save this website content item'));
+            }
+        },
+        async deleteWebsiteContentItem(collectionName, item) {
+            if (!this.hasModulePermission('website-content', 'delete')) { this.showNotify('You do not have permission to delete website content.'); return; }
+            const label = collectionName === 'services' ? item.name : item.title;
+            if (!confirm(`Delete "${label}" from ${this.websiteContentLabel(collectionName)}? This removes it from the live site immediately.`)) return;
+            try {
+                await deleteDoc(doc(db, collectionName, item.id));
+                this.logAudit('DELETE', `Deleted ${this.websiteContentLabel(collectionName)} item "${label}"`);
+                this.showNotify('Website content deleted.');
+            } catch (error) {
+                console.error('Website content delete failed:', error);
+                this.showNotify('Unable to delete website content.');
+            }
+        },
+
+        // ── Website Content: Page Text overrides (content/site_text) ────────────
+        siteTextGroups() {
+            return ['all', ...new Set(SITE_TEXT_KEYS.map(row => row.group))];
+        },
+        filteredSiteTextRows() {
+            const search = this.siteTextFilter.search.trim().toLowerCase();
+            return SITE_TEXT_KEYS
+                .filter(row => this.siteTextFilter.group === 'all' || row.group === this.siteTextFilter.group)
+                .filter(row => !search || row.key.toLowerCase().includes(search) || row.label.toLowerCase().includes(search))
+                .map(row => ({ ...row, override: this.siteTextOverrides[row.key] || null }));
+        },
+        openSiteTextModal(row) {
+            if (!this.hasModulePermission('website-content', 'edit')) { this.showNotify('You do not have permission to manage website content.'); return; }
+            const existing = this.siteTextOverrides[row.key];
+            this.siteTextModal = { show: true, key: row.key, label: row.label, form: { en: existing?.en || '', ms: existing?.ms || '' } };
+        },
+        closeSiteTextModal() {
+            this.siteTextModal = { show: false, key: '', label: '', form: { en: '', ms: '' } };
+        },
+        async saveSiteTextOverride() {
+            if (!this.hasModulePermission('website-content', 'edit')) { this.showNotify('You do not have permission to manage website content.'); return; }
+            const key = this.siteTextModal.key;
+            const en = this.siteTextModal.form.en.trim();
+            const ms = this.siteTextModal.form.ms.trim();
+            if (!en && !ms) { this.showNotify('Enter English and/or Malay text before saving.'); return; }
+            try {
+                await setDoc(doc(db, 'content', 'site_text'), { [key]: { en, ms } }, { merge: true });
+                this.logAudit('UPDATE', `Updated page text override "${key}"`);
+                this.showNotify('Page text updated on the live site.');
+                this.closeSiteTextModal();
+            } catch (error) {
+                console.error('Page text save failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'save this page text override'));
+            }
+        },
+        async resetSiteTextOverride(key) {
+            if (!this.hasModulePermission('website-content', 'delete')) { this.showNotify('You do not have permission to manage website content.'); return; }
+            if (!confirm(`Reset "${key}" to the site's built-in default text? This removes your override.`)) return;
+            try {
+                await setDoc(doc(db, 'content', 'site_text'), { [key]: deleteField() }, { merge: true });
+                this.logAudit('DELETE', `Reset page text override "${key}" to default`);
+                this.showNotify('Reverted to the default text.');
+            } catch (error) {
+                console.error('Page text reset failed:', error);
+                this.showNotify('Unable to reset this page text override.');
+            }
         },
         async updateClientTier(cust, tier) {
             if (!this.canManageClients) { this.showNotify('You do not have permission to update client tier.'); return; }
@@ -3819,6 +4113,28 @@ createApp({
                 this.unsubscribers.push(unsubscribe);
             });
 
+            // Subscribes to multiple query sources for the same logical collection and
+            // merges their docs by id before calling onMerge — used where a single query
+            // can't cover every record a Client-role account is authorized to see (e.g.
+            // records written before/after a schema field was added).
+            const subscribeMergedWithReadySignal = (sources, onMerge, label) => new Promise((resolve) => {
+                const buckets = new Map();
+                let resolved = false;
+                sources.forEach((source, index) => {
+                    const unsubscribe = onSnapshot(source, (snapshot) => {
+                        buckets.set(index, snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+                        const merged = new Map();
+                        buckets.forEach(list => list.forEach(item => merged.set(item.id, item)));
+                        onMerge(Array.from(merged.values()));
+                        if (!resolved) { resolved = true; resolve(); }
+                    }, (error) => {
+                        console.error(`Unable to load ${label}:`, error);
+                        if (!resolved) { resolved = true; resolve(); }
+                    });
+                    this.unsubscribers.push(unsubscribe);
+                });
+            });
+
             const role = this.userProfile.role;
             const canReadAllDocuments = ['Superadmin', 'Director', 'HR', 'Account', 'IT'].includes(role);
             const canReadAllPayslips = ['Superadmin', 'Director', 'HR', 'Account'].includes(role);
@@ -3832,7 +4148,13 @@ createApp({
             const documentsSource = canReadAllDocuments
                 ? collection(db, 'docs')
                 : role === 'Client'
-                    ? query(collection(db, 'docs'), where('raw.clientEmail', '==', this.userProfile.email))
+                    // raw.customerId links to the same customers/{clientDirectoryId} record
+                    // as the "Multi-user Client Portal" claim, so this covers both the primary
+                    // contact and any authorized secondary contact. Falls back to matching by
+                    // the account's own email if the claim hasn't been synced yet.
+                    ? (this.userProfile.clientDirectoryId
+                        ? query(collection(db, 'docs'), where('raw.customerId', '==', this.userProfile.clientDirectoryId))
+                        : query(collection(db, 'docs'), where('raw.clientEmail', '==', this.userProfile.email)))
                     : null;
             const payslipsSource = canReadAllPayslips
                 ? collection(db, 'payslips')
@@ -3855,12 +4177,30 @@ createApp({
                     ? query(collection(db, 'employees'), where('email', '==', this.userProfile.email))
                     : null;
             const projectsSource = role === 'Client'
-                ? query(collection(db, 'projects'), where('clientEmail', '==', this.userProfile.email), where('clientPortalUid', '==', this.userProfile.uid))
+                // clientDirectoryId is a required field on every project (see
+                // hasValidProjectLinks in firestore.rules), so this covers both the primary
+                // contact and any authorized secondary contact under the same customer
+                // record. Falls back to the old uid-based match only if the claim hasn't
+                // been synced yet for this session.
+                ? (this.userProfile.clientDirectoryId
+                    ? query(collection(db, 'projects'), where('clientDirectoryId', '==', this.userProfile.clientDirectoryId))
+                    : query(collection(db, 'projects'), where('clientEmail', '==', this.userProfile.email), where('clientPortalUid', '==', this.userProfile.uid)))
                 : collection(db, 'projects');
             const projectActivitiesSource = role === 'Client' ? null : collection(db, 'project_activities');
-            const projectClientUpdatesSource = role === 'Client'
-                ? query(collection(db, 'project_client_updates'), where('clientPortalUid', '==', this.userProfile.uid))
-                : collection(db, 'project_client_updates');
+            // clientDirectoryId was only added to project_client_updates records once the
+            // Multi-user Client Portal support landed, so older records only carry
+            // clientPortalUid. Subscribe to both queries and merge by doc id so a Client
+            // account keeps seeing its full history regardless of which field a given
+            // record was written with, and a secondary contact sees records addressed to
+            // the shared customer record even though they never match clientPortalUid.
+            const projectClientUpdatesSources = role === 'Client'
+                ? [
+                    query(collection(db, 'project_client_updates'), where('clientPortalUid', '==', this.userProfile.uid)),
+                    ...(this.userProfile.clientDirectoryId
+                        ? [query(collection(db, 'project_client_updates'), where('clientDirectoryId', '==', this.userProfile.clientDirectoryId))]
+                        : [])
+                ]
+                : [collection(db, 'project_client_updates')];
 
             const userSubscription = canReadUserDirectory
                 ? subscribeWithReadySignal(collection(db, 'users'), (snapshot) => {
@@ -3915,6 +4255,26 @@ createApp({
                         this.paymentVouchers = snapshot.docs.map(d => ({ id: d.id, documentType: 'Payment Voucher', type: 'Payment Voucher', ...d.data() }));
                     }, 'payment vouchers')
                     : Promise.resolve(),
+                this.hasAccess('website-content')
+                    ? subscribeWithReadySignal(collection(db, 'portfolio_web'), (snapshot) => {
+                        this.websiteContent.portfolio_web = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+                    }, 'website content — Digital Systems')
+                    : Promise.resolve(),
+                this.hasAccess('website-content')
+                    ? subscribeWithReadySignal(collection(db, 'portfolio_gaming'), (snapshot) => {
+                        this.websiteContent.portfolio_gaming = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+                    }, 'website content — Licensing & Permits')
+                    : Promise.resolve(),
+                this.hasAccess('website-content')
+                    ? subscribeWithReadySignal(collection(db, 'services'), (snapshot) => {
+                        this.websiteContent.services = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+                    }, 'website content — Services')
+                    : Promise.resolve(),
+                this.hasAccess('website-content')
+                    ? subscribeWithReadySignal(doc(db, 'content', 'site_text'), (snapshot) => {
+                        this.siteTextOverrides = snapshot.exists() ? snapshot.data() : {};
+                    }, 'website content — Page Text')
+                    : Promise.resolve(),
                 subscribeWithReadySignal(projectsSource, (snapshot) => { this.projects = snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, 'project activities'),
                 projectActivitiesSource ? subscribeWithReadySignal(projectActivitiesSource, (snapshot) => {
                     const previousIds = new Set(this.projectActivities.map(activity => activity.id));
@@ -3930,9 +4290,9 @@ createApp({
                     }
                     this.projectActivitiesLoaded = true;
                 }, 'project activity issues') : Promise.resolve(),
-                subscribeWithReadySignal(projectClientUpdatesSource, (snapshot) => {
+                subscribeMergedWithReadySignal(projectClientUpdatesSources, (merged) => {
                     const previousIds = new Set(this.projectClientUpdates.map(update => update.id));
-                    this.projectClientUpdates = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    this.projectClientUpdates = merged;
                     if (this.projectClientUpdatesLoaded && role === 'Client') {
                         const newUpdate = this.projectClientUpdates.find(update => !previousIds.has(update.id));
                         if (newUpdate) this.showNotify(`New project update received: ${newUpdate.projectRef}`);
@@ -4051,6 +4411,8 @@ createApp({
                 this.paymentVouchers = [];
                 this.users = [];
                 this.auditLogs = [];
+                this.websiteContent = { portfolio_web: [], portfolio_gaming: [], services: [] };
+                this.siteTextOverrides = {};
                 this.notificationsLog = [];
                 this.notificationsPanelOpen = false;
                 if (this.notificationsSyncTimer) { clearTimeout(this.notificationsSyncTimer); this.notificationsSyncTimer = null; }

@@ -443,6 +443,9 @@
                     <button v-if="userProfile.role !== 'Client' && hasAccess('client-portal')" type="button" @click="switchTab('client-portal')" :class="{'sidebar-item-active': currentTab === 'client-portal', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'client-portal'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
                         <i class="fa-solid fa-user-tie w-5 text-center"></i><span>Client Portal</span>
                     </button>
+                    <button v-if="hasAccess('website-content')" type="button" @click="switchTab('website-content')" :class="{'sidebar-item-active': currentTab === 'website-content', 'text-slate-400 hover:bg-slate-800/60 hover:text-white': currentTab !== 'website-content'}" class="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center space-x-3">
+                        <i class="fa-solid fa-photo-film w-5 text-center"></i><span>Website Content</span>
+                    </button>
 
                     <div v-if="hasAccess('settings') || hasAccess('profile') || hasAccess('audit-logs')" class="pt-3 pb-1">
                         <p class="px-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">{{ userProfile.role === 'Client' ? 'My Account' : 'System & Admin' }}</p>
@@ -2419,6 +2422,60 @@
                         </form>
                     </div>
 
+                    <div v-if="websiteContentModal.show" class="fixed inset-0 z-[99] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" @click.self="closeWebsiteContentModal">
+                        <form @submit.prevent="saveWebsiteContentItem" class="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white dark:bg-slate-800 shadow-2xl">
+                            <header class="flex items-start justify-between border-b border-slate-200 dark:border-slate-700 bg-brand-dark px-6 py-5 text-white">
+                                <div>
+                                    <p class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-teal-300">{{ websiteContentLabel(websiteContentModal.collectionName) }}</p>
+                                    <h3 class="mt-1 text-lg font-extrabold">{{ websiteContentModal.isEdit ? 'Edit Item' : 'Add New Item' }}</h3>
+                                    <p class="mt-1 text-[10px] text-slate-300">Publishes live on zenqor-tech / www.zenq0r.com immediately on save.</p>
+                                </div>
+                                <button type="button" @click="closeWebsiteContentModal" class="h-9 w-9 rounded-lg bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+                            </header>
+                            <div class="grid grid-cols-1 gap-4 p-6">
+                                <template v-if="websiteContentModal.collectionName === 'services'">
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Icon (Font Awesome class) *<input v-model="websiteContentModal.form.icon" required placeholder="e.g. fas fa-building" class="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white px-3 py-2.5 text-xs outline-none focus:border-brand-blue"><span class="mt-1.5 block text-[9px] font-medium text-slate-400 dark:text-slate-500">Browse icons at fontawesome.com — copy the class, e.g. "fas fa-stamp".</span></label>
+                                    <div v-if="websiteContentModal.form.icon" class="flex h-16 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900"><i :class="websiteContentModal.form.icon" class="text-2xl text-brand-blue dark:text-teal-300"></i></div>
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Service Name *<input v-model="websiteContentModal.form.name" required maxlength="120" placeholder="e.g. Business Registration & Company Setup" class="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></label>
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Description *<textarea v-model="websiteContentModal.form.desc" required rows="4" maxlength="500" placeholder="Short description shown on the card." class="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></textarea></label>
+                                </template>
+                                <template v-else>
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Tag / Category *<input v-model="websiteContentModal.form.tag" required maxlength="60" placeholder="e.g. BUSINESS AUTOMATION" class="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></label>
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Title *<input v-model="websiteContentModal.form.title" required maxlength="120" placeholder="e.g. Project & Billing Automation" class="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></label>
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Description *<textarea v-model="websiteContentModal.form.desc" required rows="4" maxlength="500" placeholder="Short description shown on the card." class="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></textarea></label>
+                                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Image URL *<input v-model="websiteContentModal.form.imgUrl" required type="url" placeholder="https://..." class="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white px-3 py-2.5 text-xs outline-none focus:border-brand-blue"><span class="mt-1.5 block text-[9px] font-medium text-slate-400 dark:text-slate-500">Paste a direct link to a hosted image (must start with https://).</span></label>
+                                    <div v-if="websiteContentModal.form.imgUrl" class="h-32 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 bg-cover bg-center" :style="{ backgroundImage: 'url(\'' + websiteContentModal.form.imgUrl + '\')' }"></div>
+                                </template>
+                            </div>
+                            <div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 dark:border-slate-700 px-6 py-4">
+                                <button type="button" @click="closeWebsiteContentModal" class="rounded-xl bg-slate-100 dark:bg-slate-700 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600">Cancel</button>
+                                <button type="submit" class="rounded-xl bg-brand-blue px-5 py-2.5 text-xs font-bold text-white hover:bg-teal-800"><i class="fa-solid fa-floppy-disk mr-1.5"></i>{{ websiteContentModal.isEdit ? 'Save Changes' : 'Publish' }}</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div v-if="siteTextModal.show" class="fixed inset-0 z-[99] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" @click.self="closeSiteTextModal">
+                        <form @submit.prevent="saveSiteTextOverride" class="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white dark:bg-slate-800 shadow-2xl">
+                            <header class="flex items-start justify-between border-b border-slate-200 dark:border-slate-700 bg-brand-dark px-6 py-5 text-white">
+                                <div>
+                                    <p class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-teal-300">Page Text</p>
+                                    <h3 class="mt-1 text-lg font-extrabold">{{ siteTextModal.label }}</h3>
+                                    <p class="mt-1 text-[10px] font-mono text-slate-300">{{ siteTextModal.key }}</p>
+                                </div>
+                                <button type="button" @click="closeSiteTextModal" class="h-9 w-9 rounded-lg bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+                            </header>
+                            <div class="grid grid-cols-1 gap-4 p-6">
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400">Leave both blank to keep the site's built-in default text for this field. This overrides the live site immediately — HTML tags (e.g. &lt;br&gt;, &lt;strong&gt;) are preserved if the default text uses them.</p>
+                                <label class="text-xs font-bold text-slate-700 dark:text-slate-300">English<textarea v-model="siteTextModal.form.en" rows="5" class="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></textarea></label>
+                                <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Bahasa Malaysia<textarea v-model="siteTextModal.form.ms" rows="5" class="mt-1.5 w-full rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white px-3 py-2.5 text-xs outline-none focus:border-brand-blue"></textarea></label>
+                            </div>
+                            <div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 dark:border-slate-700 px-6 py-4">
+                                <button type="button" @click="closeSiteTextModal" class="rounded-xl bg-slate-100 dark:bg-slate-700 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600">Cancel</button>
+                                <button type="submit" class="rounded-xl bg-brand-blue px-5 py-2.5 text-xs font-bold text-white hover:bg-teal-800"><i class="fa-solid fa-floppy-disk mr-1.5"></i>Save</button>
+                            </div>
+                        </form>
+                    </div>
+
                     <div v-if="projectModal.show" class="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" @click.self="closeProjectModal">
                         <form @submit.prevent="saveProject" class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-2xl">
                             <div class="flex items-start justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
@@ -2629,6 +2686,87 @@
                             </table>
                         </div>
                     </div>
+                </div>
+
+                <!-- WEBSITE CONTENT MODULE (zenqor-tech Portfolio, Services, Page Text) -->
+                <div v-show="currentTab === 'website-content'" class="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <button type="button" @click="openSidebar" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center space-x-1.5 shrink-0 shadow-sm" title="Open Navigation Menu">
+                                <i class="fa-solid fa-bars"></i>
+                                <span class="hidden sm:inline">Menu</span>
+                            </button>
+                            <div>
+                                <h2 class="text-xl font-extrabold text-brand-dark dark:text-white tracking-tight">Website Content</h2>
+                                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Manage what's shown on zenqor-tech / www.zenq0r.com — changes go live immediately. Restricted to Superadmin, Director and IT.</p>
+                            </div>
+                        </div>
+                        <button v-if="websiteContentTab !== 'site_text' && hasModulePermission('website-content', 'edit')" type="button" @click="openWebsiteContentModal(websiteContentTab)" class="bg-brand-dark hover:bg-brand-blue text-white font-bold px-4 py-2 rounded-xl shadow-lg transition text-xs flex items-center space-x-2">
+                            <i class="fa-solid fa-plus"></i><span>Add Item</span>
+                        </button>
+                    </div>
+
+                    <div class="flex gap-2 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+                        <button type="button" @click="websiteContentTab = 'portfolio_web'" :class="websiteContentTab === 'portfolio_web' ? 'border-brand-blue text-brand-blue' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-4 py-2.5 text-xs font-bold border-b-2 transition shrink-0">Digital Systems <span class="ml-1 text-slate-400">({{ websiteContent.portfolio_web.length }})</span></button>
+                        <button type="button" @click="websiteContentTab = 'portfolio_gaming'" :class="websiteContentTab === 'portfolio_gaming' ? 'border-brand-blue text-brand-blue' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-4 py-2.5 text-xs font-bold border-b-2 transition shrink-0">Licensing &amp; Permits <span class="ml-1 text-slate-400">({{ websiteContent.portfolio_gaming.length }})</span></button>
+                        <button type="button" @click="websiteContentTab = 'services'" :class="websiteContentTab === 'services' ? 'border-brand-blue text-brand-blue' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-4 py-2.5 text-xs font-bold border-b-2 transition shrink-0">Services <span class="ml-1 text-slate-400">({{ websiteContent.services.length }})</span></button>
+                        <button type="button" @click="websiteContentTab = 'site_text'" :class="websiteContentTab === 'site_text' ? 'border-brand-blue text-brand-blue' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'" class="px-4 py-2.5 text-xs font-bold border-b-2 transition shrink-0">Page Text <span class="ml-1 text-slate-400">({{ Object.keys(siteTextOverrides).length }} overridden)</span></button>
+                    </div>
+
+                    <!-- Portfolio / Services galleries -->
+                    <template v-if="websiteContentTab !== 'site_text'">
+                        <p class="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2.5 text-[10px] font-semibold text-amber-800 dark:text-amber-300"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Once this list has at least one item, the public page shows ONLY these items — its built-in sample content is fully replaced, not merged.</p>
+
+                        <div v-if="!websiteContent[websiteContentTab].length" class="bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 p-10 text-center">
+                            <i class="fa-solid fa-photo-film text-3xl text-slate-300 dark:text-slate-600"></i>
+                            <p class="mt-3 text-xs font-bold text-slate-500 dark:text-slate-400">No items published yet — the public page is currently showing its built-in sample content for {{ websiteContentLabel(websiteContentTab) }}.</p>
+                        </div>
+                        <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            <div v-for="item in websiteContent[websiteContentTab]" :key="item.id" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+                                <div v-if="websiteContentTab === 'services'" class="h-20 flex items-center justify-center bg-slate-50 dark:bg-slate-900"><i :class="item.icon" class="text-3xl text-brand-blue dark:text-teal-300"></i></div>
+                                <div v-else class="h-36 bg-slate-100 dark:bg-slate-900 bg-cover bg-center" :style="{ backgroundImage: 'url(\'' + item.imgUrl + '\')' }"></div>
+                                <div class="p-4 flex flex-col flex-1">
+                                    <span v-if="item.tag" class="inline-block w-fit rounded-full bg-teal-50 dark:bg-teal-900/30 text-brand-blue dark:text-teal-300 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide">{{ item.tag }}</span>
+                                    <h4 class="mt-2 text-sm font-extrabold text-brand-dark dark:text-white">{{ item.title || item.name }}</h4>
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400 flex-1 line-clamp-3">{{ item.desc }}</p>
+                                    <div class="mt-3 flex items-center justify-end gap-1.5 border-t border-slate-100 dark:border-slate-700 pt-3">
+                                        <button v-if="hasModulePermission('website-content', 'edit')" @click="openWebsiteContentModal(websiteContentTab, item)" class="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                        <button v-if="hasModulePermission('website-content', 'delete')" @click="deleteWebsiteContentItem(websiteContentTab, item)" class="h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Page Text overrides (content/site_text) -->
+                    <template v-else>
+                        <p class="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2.5 text-[10px] font-semibold text-amber-800 dark:text-amber-300"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i>This overrides copy on ANY zenqor-tech page (Home, About, Contact, Legal, FAQ, etc). Leave a field un-overridden and the site keeps its built-in default text.</p>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <select v-model="siteTextFilter.group" class="rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white px-3 py-2 text-xs outline-none focus:border-brand-blue">
+                                <option v-for="g in siteTextGroups()" :key="g" :value="g">{{ g === 'all' ? 'All Sections' : g }}</option>
+                            </select>
+                            <input v-model="siteTextFilter.search" type="text" placeholder="Search by key or label..." class="flex-1 min-w-[200px] rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white px-3 py-2 text-xs outline-none focus:border-brand-blue">
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm divide-y divide-slate-100 dark:divide-slate-700">
+                            <div v-for="row in filteredSiteTextRows()" :key="row.key" class="p-4 flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-[9px] font-extrabold uppercase text-slate-400">{{ row.group }}</span>
+                                        <span v-if="row.override" class="rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[9px] font-extrabold uppercase">Overridden</span>
+                                    </div>
+                                    <h4 class="mt-1 text-sm font-extrabold text-brand-dark dark:text-white">{{ row.label }}</h4>
+                                    <p class="mt-0.5 text-[10px] font-mono text-slate-400">{{ row.key }}</p>
+                                    <p v-if="row.override" class="mt-1.5 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">EN: {{ row.override.en || '—' }}</p>
+                                    <p v-if="row.override" class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">MS: {{ row.override.ms || '—' }}</p>
+                                </div>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <button v-if="hasModulePermission('website-content', 'edit')" @click="openSiteTextModal(row)" class="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                    <button v-if="row.override && hasModulePermission('website-content', 'delete')" @click="resetSiteTextOverride(row.key)" class="h-8 w-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" title="Reset to default"><i class="fa-solid fa-rotate-left"></i></button>
+                                </div>
+                            </div>
+                            <div v-if="!filteredSiteTextRows().length" class="p-10 text-center text-xs font-bold text-slate-400">No matching text fields.</div>
+                        </div>
+                    </template>
                 </div>
 
                 <!-- AUDIT LOGS MODULE -->

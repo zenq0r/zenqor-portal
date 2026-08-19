@@ -60,6 +60,15 @@ service cloud.firestore {
       return isAdmin();
     }
 
+    // IT is trusted with the public zenqor-tech website's content collections
+    // (Portfolio galleries, Services, page-text overrides) alongside Superadmin/
+    // Director, but NOT with the rest of what isAdmin() unlocks (payroll, HR,
+    // audit logs, user role management) — keep this scoped to those collections
+    // only, never used as a stand-in for isAdmin() elsewhere.
+    function isContentAdmin() {
+      return isAdmin() || isIT();
+    }
+
     function hasValidProjectStage(data) {
       return data.status in [
         'Project Planning',
@@ -177,7 +186,17 @@ service cloud.firestore {
     match /docs/{docId} {
       allow read: if isAuthenticated() && (
         isAdmin() || isHR() || isAccount() || isIT() ||
-        (isClient() && resource.data.raw.clientEmail == request.auth.token.email)
+        (isClient() && resource.data.raw.clientEmail == request.auth.token.email) ||
+        (
+          // Multi-user Client Portal: a secondary authorized email (see
+          // customers/{id}.additionalClientEmails) doesn't match raw.clientEmail
+          // (always the primary contact's), so fall back to the linked customer
+          // record the same way client_documents does.
+          isClient() &&
+          resource.data.raw.customerId is string &&
+          resource.data.raw.customerId.size() > 0 &&
+          customerEmailMatches(get(/databases/$(database)/documents/customers/$(resource.data.raw.customerId)).data, request.auth.token.email)
+        )
       );
       allow create, update: if isSuperadmin() || isDirector() || isHR() || isAccount();
       allow delete: if isAdmin();
@@ -462,7 +481,13 @@ service cloud.firestore {
 
     match /project_client_updates/{updateId} {
       allow read: if isAuthenticated() && (
-        !isClient() || resource.data.clientPortalUid == request.auth.uid
+        !isClient() || resource.data.clientPortalUid == request.auth.uid || (
+          // Multi-user Client Portal: a secondary authorized email shares the
+          // primary contact's clientDirectoryId claim (see projects rule above)
+          // rather than the project's single clientPortalUid.
+          'clientDirectoryId' in resource.data &&
+          resource.data.clientDirectoryId == request.auth.token.clientDirectoryId
+        )
       );
       allow create: if isAuthenticated() &&
         request.resource.data.senderUid == request.auth.uid &&
@@ -470,7 +495,8 @@ service cloud.firestore {
         request.resource.data.projectId.size() > 0 &&
         request.resource.data.message is string &&
         request.resource.data.message.size() > 0 &&
-        exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId)) && (
+        exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId)) &&
+        request.resource.data.clientDirectoryId == get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.clientDirectoryId && (
           (
             !isClient() &&
             request.resource.data.senderRole != 'Client' &&
@@ -480,11 +506,13 @@ service cloud.firestore {
             ) &&
             get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.clientPortalUid == request.resource.data.clientPortalUid
           ) || (
+            // A secondary client contact's own uid never matches the project's
+            // single clientPortalUid, so authorize by clientDirectoryId claim
+            // instead (mirrors the projects read rule's secondary-contact path).
             isClient() &&
             request.resource.data.senderRole == 'Client' &&
             request.resource.data.clientPortalUid == request.auth.uid &&
-            get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.clientPortalUid == request.auth.uid &&
-            get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.clientEmail == request.auth.token.email
+            get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.clientDirectoryId == request.auth.token.clientDirectoryId
           )
         );
       allow update: if isProjectManager() || (
@@ -539,15 +567,15 @@ service cloud.firestore {
     // because its name matches a generic pattern.
     match /portfolio_web/{document=**} {
       allow read: if true;
-      allow write, delete: if isAdmin();
+      allow write, delete: if isContentAdmin();
     }
     match /portfolio_gaming/{document=**} {
       allow read: if true;
-      allow write, delete: if isAdmin();
+      allow write, delete: if isContentAdmin();
     }
     match /services/{document=**} {
       allow read: if true;
-      allow write, delete: if isAdmin();
+      allow write, delete: if isContentAdmin();
     }
     match /navigation/{document=**} {
       allow read: if true;
@@ -559,7 +587,7 @@ service cloud.firestore {
     }
     match /content/{document=**} {
       allow read: if true;
-      allow write, delete: if isAdmin();
+      allow write, delete: if isContentAdmin();
     }
     match /testimonials/{document=**} {
       allow read: if true;
