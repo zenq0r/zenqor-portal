@@ -2285,6 +2285,19 @@ createApp({
         formatDateTime(val) {
             return val ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(val)) : '-';
         },
+        formatDateWithDay(val) {
+            if (!val) return '-';
+            const raw = typeof val === 'string' && val.length === 10 ? `${val}T00:00:00` : val;
+            const parsed = new Date(raw);
+            if (Number.isNaN(parsed.getTime())) return '-';
+            return new Intl.DateTimeFormat('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }).format(parsed);
+        },
+        formatDateTimeWithDay(val) {
+            if (!val) return '-';
+            const parsed = new Date(val);
+            if (Number.isNaN(parsed.getTime())) return '-';
+            return new Intl.DateTimeFormat('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(parsed);
+        },
         getLocalDateKey(value = new Date()) {
             const date = value instanceof Date ? value : new Date(value);
             const year = date.getFullYear();
