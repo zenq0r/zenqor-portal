@@ -407,7 +407,14 @@ createApp({
                 isEdit: false,
                 collectionName: 'portfolio_web',
                 id: '',
-                form: { tag: '', title: '', desc: '', imgUrl: '', icon: '', name: '' }
+                form: { tag: '', title: '', desc: '', imgUrl: '', imgStoragePath: '', icon: '', name: '' },
+                // Selected-but-not-yet-uploaded image file, plus a local object URL for
+                // instant preview and orientation detection before the actual upload happens
+                // on save (so cancelling the modal never leaves an orphaned Storage file).
+                imageFile: null,
+                imagePreviewUrl: '',
+                imageOrientation: '',
+                uploading: false
             },
             siteTextOverrides: {},
             siteTextFilter: { group: 'all', search: '' },
@@ -3328,16 +3335,75 @@ createApp({
         },
         openWebsiteContentModal(collectionName, item = null) {
             if (!this.hasModulePermission('website-content', 'edit')) { this.showNotify('You do not have permission to manage website content.'); return; }
+            if (this.websiteContentModal.imagePreviewUrl && this.websiteContentModal.imageFile) URL.revokeObjectURL(this.websiteContentModal.imagePreviewUrl);
             this.websiteContentModal = {
                 show: true,
                 isEdit: Boolean(item),
                 collectionName,
                 id: item?.id || '',
-                form: { tag: item?.tag || '', title: item?.title || '', desc: item?.desc || '', imgUrl: item?.imgUrl || '', icon: item?.icon || '', name: item?.name || '' }
+                form: { tag: item?.tag || '', title: item?.title || '', desc: item?.desc || '', imgUrl: item?.imgUrl || '', imgStoragePath: item?.imgStoragePath || '', icon: item?.icon || '', name: item?.name || '' },
+                imageFile: null,
+                imagePreviewUrl: item?.imgUrl || '',
+                imageOrientation: '',
+                uploading: false
             };
         },
         closeWebsiteContentModal() {
-            this.websiteContentModal = { show: false, isEdit: false, collectionName: 'portfolio_web', id: '', form: { tag: '', title: '', desc: '', imgUrl: '', icon: '', name: '' } };
+            if (this.websiteContentModal.imagePreviewUrl && this.websiteContentModal.imageFile) URL.revokeObjectURL(this.websiteContentModal.imagePreviewUrl);
+            this.websiteContentModal = { show: false, isEdit: false, collectionName: 'portfolio_web', id: '', form: { tag: '', title: '', desc: '', imgUrl: '', imgStoragePath: '', icon: '', name: '' }, imageFile: null, imagePreviewUrl: '', imageOrientation: '', uploading: false };
+        },
+        // Only PNG/JPEG — these become public marketing images on zenqor-tech, so no PDFs
+        // or other formats. Magic-byte check mirrors validateClientDocumentFile so a
+        // renamed .exe or mismatched extension can't slip through the extension check alone.
+        async validateWebsiteContentImage(file) {
+            if (!file) throw new Error('No file was selected.');
+            if (file.size <= 0) throw new Error('The selected file is empty.');
+            if (file.size > 8 * 1024 * 1024) throw new Error('Image size must not exceed 8 MB.');
+
+            const extension = String(file.name || '').split('.').pop().toLowerCase();
+            const extensionTypeMap = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg' };
+            const contentType = extensionTypeMap[extension];
+            if (!contentType) throw new Error('Only JPG, JPEG and PNG images are allowed.');
+
+            const declaredType = String(file.type || '').toLowerCase();
+            const compatibleTypesMap = {
+                'image/png': ['image/png', 'image/x-png'],
+                'image/jpeg': ['image/jpeg', 'image/jpg', 'image/pjpeg']
+            };
+            if (declaredType && !compatibleTypesMap[contentType].includes(declaredType)) throw new Error('The file extension does not match its actual file type.');
+
+            const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+            const isPng = signature.length >= 8 && signature[0] === 0x89 && signature[1] === 0x50 && signature[2] === 0x4E && signature[3] === 0x47 && signature[4] === 0x0D && signature[5] === 0x0A && signature[6] === 0x1A && signature[7] === 0x0A;
+            const isJpeg = signature.length >= 3 && signature[0] === 0xFF && signature[1] === 0xD8 && signature[2] === 0xFF;
+            if ((contentType === 'image/png' && !isPng) || (contentType === 'image/jpeg' && !isJpeg)) {
+                throw new Error('The selected file is not a valid JPG or PNG — its content does not match its extension.');
+            }
+            return contentType;
+        },
+        async handleWebsiteContentImageSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                await this.validateWebsiteContentImage(file);
+            } catch (error) {
+                this.showNotify(error.message || 'Unable to use this image.');
+                e.target.value = '';
+                return;
+            }
+            if (this.websiteContentModal.imagePreviewUrl && this.websiteContentModal.imageFile) URL.revokeObjectURL(this.websiteContentModal.imagePreviewUrl);
+            this.websiteContentModal.imageFile = file;
+            this.websiteContentModal.imagePreviewUrl = URL.createObjectURL(file);
+            this.websiteContentModal.imageOrientation = '';
+            // Detected purely for the admin's own preview label (Portrait/Landscape/Square) —
+            // the public site (zenqor-tech) does its own detection from the uploaded image
+            // directly, so nothing here needs to be persisted to Firestore.
+            const probe = new Image();
+            probe.onload = () => {
+                if (this.websiteContentModal.imageFile !== file) return;
+                const ratio = probe.naturalWidth / probe.naturalHeight;
+                this.websiteContentModal.imageOrientation = ratio < 0.85 ? 'Portrait' : ratio > 1.15 ? 'Landscape' : 'Square';
+            };
+            probe.src = this.websiteContentModal.imagePreviewUrl;
         },
         async saveWebsiteContentItem() {
             if (!this.hasModulePermission('website-content', 'edit')) { this.showNotify('You do not have permission to manage website content.'); return; }
@@ -3355,13 +3421,28 @@ createApp({
             } else {
                 const tag = form.tag.trim();
                 const title = form.title.trim();
-                const imgUrl = form.imgUrl.trim();
-                if (!tag || !title || !desc || !imgUrl) { this.showNotify('Fill in Tag, Title, Description and Image URL.'); return; }
-                if (!/^https:\/\//i.test(imgUrl)) { this.showNotify('Image URL must start with https:// (paste a direct link to a hosted image).'); return; }
-                payload = { tag, title, desc, imgUrl };
+                if (!tag || !title || !desc) { this.showNotify('Fill in Tag, Title and Description.'); return; }
+                if (!this.websiteContentModal.imageFile && !form.imgUrl) { this.showNotify('Upload an image (PNG, JPG or JPEG).'); return; }
+                payload = { tag, title, desc };
             }
             const label = isServices ? payload.name : payload.title;
+            this.websiteContentModal.uploading = !isServices && Boolean(this.websiteContentModal.imageFile);
             try {
+                let oldStoragePath = '';
+                if (!isServices && this.websiteContentModal.imageFile) {
+                    const file = this.websiteContentModal.imageFile;
+                    const contentType = await this.validateWebsiteContentImage(file);
+                    const safeName = String(file.name || 'image').replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120);
+                    const storagePath = `website_content/${collectionName}/${Date.now()}_${safeName}`;
+                    const fileRef = storageRef(storage, storagePath);
+                    await uploadBytes(fileRef, file, { contentType });
+                    payload.imgUrl = await getDownloadURL(fileRef);
+                    payload.imgStoragePath = storagePath;
+                    oldStoragePath = form.imgStoragePath || '';
+                } else if (!isServices) {
+                    payload.imgUrl = form.imgUrl;
+                    payload.imgStoragePath = form.imgStoragePath || '';
+                }
                 payload.updatedAt = new Date().toISOString();
                 payload.updatedByUid = this.userProfile.uid;
                 payload.updatedByEmail = this.userProfile.email;
@@ -3375,10 +3456,17 @@ createApp({
                     this.logAudit('CREATE', `Added ${this.websiteContentLabel(collectionName)} item "${label}"`);
                     this.showNotify('Website content published to the live site.');
                 }
+                // Only clean up the previous Storage file once the new one is safely saved,
+                // and only if it was one we uploaded ourselves (external/seeded URLs have no path).
+                if (oldStoragePath && oldStoragePath !== payload.imgStoragePath) {
+                    try { await deleteObject(storageRef(storage, oldStoragePath)); } catch (cleanupError) { console.warn('Old website content image cleanup failed:', cleanupError); }
+                }
                 this.closeWebsiteContentModal();
             } catch (error) {
                 console.error('Website content save failed:', error);
-                this.showNotify(this.getFirestoreWriteError(error, 'save this website content item'));
+                this.showNotify(error.message && !error.code ? error.message : this.getFirestoreWriteError(error, 'save this website content item'));
+            } finally {
+                this.websiteContentModal.uploading = false;
             }
         },
         async deleteWebsiteContentItem(collectionName, item) {
@@ -3387,6 +3475,7 @@ createApp({
             if (!confirm(`Delete "${label}" from ${this.websiteContentLabel(collectionName)}? This removes it from the live site immediately.`)) return;
             try {
                 await deleteDoc(doc(db, collectionName, item.id));
+                if (item.imgStoragePath) { try { await deleteObject(storageRef(storage, item.imgStoragePath)); } catch (cleanupError) { console.warn('Website content image cleanup failed:', cleanupError); } }
                 this.logAudit('DELETE', `Deleted ${this.websiteContentLabel(collectionName)} item "${label}"`);
                 this.showNotify('Website content deleted.');
             } catch (error) {

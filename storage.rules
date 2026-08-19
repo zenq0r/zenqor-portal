@@ -36,12 +36,31 @@ service firebase.storage {
         request.auth.token.clientDirectoryId == clientDirectoryId;
     }
 
+    // Mirrors firestore.rules' isContentAdmin() — IT is trusted with the public
+    // zenqor-tech website's Portfolio images alongside Superadmin/Director, but
+    // not with client document management (isStaffDocumentManager above).
+    function isContentAdmin() {
+      return isSignedIn() && userRole() in ['Superadmin', 'Director', 'IT'];
+    }
+
     match /client_documents/{clientDirectoryId}/{fileName} {
       allow read: if isStaffReader() || isOwningClient(clientDirectoryId);
       allow write: if (isStaffDocumentManager() || isOwningClient(clientDirectoryId)) &&
         request.resource.size <= 10 * 1024 * 1024 &&
         request.resource.contentType in ['image/jpeg', 'image/png', 'application/pdf'];
       allow delete: if isStaffDocumentManager();
+    }
+
+    // Public zenqor-tech Portfolio gallery images (Digital Systems / Licensing &
+    // Permits). Publicly readable — these are marketing images shown to anonymous
+    // site visitors — but only content admins may upload/replace/remove them.
+    match /website_content/{collectionName}/{fileName} {
+      allow read: if true;
+      allow write: if isContentAdmin() &&
+        collectionName in ['portfolio_web', 'portfolio_gaming'] &&
+        request.resource.size <= 8 * 1024 * 1024 &&
+        request.resource.contentType in ['image/jpeg', 'image/png'];
+      allow delete: if isContentAdmin();
     }
   }
 }
