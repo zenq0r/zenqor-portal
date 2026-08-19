@@ -264,18 +264,30 @@
             </div>
         </div>
 
-        <!-- LOGIN SYSTEM & RBAC GUARD — also doubles as the session-restore wait state:
+        <!-- LOGIN SYSTEM & RBAC GUARD — also doubles as the session-restore wait shell:
              Firebase Auth restoring a persisted session (and the follow-up Firestore/OTP/
              claims checks in onAuthStateChanged) is asynchronous, so authLoading stays true
-             for a moment on every refresh even for an already-signed-in user. Rather than a
-             separate spinner screen, this same landing page is shown throughout — it just
-             transitions straight to the dashboard once ready, with nothing to flash past. -->
-        <div v-else-if="authLoading || !isLoggedIn" class="relative min-h-screen flex items-center justify-center bg-brand-dark px-4 py-8 overflow-hidden">
+             for a moment on every refresh even for an already-signed-in user. This container
+             (same dark background + watermark either way, so there's no jarring swap to a
+             different-looking screen) covers both states, but authLoading gates which INNER
+             content shows: a neutral spinner while we don't yet know the outcome, or the
+             actual interactive sign-in form only once we're sure the user is logged out.
+             (v-else-if alone on `!isLoggedIn` would be wrong here — isLoggedIn stays false for
+             the ENTIRE loading window too, only flipping true once restore fully completes —
+             so gating on it alone showed the interactive login form immediately on every
+             refresh, indistinguishable from actually being logged out.) -->
+        <div v-else-if="!isLoggedIn" class="relative min-h-screen flex items-center justify-center bg-brand-dark px-4 py-8 overflow-hidden">
 
             <!-- WORDMARK WATERMARK — proprietary in-house system, not a rented/subscribed SaaS -->
             <div class="pointer-events-none select-none absolute inset-0 flex items-center justify-center opacity-[0.06]">
                 <img src="./logo.png" alt="" class="w-full max-w-3xl object-contain" style="filter: invert(1);">
             </div>
+
+            <div v-if="authLoading" class="relative z-10 flex flex-col items-center gap-4">
+                <img src="./logo.png" onerror="this.style.display='none'" alt="" class="h-14 w-auto object-contain opacity-90">
+                <i class="fa-solid fa-circle-notch fa-spin text-2xl text-white/70"></i>
+            </div>
+            <template v-else>
 
             <!-- LANDING PAGE: choose Company Staff or Client Portal -->
             <div v-if="authView === 'landing'" class="relative z-10 max-w-3xl w-full">
@@ -378,6 +390,7 @@
                     </form>
                 </div>
             </div>
+            </template>
         </div>
 
         <!-- MAIN PLATFORM LAYOUT -->
