@@ -1733,7 +1733,7 @@ createApp({
                 ];
             }
 
-            if (rows.length === 0) { alert("Tiada rekod data untuk dieksport."); return; }
+            if (rows.length === 0) { this.showNotify("Tiada rekod data untuk dieksport."); return; }
 
             const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + rows.map(e => e.map(cell => this.csvSafeCell(cell)).join(",")).join("\n");
             const encodedUri = encodeURI(csvContent);
@@ -3110,9 +3110,9 @@ createApp({
         async savePortalUser() {
             try {
                 if (!this.canManageRBAC) { this.showNotify('Only Superadmin and Director can manage portal access.'); return; }
-                if (!this.userModal.form.name || !this.userModal.form.email || (this.userModal.isEdit === false && !this.userModal.form.password)) { alert("Please fill out all required fields."); return; }
+                if (!this.userModal.form.name || !this.userModal.form.email || (this.userModal.isEdit === false && !this.userModal.form.password)) { this.showNotify("Please fill out all required fields."); return; }
                 if (this.userModal.form.role !== 'Client' && !this.isOfficialEmail(this.userModal.form.email)) {
-                    alert(`Only Client Users System Terminal may use Gmail or another external domain. This role must use @${this.officialEmailDomain}.`);
+                    this.showNotify(`Only Client Users System Terminal may use Gmail or another external domain. This role must use @${this.officialEmailDomain}.`);
                     return;
                 }
 
@@ -3136,7 +3136,7 @@ createApp({
                         userId = createdUser.user.uid;
                     } catch (authErr) {
                         if (authErr.code === 'auth/email-already-in-use') existingAuthenticationAccount = true;
-                        else { alert("Gagal mendaftar ke Firebase: " + authErr.message); return; }
+                        else { this.showNotify("Gagal mendaftar ke Firebase: " + authErr.message); return; }
                     } finally {
                         await signOutSecondary(secondaryAuth).catch(() => {});
                         await deleteApp(secondaryApp).catch(() => {});
@@ -3173,7 +3173,7 @@ createApp({
                 else this.showNotify('User updated successfully!');
             } catch (error) {
                 console.error('Portal access save failed:', error);
-                alert("Unable to save portal access. Please ensure the latest Firestore Rules have been published.");
+                this.showNotify("Unable to save portal access. Please ensure the latest Firestore Rules have been published.");
             }
         },
 
@@ -3236,8 +3236,8 @@ createApp({
         },
         async saveCustomerToDatabase() {
             if (!this.canManageClients) { this.showNotify('You do not have permission to save client records.'); return false; }
-            if (!this.docForm.clientName || !this.docForm.clientPhone || !(this.docForm.clientAddress1 || this.docForm.clientAddress)) return alert('Enter Client Name, Phone, and Address Line 1.');
-            if (!/^\d{5}$/.test(String(this.docForm.clientPostcode || '')) || !this.docForm.clientCity || !this.docForm.clientState) return alert('Enter a valid 5-digit postcode, City, and State.');
+            if (!this.docForm.clientName || !this.docForm.clientPhone || !(this.docForm.clientAddress1 || this.docForm.clientAddress)) return this.showNotify('Enter Client Name, Phone, and Address Line 1.');
+            if (!/^\d{5}$/.test(String(this.docForm.clientPostcode || '')) || !this.docForm.clientCity || !this.docForm.clientState) return this.showNotify('Enter a valid 5-digit postcode, City, and State.');
             try {
                 // Existing records keep whatever ID they already have (legacy records are
                 // still name-derived — left untouched to avoid a data migration). New
@@ -3635,10 +3635,10 @@ createApp({
                 Object.assign(form, this.normalizeOfficialRecord(form));
                 form.email = String(form.email || '').trim().toLowerCase();
                 const sensitiveFields = ['ic', 'bankAcc', 'epfNo', 'socsoNo', 'eisNo', 'taxNo'];
-                if (!form.empNo || !form.name || !form.dept || !form.joinDate || !form.employmentType) return alert("Complete the required Basic Information fields.");
-                if (!this.employeeModal.isEdit && !form.ic) return alert("National ID / Passport is required for a new employee.");
+                if (!form.empNo || !form.name || !form.dept || !form.joinDate || !form.employmentType) return this.showNotify("Complete the required Basic Information fields.");
+                if (!this.employeeModal.isEdit && !form.ic) return this.showNotify("National ID / Passport is required for a new employee.");
                 form.email = String(form.email || '').trim().toLowerCase();
-                if (sensitiveFields.some(field => /^X{5}/i.test(String(form[field] || '').trim()))) return alert("Enter the complete sensitive number, not a masked value.");
+                if (sensitiveFields.some(field => /^X{5}/i.test(String(form[field] || '').trim()))) return this.showNotify("Enter the complete sensitive number, not a masked value.");
                 sensitiveFields.forEach(field => {
                     if (this.employeeModal.isEdit && !String(form[field] || '').trim()) form[field] = this.employeeModal.originalSensitive[field] || '';
                 });
@@ -3870,7 +3870,7 @@ createApp({
             const isDirectorDecision = this.userProfile.role === 'Director';
             const nextRole = isDirectorDecision ? null : { 'Pending HR': 'Account', 'Pending Account': 'Director' }[clm.status];
             const roleNames = { HR: 'Human Resource Management', Account: 'Finance Account Management', Director: 'Director' };
-            if (isDirectorDecision && !this.claimPreview.directorApprovalAttachment) { alert('Director approval requires a supporting document attachment.'); return; }
+            if (isDirectorDecision && !this.claimPreview.directorApprovalAttachment) { this.showNotify('Director approval requires a supporting document attachment.'); return; }
             const bypassedReviews = clm.status === 'Pending HR' ? ['HR', 'Account'] : clm.status === 'Pending Account' ? ['Account'] : [];
             const nowIso = new Date().toISOString();
             const existingHistory = Array.isArray(clm.approvalHistory) ? clm.approvalHistory : [];
@@ -3916,10 +3916,10 @@ createApp({
         },
         async saveExpenseClaim() {
             if (!['Superadmin', 'Director', 'HR', 'Account', 'Staff'].includes(this.userProfile.role)) { this.showNotify('Your role cannot submit expense claims.'); return; }
-            if (this.attachmentUploadState.receipt) return alert('Wait for the receipt upload to finish.');
+            if (this.attachmentUploadState.receipt) return this.showNotify('Wait for the receipt upload to finish.');
             Object.assign(this.claimForm, this.normalizeOfficialRecord(this.claimForm));
             this.claimForm.empEmail = String(this.claimForm.empEmail || '').trim().toLowerCase();
-            if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo || !this.claimForm.description.trim() || !this.claimForm.receiptAttachment) return alert("Complete all required claim fields, including Expense Description and Receipt Attachment.");
+            if (!this.claimForm.name || !this.claimForm.empNo || !this.claimForm.amount || !this.claimForm.receiptNo || !this.claimForm.description.trim() || !this.claimForm.receiptAttachment) return this.showNotify("Complete all required claim fields, including Expense Description and Receipt Attachment.");
             try {
                 const initialStatus = 'Pending HR';
                 const assignee = { id: '', name: 'Human Resource Management', email: '', role: 'HR' };
@@ -3944,7 +3944,7 @@ createApp({
         editClaimRecord(clm) { this.claimFormMode = 'Claim'; this.editingClaimId = clm.id; this.selectedClaimEmployeeId = clm.empNo || ''; this.claimForm = JSON.parse(JSON.stringify(clm)); this.switchTab('claims'); },
         cancelEditClaim() { this.editingClaimId = null; this.resetClaimForm(); },
         async printApprovedClaim(claim) {
-            if (!claim || claim.status !== 'Approved') { alert('Only approved claims can be printed.'); return; }
+            if (!claim || claim.status !== 'Approved') { this.showNotify('Only approved claims can be printed.'); return; }
             this.claimPrint = JSON.parse(JSON.stringify(claim));
             this.activePrintModule = 'CLAIM';
             this.setPrintOrientation('portrait', '15mm');
@@ -3971,7 +3971,7 @@ createApp({
             const isDirectorDecision = this.userProfile.role === 'Director';
             const nextRole = isDirectorDecision ? null : { 'Pending HR': 'Account', 'Pending Account': 'Director' }[pv.status];
             const roleNames = { HR: 'Human Resource Management', Account: 'Finance Account Management', Director: 'Director' };
-            if (isDirectorDecision && !this.claimPreview.directorApprovalAttachment) { alert('Director approval requires a supporting document attachment.'); return; }
+            if (isDirectorDecision && !this.claimPreview.directorApprovalAttachment) { this.showNotify('Director approval requires a supporting document attachment.'); return; }
             const bypassedReviews = pv.status === 'Pending HR' ? ['HR', 'Account'] : pv.status === 'Pending Account' ? ['Account'] : [];
             const nowIso = new Date().toISOString();
             const existingHistory = Array.isArray(pv.approvalHistory) ? pv.approvalHistory : [];
@@ -4017,11 +4017,11 @@ createApp({
         },
         async savePaymentVoucher() {
             if (!['Superadmin', 'Director', 'HR', 'Account', 'Staff'].includes(this.userProfile.role)) { this.showNotify('Your role cannot submit payment vouchers.'); return; }
-            if (this.attachmentUploadState.receipt) return alert('Wait for the supporting document upload to finish.');
+            if (this.attachmentUploadState.receipt) return this.showNotify('Wait for the supporting document upload to finish.');
             Object.assign(this.voucherForm, this.normalizeOfficialRecord(this.voucherForm));
             this.voucherForm.empEmail = String(this.voucherForm.empEmail || '').trim().toLowerCase();
-            if (!this.voucherForm.name || !this.voucherForm.empNo || !this.voucherForm.amount || !this.voucherForm.description.trim() || !this.voucherForm.receiptAttachment) return alert("Complete all required voucher fields, including Payment Description and Supporting Document.");
-            if (!this.voucherForm.payeeName.trim() || !this.voucherForm.paymentPurpose.trim()) return alert('Complete the Payee Name and Payment Purpose for this Payment Voucher.');
+            if (!this.voucherForm.name || !this.voucherForm.empNo || !this.voucherForm.amount || !this.voucherForm.description.trim() || !this.voucherForm.receiptAttachment) return this.showNotify("Complete all required voucher fields, including Payment Description and Supporting Document.");
+            if (!this.voucherForm.payeeName.trim() || !this.voucherForm.paymentPurpose.trim()) return this.showNotify('Complete the Payee Name and Payment Purpose for this Payment Voucher.');
             try {
                 const initialStatus = 'Pending HR';
                 const assignee = { id: '', name: 'Human Resource Management', email: '', role: 'HR' };
@@ -4047,7 +4047,7 @@ createApp({
         editPaymentVoucher(pv) { this.claimFormMode = 'Payment Voucher'; this.editingVoucherId = pv.id; this.selectedVoucherEmployeeId = pv.empNo || ''; this.voucherForm = JSON.parse(JSON.stringify(pv)); this.switchTab('claims'); },
         cancelEditVoucher() { this.editingVoucherId = null; this.resetVoucherForm(); },
         async printApprovedVoucher(voucher) {
-            if (!voucher || voucher.status !== 'Approved') { alert('Only approved payment vouchers can be printed.'); return; }
+            if (!voucher || voucher.status !== 'Approved') { this.showNotify('Only approved payment vouchers can be printed.'); return; }
             this.claimPrint = JSON.parse(JSON.stringify(voucher));
             this.activePrintModule = 'CLAIM';
             this.setPrintOrientation('portrait', '15mm');
@@ -4056,20 +4056,20 @@ createApp({
         },
 
         setPrintOrientation(orientation, margin) { const styleEl = document.getElementById('dynamic-print-orientation'); if (styleEl) styleEl.innerHTML = `@media print { @page { size: A4 ${orientation}; margin: ${margin} !important; } }`; },
-        async printDocumentModule() { if (!this.clientSavedForDocument) return alert('Save Client information before previewing or printing this document.'); this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE'; this.setPrintOrientation('portrait', '15mm'); setTimeout(() => { window.print(); }, 250); },
-        async printPayslipModule() { if (!this.payForm.name || !this.payForm.empNo) return alert('Enter Name and Emp ID.'); this.autoCalculatePayroll(); this.activePrintModule = 'PAYSLIP'; this.setPrintOrientation('landscape', '0mm'); setTimeout(() => { window.print(); }, 250); },
+        async printDocumentModule() { if (!this.clientSavedForDocument) return this.showNotify('Save Client information before previewing or printing this document.'); this.activePrintModule = this.docForm.type === 'Quotation' ? 'QUOTATION' : 'INVOICE'; this.setPrintOrientation('portrait', '15mm'); setTimeout(() => { window.print(); }, 250); },
+        async printPayslipModule() { if (!this.payForm.name || !this.payForm.empNo) return this.showNotify('Enter Name and Emp ID.'); this.autoCalculatePayroll(); this.activePrintModule = 'PAYSLIP'; this.setPrintOrientation('landscape', '0mm'); setTimeout(() => { window.print(); }, 250); },
         
         async saveDocRecord() {
             try {
                 if (this.attachmentUploadState.payment) { this.showNotify('Wait for the payment attachment upload to finish.'); return false; }
                 if (!this.canManageDocuments) { this.showNotify('You do not have permission to save documents.'); return false; }
-                if (['Paid', 'Partial'].includes(this.docForm.status) && (!this.docForm.paymentRefNo || this.docForm.paymentRefNo.trim() === '')) { alert("Payment Reference No. is REQUIRED."); return false; }
+                if (['Paid', 'Partial'].includes(this.docForm.status) && (!this.docForm.paymentRefNo || this.docForm.paymentRefNo.trim() === '')) { this.showNotify("Payment Reference No. is REQUIRED."); return false; }
                 const normalizedDocForm = this.normalizeOfficialRecord(this.docForm);
                 normalizedDocForm.clientEmail = String(this.docForm.clientEmail || '').trim().toLowerCase();
                 Object.assign(this.docForm, normalizedDocForm);
                 const docId = String(this.editingDocId || Date.now());
                 const payload = { id: docId, type: this.docForm.type, docNo: this.docForm.docNo, status: this.docForm.status || (this.docForm.type === 'Invoice' ? 'Unpaid' : 'Open'), paymentMethod: this.docForm.paymentMethod || 'Bank Transfer', paymentBank: this.docForm.paymentBank || '', paymentReceiver: this.docForm.paymentReceiver || '', paymentRefNo: this.docForm.paymentRefNo || '', paymentAttachment: this.docForm.paymentAttachment || '', date: this.docForm.date, name: this.docForm.clientName, amount: this.docGrandTotal, raw: JSON.parse(JSON.stringify(this.docForm)) };
-                if (!this.clientSavedForDocument) { alert('Save Client information before saving this document.'); return false; }
+                if (!this.clientSavedForDocument) { this.showNotify('Save Client information before saving this document.'); return false; }
                 await setDoc(doc(db, "docs", docId), payload, { merge: true }); this.editingDocId = docId; this.showNotify(`Document saved.`); return true;
             } catch (error) { console.error('Document save failed:', error); this.showNotify('Unable to save document. Check the attachment size and try again.'); return false; }
         },
