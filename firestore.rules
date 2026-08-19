@@ -142,6 +142,13 @@ service cloud.firestore {
       allow update: if (isAdmin() && hasAllowedRoleEmail(request.resource.data)) || (
         request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photo', 'mustChangePassword', 'themePreference', 'lastSeenChangelogVersion', 'notificationsLog', 'presenceStatus', 'isOnline', 'presenceUpdatedAt', 'lastSeen'])
+      ) || (
+        // HR can correct a name typo/legal-name change via the HR Employees form
+        // (syncEmployeeIdentityReferences), which needs to keep this portal login
+        // record's display name in step with the employees/{empNo} record HR
+        // actually edits. Scoped to exactly that one field — role, email and
+        // customAccess (this account's actual permissions) stay untouchable here.
+        isHR() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
       );
     }
 

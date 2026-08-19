@@ -3663,10 +3663,18 @@ createApp({
             // promoted or moved departments would falsify the historical record — so
             // only still-pending claims/vouchers are synced, and payslips are never
             // touched by this cascade at all.
-            const [claimsSnapshot, vouchersSnapshot, projectsSnapshot] = await Promise.all([
+            // employees/{empNo} (this HR record) and users/{uid} (the same person's portal
+            // login/access record, if they have one) are separate documents — editing the
+            // employee's name here does NOT touch users/{uid}.name on its own. That divorce
+            // is what left approverNameLive() (Approval Workflow, Approved/Rejected by)
+            // showing a stale name after an HR edit: it reads live from `this.users`, which
+            // is sourced from users/{uid}, not from employees/{empNo}. Bridge them by email.
+            const normalizedEmail = String(employee.email || '').trim().toLowerCase();
+            const [claimsSnapshot, vouchersSnapshot, projectsSnapshot, usersSnapshot] = await Promise.all([
                 getDocs(query(collection(db, 'claims'), where('empNo', '==', employeeId))),
                 getDocs(query(collection(db, 'payment_vouchers'), where('empNo', '==', employeeId))),
-                getDocs(query(collection(db, 'projects'), where('ownerEmpNo', '==', employeeId)))
+                getDocs(query(collection(db, 'projects'), where('ownerEmpNo', '==', employeeId))),
+                normalizedEmail ? getDocs(query(collection(db, 'users'), where('email', '==', normalizedEmail))) : Promise.resolve(null)
             ]);
             const writes = [];
             claimsSnapshot.forEach(record => {
@@ -3702,6 +3710,10 @@ createApp({
                     ownerDepartment: employee.dept || ''
                 }
             }));
+            // Name only — role/customAccess/email stay untouched here, and firestore.rules
+            // only grants HR write access to exactly this one field on someone else's
+            // users/{uid} record (see the users match block), matching this cascade's scope.
+            if (employee.name && usersSnapshot) usersSnapshot.forEach(record => writes.push({ ref: record.ref, data: { name: employee.name } }));
 
             for (let start = 0; start < writes.length; start += 450) {
                 const batch = writeBatch(db);
