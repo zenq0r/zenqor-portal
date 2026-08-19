@@ -2857,7 +2857,7 @@ createApp({
                 this.loginOtp.sending = false;
             }
         },
-        async checkTrustedDevice(firebaseUser) {
+        async checkTrustedDevice(firebaseUser, attempt = 0) {
             try {
                 const idToken = await firebaseUser.getIdToken();
                 const resp = await fetch('/api/check-trusted-device', {
@@ -2867,6 +2867,11 @@ createApp({
                 const data = await resp.json().catch(() => ({}));
                 return resp.ok && data.trusted === true;
             } catch (error) {
+                // A hard refresh re-fetches every resource from cold — Firebase's SDK, this
+                // call's own network path, everything — at once, which occasionally trips a
+                // transient failure here that a normal refresh wouldn't hit. One retry avoids
+                // forcing an already-trusted device through a fresh OTP over a network blip.
+                if (attempt < 1) return this.checkTrustedDevice(firebaseUser, attempt + 1);
                 console.warn('Trusted-device check failed; OTP will be required:', error);
                 return false;
             }
@@ -4504,11 +4509,23 @@ createApp({
                         if (otpVerifiedUid !== firebaseUser.uid) {
                             const trusted = await this.checkTrustedDevice(firebaseUser);
                             if (!trusted) {
-                                // A password sign-in fires this listener before handleLogin() has
-                                // completed its OTP challenge. Only an existing trusted-device
-                                // cookie may resume a portal session here without a fresh OTP.
                                 this.loginLoading = false;
                                 this.authLoading = false;
+                                // A restored session (page refresh, including a hard refresh that
+                                // drops sessionStorage's OTP marker) on a browser Firebase still
+                                // considers signed-in but this portal doesn't yet trust needs the
+                                // same one-time-code challenge a fresh sign-in would require —
+                                // show it here instead of silently leaving the user stranded on
+                                // the landing page looking logged out with no way back in short
+                                // of typing their password again. Skip only when handleLogin()'s
+                                // OWN in-flight sign-in already has this exact OTP prompt open
+                                // (its signInWithEmailAndPassword call fires this same listener
+                                // a second time while that modal is still up).
+                                if (!this.loginOtp.show || this.loginOtp.email !== firebaseUser.email) {
+                                    this.pendingLoginContext = { firebaseUser, userData, role, name, photo, mustChangePassword };
+                                    this.loginOtp = { show: true, code: '', error: '', sending: true, verifying: false, email: firebaseUser.email, trustDevice: true };
+                                    await this.requestLoginOtp();
+                                }
                                 return;
                             }
                             try { sessionStorage.setItem('zenqorOtpVerifiedUid', firebaseUser.uid); } catch (error) { console.error('Failed to persist trusted-device marker:', error); }
