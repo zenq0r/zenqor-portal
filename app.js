@@ -28,7 +28,7 @@ import {
     getDownloadURL,
     deleteObject
 } from "./firebase-config.js";
-import { DOCUMENT_TEMPLATES, defaultFieldValues, requiredFieldsMissing, buildPdfForDocument } from "./documents-templates.js";
+import { DOCUMENT_TEMPLATES, defaultFieldValues, requiredFieldsMissing, prefillFromCustomer, buildPdfForDocument } from "./documents-templates.js";
 
 const { createApp } = Vue;
 
@@ -2266,7 +2266,7 @@ createApp({
                     clientEmail: customer.clientEmail || '',
                     title: `${this.documentTemplates[templateId].label.en} — ${customer.clientName || ''}`,
                     referenceNo: templateId === 'service_agreement' ? `ZNQ-SA-${Date.now().toString().slice(-6)}` : '',
-                    fields: defaultFieldValues(templateId),
+                    fields: { ...defaultFieldValues(templateId), ...prefillFromCustomer(templateId, customer) },
                     signatures: { client: null, zenqor: null },
                     finalPdf: null,
                     audit: [{ action: 'created', byUid: this.userProfile.uid, byName: this.userProfile.name, byEmail: this.userProfile.email, byRole: this.userProfile.role, at: now }],
@@ -2531,6 +2531,13 @@ createApp({
         exportSignaturePad(role) {
             const canvas = this.signaturePadRef(role);
             return canvas ? canvas.toDataURL('image/png') : '';
+        },
+        // Opens the finished PDF in a new tab so either party (Client or Zenqor staff)
+        // can use their browser's own PDF viewer to print it — same open-in-tab pattern
+        // as viewClientDocument(), just for the Signed Documents module's finalPdf.
+        printSignedDocumentPdf(docItem) {
+            if (!docItem.finalPdf || !docItem.finalPdf.downloadURL) return;
+            window.open(docItem.finalPdf.downloadURL, '_blank', 'noopener');
         },
         async downloadSignedDocumentPdf(docItem) {
             if (!docItem.finalPdf || !docItem.finalPdf.downloadURL) return;

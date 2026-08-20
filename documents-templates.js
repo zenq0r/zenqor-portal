@@ -230,6 +230,86 @@ export function requiredFieldsMissing(templateId, fields, owners) {
     }).map(f => f.label.en);
 }
 
+function formatCustomerAddress(customer) {
+    if (!customer) return '';
+    const line1 = customer.clientAddress1 || customer.clientAddress || '';
+    const parts = [line1, customer.clientAddress2, customer.clientAddress3, [customer.clientPostcode, customer.clientCity].filter(Boolean).join(' '), customer.clientState, customer.clientCountry && customer.clientCountry !== 'Malaysia' ? customer.clientCountry : ''];
+    return parts.map(p => String(p || '').trim()).filter(Boolean).join(', ');
+}
+
+// Maps each template's client-side fields to the matching Client Directory
+// (customers/{id}) record so staff picking a client from the dropdown gets
+// those fields pre-populated instead of blank — the client only needs to
+// review/correct them (still editable, owner stays 'client_fills') rather
+// than re-type company info the office already has on file.
+export function prefillFromCustomer(templateId, customer) {
+    if (!customer) return {};
+    const name = customer.clientName || '';
+    const regNo = customer.clientSSM || '';
+    const address = formatCustomerAddress(customer);
+    const contactPerson = customer.clientContactPerson || '';
+    const position = customer.clientPosition || '';
+    const phone = customer.clientPhone || '';
+    const email = customer.clientEmail || '';
+    const signatoryNameTitle = contactPerson ? [contactPerson, position].filter(Boolean).join(' — ') : '';
+
+    const byTemplate = {
+        authorization_letter: {
+            appointerName: contactPerson,
+            appointerPosition: position,
+            appointerCompany: name,
+            appointerRegNo: regNo,
+            clientCompanyName: name,
+            clientRegNo: regNo,
+            clientRegisteredAddress: address,
+            clientSignatoryNameTitle: signatoryNameTitle,
+            clientSigName: contactPerson,
+            clientSigPosition: position
+        },
+        client_info_form: {
+            legalName: name,
+            registeredAddress: address,
+            brnNricPassport: regNo,
+            contactPersonName: contactPerson,
+            designation: position,
+            mobileNo: phone,
+            contactEmail: email,
+            billingName: name,
+            billingEmail: email,
+            buyerAddress: address,
+            authRepName: contactPerson,
+            authRepDesignation: position,
+            authRepContactNo: phone,
+            authRepEmail: email,
+            declarationName: contactPerson,
+            declarationDesignation: position,
+            officialEmailContact: email
+        },
+        nda: {
+            receivingCompanyName: name,
+            receivingRegNo: regNo,
+            receivingAddress: address,
+            clientRepName: contactPerson,
+            clientRepPosition: position
+        },
+        service_agreement: {
+            clientCompanyName: name,
+            clientRegNo: regNo,
+            clientBusinessAddress: address,
+            clientContactPerson: contactPerson,
+            clientPhone: phone,
+            clientEmail: email,
+            clientSignatoryName: contactPerson,
+            clientSignatoryTitleStamp: position
+        }
+    };
+    const overrides = byTemplate[templateId] || {};
+    // Never overwrite with an empty string — leave the field's own defaultValue
+    // (e.g. '') so the client still sees it as blank/required if the Client
+    // Directory record itself doesn't have that piece of information on file.
+    return Object.fromEntries(Object.entries(overrides).filter(([, v]) => String(v || '').trim() !== ''));
+}
+
 // ---------------------------------------------------------------
 // PDF KIT — built on the global `PDFLib` (loaded via CDN in index.html)
 // ---------------------------------------------------------------
