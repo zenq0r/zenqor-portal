@@ -2510,13 +2510,18 @@ createApp({
         },
         // Deleting a signed_documents record is restricted to Superadmin/Director only —
         // matches firestore.rules' `allow delete: if isSuperadmin() || isDirector();` on
-        // this collection, and is only ever offered once a document is already Voided
-        // (a live draft/awaiting/completed record should be voided first, not deleted outright).
+        // this collection. Offered once a document is Voided, or directly from Completed
+        // (a fully-signed record) since firestore.rules already permits deletion from any
+        // status for these two roles — the UI just gates it with an extra-strength warning
+        // when deleting a Completed (already-signed) document.
         requestDeleteSignedDocument(docItem) {
             if (!['Superadmin', 'Director'].includes(this.userProfile.role)) { this.showNotify('You do not have permission to delete this document.'); return; }
+            const isCompleted = docItem.status === 'completed';
             this.requestConfirm({
-                title: 'Permanently delete this document?',
-                message: `"${docItem.title}" and its signature/PDF files will be permanently removed. This cannot be undone.`,
+                title: isCompleted ? 'Permanently delete this SIGNED document?' : 'Permanently delete this document?',
+                message: isCompleted
+                    ? `"${docItem.title}" has already been signed by both parties and finalized. Deleting it will permanently remove the executed PDF and signature records with no way to recover them. This cannot be undone.`
+                    : `"${docItem.title}" and its signature/PDF files will be permanently removed. This cannot be undone.`,
                 confirmLabel: 'Yes, Delete Document',
                 danger: true,
                 onConfirm: () => this.deleteSignedDocument(docItem)
