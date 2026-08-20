@@ -108,7 +108,7 @@ const clientInfoFormFields = [
     { id: 'clientReference', label: { en: 'Client Reference / Referral', ms: 'Rujukan / Referral' }, type: 'text', owner: 'client_fills', section: 'F. Supporting Documents & Additional Information', required: false, defaultValue: '' },
     { id: 'additionalNotes', label: { en: 'Additional Notes', ms: 'Catatan Tambahan' }, type: 'textarea', owner: 'client_fills', section: 'F. Supporting Documents & Additional Information', required: false, defaultValue: '' },
 
-    { id: 'pdpaConsent', label: { en: 'I/We acknowledge and consent to the PDPA notice above', ms: 'Saya/Kami mengakui dan bersetuju dengan notis PDPA di atas' }, type: 'checkbox', owner: 'client_fills', section: 'G. Personal Data Protection Notice & Consent', required: true, defaultValue: false },
+    { id: 'pdpaConsent', label: { en: 'I/We acknowledge that I/we have read and understood the notice above and consent to the processing described, subject to applicable law.', ms: 'Saya/Kami mengakui telah membaca dan memahami notis di atas serta bersetuju dengan pemprosesan yang dinyatakan, tertakluk kepada undang-undang yang terpakai.' }, type: 'checkbox', owner: 'client_fills', section: 'G. Personal Data Protection Notice & Consent', required: true, defaultValue: false },
     { id: 'privacyContact', label: { en: 'Privacy Contact', ms: 'Hubungan Privasi' }, type: 'text', owner: 'client_fills', section: 'G. Personal Data Protection Notice & Consent', required: false, defaultValue: '' },
 
     { id: 'declarationName', label: { en: 'Name', ms: 'Nama' }, type: 'text', owner: 'client_fills', section: 'H. Client Declaration & Authorisation', required: true, defaultValue: '' },
@@ -266,7 +266,7 @@ const ndaPdfBlocks = [
         'maklumat pelanggan, prospek, pembekal, rakan niaga, pekerja dan hubungan komersial;',
         'pelan teknikal, seni bina sistem, dokumentasi, algoritma, kod sumber, kod objek, pangkalan data, API, token, kunci akses, kata laluan, konfigurasi, reka bentuk, prototaip, pengetahuan teknikal dan rahsia dagangan;',
         'laporan, analisis, nota, salinan atau bahan terbitan yang mengandungi atau mencerminkan Maklumat Sulit; dan',
-        'apa-apa maklumat yang, menurut sifatnya, keadaan pendedahan atau penandaan munasabah sepatutnya dianggap sulit.'
+        'apa-apa maklumat yang. menurut sifatnya, keadaan pendedahan atau penandaan munasabah sepatutnya dianggap sulit.'
     ]},
     { t: 'heading', text: '3. KEWAJIPAN PIHAK PENERIMA' },
     { t: 'para', text: 'Pihak Penerima hendaklah:' },
@@ -320,22 +320,23 @@ const ndaPdfBlocks = [
 ];
 
 const serviceAgreementPdfBlocks = [
-    { t: 'title', en: 'CONSULTANCY & LICENSE APPLICATION SERVICE AGREEMENT', ms: 'PERJANJIAN PERKHIDMATAN PERUNDINGAN & PERMOHONAN LESEN' },
+    { t: 'title', en: 'CONSULTANCY & LICENSE APPLICATION SERVICE AGREEMENT', ms: 'PERUNDINGAN & PERMOHONAN LESEN PERJANJIAN PERKHIDMATAN' },
     { t: 'tworef', items: [['Agreement Reference (Rujukan Perjanjian)', 'ZNQ-SA-{{agreementRefSuffix}}'], ['Document Date (Tarikh Dokumen)', '{{documentDate}}']] },
     { t: 'para', text: 'This Consultancy & License Application Service Agreement (the "Agreement") is entered into as of the Agreement Date stated in Section 1 by and between Zenqor Technologies (the "Service Provider" or "Consultant") and the client identified in Section 1 (the "Client"). Each may be referred to individually as a "Party" and collectively as the "Parties."' },
     { t: 'para', text: '(Perjanjian Perkhidmatan Perundingan dan Permohonan Lesen ini ("Perjanjian") dibuat pada Tarikh Perjanjian yang dinyatakan dalam Seksyen 1 antara Zenqor Technologies ("Penyedia Perkhidmatan" atau "Perunding") dengan pelanggan yang dikenal pasti dalam Seksyen 1 ("Pelanggan"). Setiap satunya boleh disebut sebagai "Pihak" dan secara bersama sebagai "Pihak-Pihak".)', italic: true },
     { t: 'heading', text: '1.0 PARTY INFORMATION (MAKLUMAT PIHAK-PIHAK)' },
-    { t: 'table3', headers: ['DETAIL (BUTIRAN)', 'SERVICE PROVIDER (PIHAK PERTAMA)', 'CLIENT (PIHAK KEDUA)'], rows: [
-        ['Company / Business Name', 'ZENQOR TECHNOLOGIES', '{{clientCompanyName}}'],
-        ['Registration No. (SSM)', '202603157897 (JM1045730-D)', '{{clientRegNo}}'],
-        ['Business Address', 'Suria Residence, Block A, Jalan Residence, Bandar Mahkota Cheras, 43200 Selangor', '{{clientBusinessAddress}}'],
-        ['Contact Person', 'Muhammad Annas', '{{clientContactPerson}}'],
-        ['Telephone / WhatsApp', '+60 11-6501 2569', '{{clientPhone}}'],
-        ['Official Email', 'admin@zenq0r.com', '{{clientEmail}}'],
-        ['Agreement Date', '{{agreementDate}}', '{{agreementDate}}']
+    { t: 'table3', headers: ['DETAIL (BUTIRAN)', 'SERVICE PROVIDER (FIRST PARTY) (PENYEDIA PERKHIDMATAN (PIHAK PERTAMA))', 'CLIENT (SECOND PARTY) (PELANGGAN (PIHAK KEDUA))'], rows: [
+        ['Company / Business Name (Nama Syarikat / Perniagaan)', 'ZENQOR TECHNOLOGIES', '{{clientCompanyName}}'],
+        ['Registration No. (SSM) (No. Pendaftaran (SSM))', '202603157897 (JM1045730-D)', '{{clientRegNo}}'],
+        ['Business Address (Alamat Perniagaan)', 'Suria Residence, Block A, Jalan Residence, Bandar Mahkota Cheras, 43200 Selangor', '{{clientBusinessAddress}}'],
+        ['Contact Person (Pegawai untuk Dihubungi)', 'Muhammad Annas', '{{clientContactPerson}}'],
+        ['Telephone / WhatsApp (Telefon / WhatsApp)', '+60 11-6501 2569', '{{clientPhone}}'],
+        ['Official Email (E-mel Rasmi)', 'admin@zenq0r.com', '{{clientEmail}}'],
+        ['Agreement Date (Tarikh Perjanjian)', '{{agreementDate}}', '{{agreementDate}}']
     ]},
     { t: 'heading', text: '2.0 SCOPE OF SERVICES (SKOP PERKHIDMATAN)' },
     { t: 'para', text: 'Zenqor Technologies will provide consultancy, file-management, and premises-license application services within the following scope:' },
+    { t: 'para', text: '(Zenqor Technologies akan menyediakan perkhidmatan perundingan, pengurusan fail dan permohonan lesen premis berdasarkan skop berikut:)', italic: true },
     { t: 'bullets', items: [
         '2.1 Document Review and Audit. Review, audit, and organize supporting documents and application files for completeness and alignment with the requirements and guidelines of the relevant Local Authority (Pihak Berkuasa Tempatan, or "PBT") or another competent agency.',
         '2.2 Application Preparation. Prepare, complete, and process official application documents and forms using information supplied by the Client.',
@@ -343,31 +344,55 @@ const serviceAgreementPdfBlocks = [
         '2.4 Submission and Tracking. Submit the application file at the PBT counter or through the relevant official portal and periodically monitor the application status.',
         '2.5 Coordination of Authority Feedback. Guide the Client on corrective actions required in response to technical comments, notices, additional conditions, or findings arising from a PBT premises inspection.'
     ]},
+    { t: 'bullets', italic: true, items: [
+        '(2.1 Semakan dan Audit Dokumen. Menyemak, mengaudit dan menyusun dokumen sokongan serta fail permohonan bagi memastikan kelengkapannya dan pematuhannya terhadap keperluan serta garis panduan Pihak Berkuasa Tempatan (PBT) atau agensi berwajib yang berkaitan.)',
+        '(2.2 Penyediaan Permohonan. Menyediakan, melengkapkan dan memproses dokumen serta borang permohonan rasmi berdasarkan maklumat yang diberikan oleh Pelanggan.)',
+        '(2.3 Khidmat Nasihat Pematuhan Premis. Memberikan panduan teknikal asas berkaitan keperluan pematuhan PBT, termasuk spesifikasi papan tanda perniagaan, keperluan alat pemadam api dan susun atur premis.)',
+        '(2.4 Penyerahan dan Pemantauan. Menyerahkan fail permohonan di kaunter PBT atau melalui portal rasmi yang berkaitan serta memantau status permohonan secara berkala.)',
+        '(2.5 Penyelarasan Maklum Balas Pihak Berkuasa. Membimbing Pelanggan berhubung tindakan pembetulan yang diperlukan susulan ulasan teknikal, notis, syarat tambahan atau dapatan pemeriksaan premis oleh PBT.)'
+    ]},
     { t: 'heading', text: '3.0 SERVICE PROVIDER RESPONSIBILITIES (TANGGUNGJAWAB PENYEDIA PERKHIDMATAN)' },
     { t: 'bullets', items: [
         '3.1 Professional Care. Perform the Services with reasonable professional skill, care, and diligence consistent with applicable industry practices in Malaysia.',
         '3.2 Status Updates. Provide the Client with periodic updates on application progress, status, and official feedback received from the PBT or relevant agencies.',
         '3.3 Document Management. Organize and safeguard working documents provided by the Client while the application is being processed.'
     ]},
+    { t: 'bullets', italic: true, items: [
+        '(3.1 Ketelitian Profesional. Melaksanakan Perkhidmatan dengan kemahiran, ketelitian dan usaha profesional yang munasabah, selaras dengan amalan industri yang berkaitan di Malaysia.)',
+        '(3.2 Kemas Kini Status. Memberikan kemas kini berkala kepada Pelanggan mengenai perkembangan dan status permohonan serta maklum balas rasmi yang diterima daripada PBT atau agensi berkaitan.)',
+        '(3.3 Pengurusan Dokumen. Menyusun dan menjaga keselamatan dokumen kerja yang diberikan oleh Pelanggan sepanjang tempoh pemprosesan permohonan.)'
+    ]},
     { t: 'heading', text: '4.0 CLIENT RESPONSIBILITIES (TANGGUNGJAWAB PELANGGAN)' },
     { t: 'para', text: 'To support timely processing and avoid preventable delays, the Client agrees to the following:' },
+    { t: 'para', text: '(Bagi menyokong pemprosesan yang lancar dan mengelakkan kelewatan yang boleh dicegah, Pelanggan bersetuju untuk mematuhi perkara berikut:)', italic: true },
     { t: 'bullets', items: [
         '4.1 Accuracy and Authenticity. Provide valid, accurate, current, and authentic supporting documents, including, where applicable, the SSM profile, tenancy agreement, floor plan, and copies of identification documents.',
         '4.2 Response Time. Provide all documents or additional information requested by Zenqor Technologies within seven (7) business days.',
         '4.3 Physical and Technical Compliance. Ensure that the premises comply with applicable PBT requirements, including restrictions on unauthorized structural alterations, Fire and Rescue Department of Malaysia requirements, and hygiene standards.',
         '4.4 Official Government Fees. Pay all official license fees, inspection charges, signage charges, deposits, penalties, and other governmental charges directly to the PBT or relevant agency. These amounts are separate from Zenqor Technologies’ service fees.'
     ]},
+    { t: 'bullets', italic: true, items: [
+        '(4.1 Ketepatan dan Kesahihan. Menyediakan dokumen sokongan yang sah, tepat, terkini dan tulen, termasuk, jika berkenaan, profil SSM, perjanjian sewa, pelan lantai dan salinan dokumen pengenalan.)',
+        '(4.2 Tempoh Maklum Balas. Menyerahkan semua dokumen atau maklumat tambahan yang diminta oleh Zenqor Technologies dalam tempoh tujuh (7) hari bekerja.)',
+        '(4.3 Pematuhan Fizikal dan Teknikal. Memastikan premis mematuhi keperluan PBT yang berkenaan, termasuk larangan terhadap pengubahsuaian struktur tanpa kebenaran, keperluan Jabatan Bomba dan Penyelamat Malaysia serta piawaian kebersihan.)',
+        '(4.4 Fi Rasmi Kerajaan. Membayar semua fi lesen rasmi, caj pemeriksaan, caj papan tanda, deposit, penalti dan caj kerajaan yang lain secara terus kepada PBT atau agensi berkaitan. Semua amaun tersebut adalah berasingan daripada fi perkhidmatan Zenqor Technologies.)'
+    ]},
     { t: 'heading', text: '5.0 FEES AND PAYMENT TERMS (FI DAN TERMA PEMBAYARAN)' },
     { t: 'para', text: 'The total fee for the scope of services described in this Agreement is {{totalFee}}, inclusive of the Professional Service Fee and the applicable Official Government / Statutory Charges within the agreed scope of services. The total fee shall be payable in the following fixed instalments:' },
-    { t: 'table4', headers: ['PHASE', 'WORK STAGE', 'AMOUNT (RM)', 'PAYMENT MILESTONE'], rows: [
-        ['Phase 1', '{{phase1_workStage}}', '{{phase1_amount}}', '{{phase1_milestone}}'],
-        ['Phase 2', '{{phase2_workStage}}', '{{phase2_amount}}', '{{phase2_milestone}}'],
-        ['Phase 3', '{{phase3_workStage}}', '{{phase3_amount}}', '{{phase3_milestone}}'],
-        ['TOTAL', '', '{{totalAmount}}', '']
+    { t: 'para', text: '(Jumlah fi bagi skop perkhidmatan yang dinyatakan dalam Perjanjian ini ialah sebanyak {{totalFee}}, yang merangkumi Fi Perkhidmatan Profesional serta Fi Rasmi Kerajaan / Statutori yang berkenaan dalam skop perkhidmatan yang dipersetujui. Jumlah fi tersebut hendaklah dibayar melalui ansuran tetap berikut:)', italic: true },
+    { t: 'table4', headers: ['PHASE (FASA)', 'WORK STAGE (PERINGKAT KERJA)', 'AMOUNT (RM) (AMAUN (RM))', 'PAYMENT MILESTONE (MILESTONE PEMBAYARAN)'], rows: [
+        ['Phase 1 (Fasa 1)', '{{phase1_workStage}}', '{{phase1_amount}}', '{{phase1_milestone}}'],
+        ['Phase 2 (Fasa 2)', '{{phase2_workStage}}', '{{phase2_amount}}', '{{phase2_milestone}}'],
+        ['Phase 3 (Fasa 3)', '{{phase3_workStage}}', '{{phase3_amount}}', '{{phase3_milestone}}'],
+        ['TOTAL (JUMLAH)', '', '{{totalAmount}}', '']
     ]},
     { t: 'bullets', items: [
         '5.1 Official Payment Method. Online bank transfer to Maybank Islamic Berhad, Account No. 5629 8205 7309, Account Name: Zenqor Technologies. The Client should retain and provide proof of payment.',
         '5.2 Invoice Due Date. Each phase payment is due within three (3) business days after the applicable invoice date.'
+    ]},
+    { t: 'bullets', italic: true, items: [
+        '(5.1 Kaedah Pembayaran Rasmi. Pindahan bank dalam talian ke Maybank Islamic Berhad, No. Akaun 5629 8205 7309, Nama Akaun: Zenqor Technologies. Pelanggan hendaklah menyimpan dan mengemukakan bukti pembayaran.)',
+        '(5.2 Tempoh Pembayaran Invois. Bayaran bagi setiap fasa hendaklah dijelaskan dalam tempoh tiga (3) hari bekerja dari tarikh invois berkenaan.)'
     ]},
     { t: 'heading', text: '6.0 CANCELLATION AND TERMINATION (PEMBATALAN DAN PENAMATAN)' },
     { t: 'bullets', items: [
@@ -375,27 +400,48 @@ const serviceAgreementPdfBlocks = [
         '6.2 Termination for Breach. Zenqor Technologies may terminate this Agreement immediately by written notice if the Client fails to provide required documents for more than thirty (30) days, provides false or misleading information, or fails to make payment when due.',
         '6.3 Amounts Due on Termination. The Client remains responsible for payment for every phase of work completed before the effective termination date.'
     ]},
-    { t: 'heading', text: '7.0 LICENSE APPROVAL DISCLAIMER AND LIMITATION OF LIABILITY' },
+    { t: 'bullets', italic: true, items: [
+        '(6.1 Pembatalan oleh Pelanggan. Jika Pelanggan membatalkan permohonan atau menamatkan Perjanjian ini atas sebabnya sendiri selepas kerja perundingan atau audit dokumen dimulakan, semua deposit dan fi yang telah dibayar tidak akan dikembalikan.)',
+        '(6.2 Penamatan kerana Pelanggaran. Zenqor Technologies boleh menamatkan Perjanjian ini serta-merta melalui notis bertulis jika Pelanggan gagal mengemukakan dokumen yang diperlukan melebihi tiga puluh (30) hari, memberikan maklumat palsu atau mengelirukan, atau gagal membuat pembayaran apabila perlu dibayar.)',
+        '(6.3 Amaun yang Perlu Dibayar semasa Penamatan. Pelanggan tetap bertanggungjawab membayar setiap fasa kerja yang telah diselesaikan sebelum tarikh kuat kuasa penamatan.)'
+    ]},
+    { t: 'heading', text: '7.0 LICENSE APPROVAL DISCLAIMER AND LIMITATION OF LIABILITY (PENAFIAN KELULUSAN LESEN DAN HAD LIABILITI)' },
     { t: 'bullets', items: [
         '7.1 Authority Decision. The Client acknowledges that all decisions to approve, reject, defer, or impose additional conditions on a license application rest solely with the PBT and other competent agencies, subject to their policies, standards, and discretion.',
         '7.2 Consultant’s Role. Zenqor Technologies acts solely as a professional consultant and facilitator in managing and coordinating the application. Zenqor Technologies does not guarantee approval and makes no representation that approval will be automatic.',
         '7.3 Limitation of Responsibility. Zenqor Technologies is not responsible for any rejection, processing delay, or loss arising from inaccurate or incomplete Client documents, false information, pre-existing legal or regulatory issues affecting the premises, the Client’s delay, or the premises’ failure to meet applicable technical standards.',
         '7.4 Non-Refundable Fees. Service fees compensate Zenqor Technologies for consultancy, audit, file preparation, and related work performed and are non-refundable if the PBT rejects the application.'
     ]},
-    { t: 'heading', text: '8.0 CONFIDENTIALITY AND PERSONAL DATA' },
+    { t: 'bullets', italic: true, items: [
+        '(7.1 Keputusan Pihak Berkuasa. Pelanggan mengakui bahawa semua keputusan untuk meluluskan, menolak, menangguhkan atau mengenakan syarat tambahan terhadap permohonan lesen terletak sepenuhnya pada PBT dan agensi berwajib yang lain, tertakluk pada dasar, piawaian dan budi bicara mereka.)',
+        '(7.2 Peranan Perunding. Zenqor Technologies bertindak semata-mata sebagai perunding profesional dan fasilitator dalam mengurus serta menyelaraskan permohonan. Zenqor Technologies tidak menjamin kelulusan dan tidak membuat sebarang representasi bahawa kelulusan akan diberikan secara automatik.)',
+        '(7.3 Had Tanggungjawab. Zenqor Technologies tidak bertanggungjawab terhadap sebarang penolakan, kelewatan pemprosesan atau kerugian yang berpunca daripada dokumen Pelanggan yang tidak tepat atau tidak lengkap, maklumat palsu, isu undang-undang atau kawal selia sedia ada yang menjejaskan premis, kelewatan oleh Pelanggan, atau kegagalan premis memenuhi piawaian teknikal yang berkenaan.)',
+        '(7.4 Fi Tidak Boleh Dikembalikan. Fi perkhidmatan merupakan bayaran bagi kerja perundingan, audit, penyediaan fail dan kerja berkaitan yang telah dilaksanakan oleh Zenqor Technologies dan tidak boleh dikembalikan jika permohonan ditolak oleh PBT.)'
+    ]},
+    { t: 'heading', text: '8.0 CONFIDENTIALITY AND PERSONAL DATA (KERAHSIAAN DAN DATA PERIBADI)' },
     { t: 'bullets', items: [
         '8.1 Confidential Information. Each Party will keep confidential all non-public business information, technical documents, financial data, and company information shared in connection with the Services and will not disclose such information to a third party without prior written consent, except where disclosure is required by law or reasonably necessary for the license application.',
         '8.2 Personal Data Protection. Zenqor Technologies will process personal data and Client company information for purposes connected with the license application and in accordance with Malaysia’s Personal Data Protection Act 2010 (Act 709), as applicable.'
     ]},
+    { t: 'bullets', italic: true, items: [
+        '(8.1 Maklumat Sulit. Setiap Pihak hendaklah merahsiakan semua maklumat perniagaan bukan awam, dokumen teknikal, data kewangan dan maklumat syarikat yang dikongsi berkaitan Perkhidmatan serta tidak mendedahkannya kepada pihak ketiga tanpa persetujuan bertulis terlebih dahulu, kecuali jika pendedahan diwajibkan oleh undang-undang atau semunasabahnya diperlukan bagi permohonan lesen.)',
+        '(8.2 Perlindungan Data Peribadi. Zenqor Technologies akan memproses data peribadi dan maklumat syarikat Pelanggan bagi tujuan yang berkaitan dengan permohonan lesen dan mengikut Akta Perlindungan Data Peribadi 2010 (Akta 709), setakat yang terpakai.)'
+    ]},
     { t: 'heading', text: '9.0 TERM (TEMPOH PERJANJIAN)' },
     { t: 'para', text: '9.1 Effective Date and Expiration. This Agreement takes effect when signed by both Parties and continues until the PBT issues its decision on the license application, unless earlier terminated under Section 6.0.' },
-    { t: 'heading', text: '10.0 DISPUTE RESOLUTION AND GOVERNING LAW' },
+    { t: 'para', text: '(9.1 Tarikh Kuat Kuasa dan Tamat Tempoh. Perjanjian ini berkuat kuasa apabila ditandatangani oleh kedua-dua Pihak dan berterusan sehingga PBT mengeluarkan keputusan mengenai permohonan lesen, melainkan ditamatkan lebih awal di bawah Seksyen 6.0.)', italic: true },
+    { t: 'heading', text: '10.0 DISPUTE RESOLUTION AND GOVERNING LAW (PENYELESAIAN PERTIKAIAN DAN UNDANG-UNDANG YANG MENGAWAL)' },
     { t: 'bullets', items: [
         '10.1 Good-Faith Negotiation. The Parties will first attempt to resolve amicably any dispute, difference in interpretation, or claim arising out of or relating to this Agreement through good-faith negotiations for fourteen (14) days after written notice of the dispute.',
         '10.2 Malaysian Law and Jurisdiction. This Agreement is governed by and construed in accordance with the laws of Malaysia. The Parties submit to the jurisdiction of the courts of Malaysia.'
     ]},
-    { t: 'heading', text: '11.0 ACKNOWLEDGMENT AND EXECUTION' },
+    { t: 'bullets', italic: true, items: [
+        '(10.1 Rundingan dengan Niat Baik. Pihak-Pihak hendaklah terlebih dahulu berusaha menyelesaikan secara baik sebarang pertikaian, perbezaan tafsiran atau tuntutan yang timbul daripada atau berkaitan dengan Perjanjian ini melalui rundingan dengan niat baik selama empat belas (14) hari selepas notis bertulis mengenai pertikaian diberikan.)',
+        '(10.2 Undang-Undang dan Bidang Kuasa Malaysia. Perjanjian ini ditadbir dan ditafsirkan mengikut undang-undang Malaysia. Pihak-Pihak bersetuju untuk tertakluk pada bidang kuasa mahkamah Malaysia.)'
+    ]},
+    { t: 'heading', text: '11.0 ACKNOWLEDGMENT AND EXECUTION (PENGAKUAN DAN PENANDATANGANAN)' },
     { t: 'para', text: 'By signing below, each Party confirms that it has read and understood this Agreement, has had the opportunity to seek independent advice, and agrees to be bound by its terms and conditions. Each signatory represents that they are authorized to sign for the Party identified below.' },
+    { t: 'para', text: '(Dengan menandatangani di bawah, setiap Pihak mengesahkan bahawa Pihak tersebut telah membaca dan memahami Perjanjian ini, telah diberikan peluang untuk mendapatkan nasihat bebas, dan bersetuju untuk terikat dengan terma dan syaratnya. Setiap penandatangan mengesahkan bahawa mereka diberi kuasa untuk menandatangani bagi pihak yang dikenal pasti di bawah.)', italic: true },
     { t: 'signatures2',
         left: { title: 'FOR ZENQOR TECHNOLOGIES', nameField: 'zenqorSignatoryName', positionField: 'zenqorSignatoryTitle', dateField: 'zenqorSignDate', sigRole: 'zenqor' },
         right: { title: 'FOR THE CLIENT / COMPANY', nameField: 'clientSignatoryName', positionField: 'clientSignatoryTitleStamp', dateField: 'clientSignDate', sigRole: 'client' }
@@ -412,8 +458,8 @@ const clientInfoFormPdfBlocks = [
         ['Legal / Registered Name (Nama Berdaftar)', '{{legalName}}'],
         ['Trading / Business Name (Nama Perniagaan)', '{{tradingName}}'],
         ['BRN / NRIC / Passport No. (No. BRN / KP / Pasport)', '{{brnNricPassport}}'],
-        ['Tax Identification No. TIN (No. Pengenalan Cukai)', '{{tin}}'],
-        ['SST Registration No. (No. SST)', '{{sstNo}}'],
+        ['Tax Identification No. (TIN) (No. Pengenalan Cukai)', '{{tin}}'],
+        ['SST Registration No. (if applicable) (No. SST (jika berkenaan))', '{{sstNo}}'],
         ['Industry / Nature of Business (Industri / Jenis Perniagaan)', '{{industry}}'],
         ['Registered Address (Alamat Berdaftar)', '{{registeredAddress}}'],
         ['Correspondence Address (Alamat Surat-Menyurat)', '{{correspondenceAddress}}']
@@ -436,7 +482,7 @@ const clientInfoFormPdfBlocks = [
         ['Billing Email (E-mel Bil)', '{{billingEmail}}'],
         ['Buyer TIN (TIN Pembeli)', '{{buyerTin}}'],
         ['Buyer BRN / NRIC / Passport No. (BRN / KP / Pasport Pembeli)', '{{buyerBrn}}'],
-        ['Buyer SST Registration No. (No. SST Pembeli)', '{{buyerSst}}'],
+        ['Buyer SST Registration No. (if applicable) (No. SST Pembeli (jika berkenaan))', '{{buyerSst}}'],
         ['Buyer Contact No. (No. Hubungan Pembeli)', '{{buyerContactNo}}'],
         ['Buyer / Billing Address (Alamat Pembeli / Bil)', '{{buyerAddress}}']
     ]},
@@ -458,19 +504,19 @@ const clientInfoFormPdfBlocks = [
         ['Email (E-mel)', '{{authRepEmail}}']
     ]},
     { t: 'checkboxGroup', fieldId: 'authorisedToApprove' },
-    { t: 'heading', text: 'F. SUPPORTING DOCUMENTS & ADDITIONAL INFORMATION' },
+    { t: 'heading', text: 'F. SUPPORTING DOCUMENTS & ADDITIONAL INFORMATION (Dokumen Sokongan & Maklumat Tambahan)' },
     { t: 'checkboxGroup', fieldId: 'documentsAttached' },
     { t: 'table2', rows: [
         ['How did you hear about us? (Bagaimana mengetahui kami?)', '{{referralSource}}'],
         ['Client Reference / Referral (Rujukan / Referral)', '{{clientReference}}'],
         ['Additional Notes (Catatan Tambahan)', '{{additionalNotes}}']
     ]},
-    { t: 'heading', text: 'G. PERSONAL DATA PROTECTION NOTICE & CONSENT' },
+    { t: 'heading', text: 'G. PERSONAL DATA PROTECTION NOTICE & CONSENT (Notis & Persetujuan Perlindungan Data Peribadi)' },
     { t: 'para', text: 'Zenqor Technologies may collect and process the personal data provided in this form for client onboarding, identity and contact verification, quotation and contract administration, delivery and support of services, billing, payment administration, e-Invoice and tax compliance, record keeping, legal or regulatory requirements, and related business communications. Where reasonably necessary, such data may be disclosed to service providers, professional advisers, financial institutions, government, tax or regulatory authorities, and other parties permitted or required by law. Reasonable security measures will be applied and personal data will be retained only for as long as necessary for the stated purposes or as required by applicable law.', small: true },
     { t: 'para', text: 'Zenqor Technologies boleh mengumpul dan memproses data peribadi yang diberikan dalam borang ini bagi tujuan pendaftaran pelanggan, pengesahan identiti dan hubungan, pentadbiran sebut harga dan kontrak, penyampaian serta sokongan perkhidmatan, pengebilan, pentadbiran bayaran, pematuhan e-Invois dan cukai, penyimpanan rekod, keperluan undang-undang atau kawal selia, serta komunikasi perniagaan yang berkaitan. Jika perlu secara munasabah, data tersebut boleh didedahkan kepada penyedia perkhidmatan, penasihat profesional, institusi kewangan, pihak kerajaan, percukaian atau kawal selia, serta pihak lain yang dibenarkan atau dikehendaki oleh undang-undang. Langkah keselamatan yang munasabah akan diambil dan data peribadi akan disimpan hanya selama diperlukan bagi tujuan yang dinyatakan atau sebagaimana dikehendaki oleh undang-undang yang terpakai.', small: true },
     { t: 'checkboxGroup', fieldId: 'pdpaConsent' },
     { t: 'table2', rows: [['Privacy Contact (Hubungan Privasi)', '{{privacyContact}}']] },
-    { t: 'heading', text: 'H. CLIENT DECLARATION & AUTHORISATION' },
+    { t: 'heading', text: 'H. CLIENT DECLARATION & AUTHORISATION (Akuan & Kebenaran Pelanggan)' },
     { t: 'para', text: 'I/We confirm that the information provided in this form is true, complete and accurate to the best of my/our knowledge, and I/we am/are authorised to provide it on behalf of the client.', small: true },
     { t: 'para', text: 'Saya/Kami mengesahkan bahawa maklumat yang diberikan dalam borang ini adalah benar, lengkap dan tepat setakat pengetahuan saya/kami, dan saya/kami diberi kuasa untuk memberikannya bagi pihak pelanggan.', small: true },
     { t: 'signatures2', left: { title: 'Client Declaration / Akuan Pelanggan', nameField: 'declarationName', positionField: 'declarationDesignation', dateField: 'declarationDate', stampField: 'companyStampNote', sigRole: 'client' }, right: null },
@@ -859,10 +905,13 @@ export async function buildPdfForDocument(templateId, fields, signatures, meta) 
             page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_WIDTH - MARGIN, y }, thickness: 1.2, color: rgb(0.02, 0.16, 0.29) });
             y -= 18;
         } else if (b.t === 'heading') {
-            ensureSpace(24);
+            const headingLines = wrapText(bold, sub(b.text), 10.5, CONTENT_WIDTH);
+            ensureSpace(24 + (headingLines.length - 1) * 13);
             y -= 4;
-            page.drawText(sub(b.text), { x: MARGIN, y, size: 10.5, font: bold, color: rgb(0.02, 0.16, 0.29) });
-            y -= 5;
+            headingLines.forEach((line, li) => {
+                page.drawText(line, { x: MARGIN, y: y - li * 13, size: 10.5, font: bold, color: rgb(0.02, 0.16, 0.29) });
+            });
+            y -= headingLines.length * 13 + 1;
             page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_WIDTH - MARGIN, y }, thickness: 0.5, color: rgb(0.82, 0.82, 0.82) });
             y -= 13;
         } else if (b.t === 'boldpara') {
@@ -874,12 +923,14 @@ export async function buildPdfForDocument(templateId, fields, signatures, meta) 
             drawWrapped(sub(b.text), { size, f, lh: size + 3, color: b.small ? rgb(0.35, 0.35, 0.35) : undefined });
             y -= 5;
         } else if (b.t === 'bullets') {
+            const bf = b.italic ? italic : font;
+            const bColor = b.italic ? rgb(0.35, 0.35, 0.35) : rgb(0.08, 0.08, 0.08);
             b.items.forEach(item => {
-                const lines = wrapText(font, sub(item), 9, CONTENT_WIDTH - 14);
+                const lines = wrapText(bf, sub(item), 9, CONTENT_WIDTH - 14);
                 ensureSpace(lines.length * 11.5 + 2);
                 lines.forEach((line, i) => {
-                    if (i === 0) page.drawText('•', { x: MARGIN, y, size: 9, font, color: rgb(0.08, 0.08, 0.08) });
-                    page.drawText(line, { x: MARGIN + 13, y, size: 9, font, color: rgb(0.08, 0.08, 0.08) });
+                    if (i === 0) page.drawText('•', { x: MARGIN, y, size: 9, font: bf, color: bColor });
+                    page.drawText(line, { x: MARGIN + 13, y, size: 9, font: bf, color: bColor });
                     y -= 11.5;
                 });
             });
@@ -902,9 +953,12 @@ export async function buildPdfForDocument(templateId, fields, signatures, meta) 
         } else if (b.t === 'checkboxGroup') {
             const field = tpl.fieldConfig.find(f => f.id === b.fieldId);
             if (field) {
-                ensureSpace(14);
-                page.drawText(`${field.label.en} / ${field.label.ms}`, { x: MARGIN, y, size: 8, font: bold, color: rgb(0.3, 0.3, 0.3) });
-                y -= 11;
+                const headerLines = wrapText(bold, `${field.label.en} / ${field.label.ms}`, 8, CONTENT_WIDTH);
+                ensureSpace(headerLines.length * 10.5 + 3);
+                headerLines.forEach((line, li) => {
+                    page.drawText(line, { x: MARGIN, y: y - li * 10.5, size: 8, font: bold, color: rgb(0.3, 0.3, 0.3) });
+                });
+                y -= headerLines.length * 10.5 + 1;
                 const text = field.type === 'checkbox'
                     ? `${safeFields[b.fieldId] ? '[X]' : '[ ]'} ${field.label.en}`
                     : (field.options || []).map(o => `${(safeFields[b.fieldId] || []).includes(o) ? '[X]' : '[ ]'} ${o}`).join('   ');
