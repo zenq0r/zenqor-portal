@@ -240,6 +240,55 @@ service cloud.firestore {
       allow delete: if isSuperadmin() || isDirector() || isHR() || isAccount();
     }
 
+    // Signed Documents — Authorization Letter / Client Information Form / NDA / Service
+    // Agreement, filled and e-signed online by both the client and Zenqor staff. Status
+    // state machine: draft -> awaiting_client -> awaiting_zenqor -> completed (or voided),
+    // modeled on the payment_vouchers status-gated allow update chain above. A document is
+    // permanently locked (no further writes from any clause) once status == 'completed'.
+    function isSignedDocumentManager() { return isSuperadmin() || isDirector() || isHR() || isAccount(); }
+    function isOwningSignedDocumentClient(clientDirectoryId) {
+      return isClient() && customerEmailMatches(get(/databases/$(database)/documents/customers/$(clientDirectoryId)).data, request.auth.token.email);
+    }
+    match /signed_documents/{docId} {
+      allow read: if isAuthenticated() && (
+        isSignedDocumentManager() ||
+        (isOwningSignedDocumentClient(resource.data.clientDirectoryId) && resource.data.status != 'draft')
+      );
+
+      allow create: if isAuthenticated() && isSignedDocumentManager() &&
+        request.resource.data.status == 'draft' &&
+        request.resource.data.createdByUid == request.auth.uid;
+
+      allow update: if (
+        // Zenqor staff prefill / send-to-client, while the client has not yet taken their turn.
+        isSignedDocumentManager() &&
+        resource.data.status in ['draft', 'awaiting_client'] &&
+        request.resource.data.status in ['draft', 'awaiting_client'] &&
+        request.resource.data.clientDirectoryId == resource.data.clientDirectoryId
+      ) || (
+        // Client fills their fields and submits their signature.
+        isOwningSignedDocumentClient(resource.data.clientDirectoryId) &&
+        resource.data.status == 'awaiting_client' &&
+        request.resource.data.status in ['awaiting_client', 'awaiting_zenqor'] &&
+        request.resource.data.clientDirectoryId == resource.data.clientDirectoryId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fields', 'signatures', 'status', 'updatedAt', 'audit'])
+      ) || (
+        // Zenqor staff reviews, fills remaining fields, countersigns and finalizes.
+        isSignedDocumentManager() &&
+        resource.data.status == 'awaiting_zenqor' &&
+        request.resource.data.status in ['awaiting_zenqor', 'completed'] &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fields', 'signatures', 'status', 'updatedAt', 'audit', 'finalPdf', 'lockedAt', 'referenceNo'])
+      ) || (
+        // Void — admin/director escape hatch, any pre-completion status.
+        isSignedDocumentManager() &&
+        resource.data.status != 'completed' &&
+        request.resource.data.status == 'voided' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'audit'])
+      );
+
+      allow delete: if isSuperadmin() || isDirector();
+    }
+
     // Password reset tokens for the custom (non-Firebase-hosted) reset flow — written and
     // read exclusively by the /api/*.js serverless functions via the Admin SDK, which
     // bypasses these rules entirely. No client, staff or otherwise, should ever touch this

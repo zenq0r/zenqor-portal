@@ -28,6 +28,7 @@ import {
     getDownloadURL,
     deleteObject
 } from "./firebase-config.js";
+import { DOCUMENT_TEMPLATES, defaultFieldValues, requiredFieldsMissing, buildPdfForDocument } from "./documents-templates.js";
 
 const { createApp } = Vue;
 
@@ -244,12 +245,12 @@ const RBAC_ROLES = {
     // (content/site_text). Restricted to Superadmin/Director/IT only — see
     // isContentAdmin() in firestore.rules, which grants write on exactly these
     // collections to that same set of roles (not the full isAdmin() surface).
-    'Director': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'website-content', 'audit-logs', 'settings', 'profile'],
-    'Superadmin': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'website-content', 'audit-logs', 'settings', 'profile'],
-    'HR': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'profile'],
-    'Account': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'profile'],
+    'Director': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'documents', 'website-content', 'audit-logs', 'settings', 'profile'],
+    'Superadmin': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'client-portal', 'documents', 'website-content', 'audit-logs', 'settings', 'profile'],
+    'HR': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'hr-employees', 'reports', 'documents', 'profile'],
+    'Account': ['dashboard', 'project-activities', 'doc-generator', 'payslip-generator', 'claims', 'client-directory', 'reports', 'documents', 'profile'],
     'IT': ['dashboard', 'project-activities', 'website-content', 'audit-logs', 'settings', 'profile'],
-    'Client': ['project-activities', 'client-portal', 'client-documents', 'client-updates', 'client-support', 'profile'],
+    'Client': ['project-activities', 'client-portal', 'client-documents', 'client-updates', 'client-support', 'documents', 'profile'],
     'Staff': ['dashboard', 'project-activities', 'claims', 'profile']
 };
 
@@ -423,6 +424,17 @@ createApp({
             expandedClientGroups: new Set(),
             projectPreview: { show: false, project: null },
             clientDocuments: { clientDirectoryId: '', clientName: '', clientEmail: '', items: [], loading: false, uploading: false, error: '' },
+
+            // Signed Documents module (Authorization Letter / Client Info Form / NDA / Service Agreement).
+            // Field definitions + PDF layout live in documents-templates.js — see DOCUMENT_TEMPLATES import above.
+            documentTemplates: DOCUMENT_TEMPLATES,
+            signedDocuments: { items: [], loading: false, error: '', clientFilter: 'all', statusFilter: 'all' },
+            newSignedDocumentModal: { show: false, clientDirectoryId: '', templateId: '', saving: false },
+            signedDocumentModal: { show: false, mode: 'view', saving: false, doc: null, fields: {} },
+            sigPad: {
+                client: { hasStrokes: false, drawing: false, ctx: null },
+                zenqor: { hasStrokes: false, drawing: false, ctx: null }
+            },
             // Public-site content management: Firestore-backed content consumed directly by
             // zenqor-tech — Portfolio galleries (portfolio_web = Digital Systems,
             // portfolio_gaming = Licensing & Permits), the Services page, and page-text
@@ -710,6 +722,29 @@ createApp({
         // Firestore/Storage rules independently re-verify clientDirectoryId ownership,
         // this is just the UI-level show/hide for the upload button.
         canUploadClientDocuments() { return this.canManageDocuments || this.userProfile.role === 'Client'; },
+        // Staff who can create/prefill/countersign Signed Documents — same roster as
+        // 'documents' in RBAC_ROLES for the non-Client roles.
+        canManageSignedDocuments() { return ['Director', 'Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
+        activeTemplateFieldConfig() {
+            const templateId = this.signedDocumentModal.doc ? this.signedDocumentModal.doc.templateId : this.newSignedDocumentModal.templateId;
+            const tpl = this.documentTemplates[templateId];
+            return tpl ? tpl.fieldConfig : [];
+        },
+        activeTemplateSections() {
+            const seen = [];
+            this.activeTemplateFieldConfig.forEach(f => { if (!seen.includes(f.section)) seen.push(f.section); });
+            return seen;
+        },
+        visibleSignedDocuments() {
+            let items = this.signedDocuments.items;
+            if (this.userProfile.role === 'Client') {
+                items = items.filter(d => d.status !== 'draft');
+            } else {
+                if (this.signedDocuments.clientFilter !== 'all') items = items.filter(d => d.clientDirectoryId === this.signedDocuments.clientFilter);
+            }
+            if (this.signedDocuments.statusFilter !== 'all') items = items.filter(d => d.status === this.signedDocuments.statusFilter);
+            return items.slice().sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+        },
         canManagePayroll() { return this.hasModulePermission('payslip-generator', 'edit'); },
         canDeleteEmployees() { return this.hasModulePermission('hr-employees', 'delete'); },
         canDeleteClients() { return this.hasModulePermission('client-directory', 'delete'); },
@@ -2187,6 +2222,348 @@ createApp({
                 this.showNotify('Unable to remove this document. Please try again.');
             }
         },
+        // ===================== SIGNED DOCUMENTS MODULE =====================
+        async loadSignedDocuments() {
+            this.signedDocuments.loading = true;
+            this.signedDocuments.error = '';
+            try {
+                const baseCol = collection(db, 'signed_documents');
+                const q = this.userProfile.role === 'Client'
+                    ? query(baseCol, where('clientDirectoryId', '==', this.userProfile.clientDirectoryId))
+                    : baseCol;
+                const snapshot = await getDocs(q);
+                this.signedDocuments.items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            } catch (error) {
+                console.error('Load signed documents failed:', error);
+                this.signedDocuments.error = error && error.code === 'permission-denied'
+                    ? "You don't have access to view these documents. If this looks wrong, please contact our team."
+                    : 'Could not load documents right now — check your internet connection and try again.';
+            } finally {
+                this.signedDocuments.loading = false;
+            }
+        },
+        openNewSignedDocumentModal() {
+            if (!this.canManageSignedDocuments) { this.showNotify('You do not have permission to create documents.'); return; }
+            this.newSignedDocumentModal = { show: true, clientDirectoryId: '', templateId: '', saving: false };
+        },
+        closeNewSignedDocumentModal() { this.newSignedDocumentModal.show = false; },
+        async createSignedDocument() {
+            const { clientDirectoryId, templateId } = this.newSignedDocumentModal;
+            if (!clientDirectoryId) { this.showNotify('Please select a client.'); return; }
+            if (!templateId || !this.documentTemplates[templateId]) { this.showNotify('Please select a document template.'); return; }
+            const customer = this.customers.find(c => c.id === clientDirectoryId);
+            if (!customer) { this.showNotify('Selected client could not be found.'); return; }
+            this.newSignedDocumentModal.saving = true;
+            try {
+                const docId = doc(collection(db, 'signed_documents')).id;
+                const now = new Date().toISOString();
+                const record = {
+                    templateId,
+                    templateVersion: 1,
+                    status: 'draft',
+                    clientDirectoryId,
+                    clientName: customer.clientName || '',
+                    clientEmail: customer.clientEmail || '',
+                    title: `${this.documentTemplates[templateId].label.en} — ${customer.clientName || ''}`,
+                    referenceNo: templateId === 'service_agreement' ? `ZNQ-SA-${Date.now().toString().slice(-6)}` : '',
+                    fields: defaultFieldValues(templateId),
+                    signatures: { client: null, zenqor: null },
+                    finalPdf: null,
+                    audit: [{ action: 'created', byUid: this.userProfile.uid, byName: this.userProfile.name, byEmail: this.userProfile.email, byRole: this.userProfile.role, at: now }],
+                    createdByUid: this.userProfile.uid,
+                    createdByName: this.userProfile.name,
+                    createdByEmail: this.userProfile.email,
+                    createdAt: now,
+                    updatedAt: now,
+                    lockedAt: null
+                };
+                await setDoc(doc(db, 'signed_documents', docId), record);
+                this.logAudit('CREATE_SIGNED_DOCUMENT', `Created ${this.documentTemplates[templateId].label.en} for client ${customer.clientName}`);
+                this.showNotify('Document created. Fill in your details, then send it to the client.');
+                this.newSignedDocumentModal.show = false;
+                await this.loadSignedDocuments();
+                const created = this.signedDocuments.items.find(d => d.id === docId);
+                if (created) this.openSignedDocument(created);
+            } catch (error) {
+                console.error('Create signed document failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'create this document'));
+            } finally {
+                this.newSignedDocumentModal.saving = false;
+            }
+        },
+        openSignedDocument(docItem) {
+            this.signedDocumentModal = {
+                show: true,
+                mode: docItem.status === 'completed' || docItem.status === 'voided' ? 'view' : 'edit',
+                saving: false,
+                doc: docItem,
+                fields: JSON.parse(JSON.stringify(docItem.fields || {}))
+            };
+            this.$nextTick(() => { this.resetSignaturePad('client'); this.resetSignaturePad('zenqor'); });
+        },
+        closeSignedDocumentModal() { this.signedDocumentModal.show = false; },
+        // Whether the CURRENT logged-in user may edit a given field right now, based on
+        // its `owner` and the document's current status — mirrors the ownership boundary
+        // enforced (at the top-level-key granularity) by firestore.rules.
+        canEditSignedField(field) {
+            const status = this.signedDocumentModal.doc ? this.signedDocumentModal.doc.status : null;
+            if (this.userProfile.role === 'Client') {
+                return field.owner === 'client_fills' && status === 'awaiting_client';
+            }
+            if (!this.canManageSignedDocuments) return false;
+            if (field.owner === 'zenqor_editable') return status === 'draft' || status === 'awaiting_client';
+            if (field.owner === 'zenqor_fills_after') return status === 'awaiting_zenqor';
+            return false;
+        },
+        toggleCheckboxGroupValue(fieldId, option) {
+            const current = Array.isArray(this.signedDocumentModal.fields[fieldId]) ? this.signedDocumentModal.fields[fieldId] : [];
+            const idx = current.indexOf(option);
+            if (idx >= 0) current.splice(idx, 1); else current.push(option);
+            this.signedDocumentModal.fields[fieldId] = current;
+        },
+        async saveSignedDocumentFields() {
+            const docItem = this.signedDocumentModal.doc;
+            if (!docItem) return;
+            this.signedDocumentModal.saving = true;
+            try {
+                await updateDoc(doc(db, 'signed_documents', docItem.id), {
+                    fields: this.signedDocumentModal.fields,
+                    updatedAt: new Date().toISOString()
+                });
+                this.showNotify('Draft saved.');
+                await this.loadSignedDocuments();
+            } catch (error) {
+                console.error('Save signed document fields failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'save this document'));
+            } finally {
+                this.signedDocumentModal.saving = false;
+            }
+        },
+        async sendSignedDocumentToClient() {
+            const docItem = this.signedDocumentModal.doc;
+            if (!docItem) return;
+            const missing = requiredFieldsMissing(docItem.templateId, this.signedDocumentModal.fields, ['zenqor_editable']);
+            if (missing.length) { this.showNotify(`Please complete required fields first: ${missing.join(', ')}`); return; }
+            this.signedDocumentModal.saving = true;
+            try {
+                const now = new Date().toISOString();
+                await updateDoc(doc(db, 'signed_documents', docItem.id), {
+                    fields: this.signedDocumentModal.fields,
+                    status: 'awaiting_client',
+                    updatedAt: now,
+                    audit: [...(docItem.audit || []), { action: 'sent_to_client', byUid: this.userProfile.uid, byName: this.userProfile.name, byEmail: this.userProfile.email, byRole: this.userProfile.role, at: now }]
+                });
+                this.logAudit('SEND_SIGNED_DOCUMENT', `Sent ${this.documentTemplates[docItem.templateId].label.en} to client ${docItem.clientName}`);
+                this.notifyByEmail({
+                    to: docItem.clientEmail,
+                    subject: `Action Required: Please Sign — ${this.documentTemplates[docItem.templateId].label.en}`,
+                    heading: 'A Document Is Waiting For Your Signature',
+                    message: `${this.documentTemplates[docItem.templateId].label.en} has been prepared for ${docItem.clientName}. Please sign in to the Client Portal to review, complete and sign it.`
+                });
+                this.showNotify('Sent to client for review and signature.');
+                this.signedDocumentModal.show = false;
+                await this.loadSignedDocuments();
+            } catch (error) {
+                console.error('Send signed document failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'send this document'));
+            } finally {
+                this.signedDocumentModal.saving = false;
+            }
+        },
+        async submitClientSignature() {
+            const docItem = this.signedDocumentModal.doc;
+            if (!docItem) return;
+            const missing = requiredFieldsMissing(docItem.templateId, this.signedDocumentModal.fields, ['client_fills']);
+            if (missing.length) { this.showNotify(`Please complete required fields first: ${missing.join(', ')}`); return; }
+            if (!this.sigPad.client.hasStrokes) { this.showNotify('Please draw your signature before submitting.'); return; }
+            this.signedDocumentModal.saving = true;
+            try {
+                const dataUrl = this.exportSignaturePad('client');
+                const now = new Date().toISOString();
+                const safeDocId = docItem.id;
+                const storagePath = `signed_documents/${docItem.clientDirectoryId}/${safeDocId}/signature_client.png`;
+                const pngBytes = Uint8Array.from(atob(dataUrl.split(',')[1]), c => c.charCodeAt(0));
+                await uploadBytes(storageRef(storage, storagePath), pngBytes, { contentType: 'image/png' });
+                const downloadURL = await getDownloadURL(storageRef(storage, storagePath));
+                const signature = { dataUrl, storagePath, downloadURL, signedByUid: this.userProfile.uid, signedByName: this.userProfile.name, signedByEmail: this.userProfile.email, signedAt: now };
+                await updateDoc(doc(db, 'signed_documents', docItem.id), {
+                    fields: this.signedDocumentModal.fields,
+                    'signatures.client': signature,
+                    status: 'awaiting_zenqor',
+                    updatedAt: now,
+                    audit: [...(docItem.audit || []), { action: 'client_submitted', byUid: this.userProfile.uid, byName: this.userProfile.name, byEmail: this.userProfile.email, byRole: this.userProfile.role, at: now }]
+                });
+                this.logAudit('SIGN_DOCUMENT_CLIENT', `${docItem.clientName} signed ${this.documentTemplates[docItem.templateId].label.en}`);
+                this.notifyByEmail({
+                    to: [...this.emailsForRole('Superadmin'), ...this.emailsForRole('Director'), ...this.emailsForRole('Account')],
+                    subject: `Client Signed — ${this.documentTemplates[docItem.templateId].label.en}`,
+                    heading: 'Client Has Signed — Countersignature Needed',
+                    message: `${docItem.clientName} has completed and signed ${this.documentTemplates[docItem.templateId].label.en}. Please review and countersign to finalize.`
+                });
+                this.showNotify('Signed and submitted. Zenqor will countersign to finalize this document.');
+                this.signedDocumentModal.show = false;
+                await this.loadSignedDocuments();
+            } catch (error) {
+                console.error('Submit client signature failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'submit your signature'));
+            } finally {
+                this.signedDocumentModal.saving = false;
+            }
+        },
+        async finalizeZenqorSignature() {
+            const docItem = this.signedDocumentModal.doc;
+            if (!docItem) return;
+            const missing = requiredFieldsMissing(docItem.templateId, this.signedDocumentModal.fields, ['zenqor_fills_after']);
+            if (missing.length) { this.showNotify(`Please complete required fields first: ${missing.join(', ')}`); return; }
+            if (!this.sigPad.zenqor.hasStrokes) { this.showNotify('Please draw the Zenqor signature before finalizing.'); return; }
+            this.signedDocumentModal.saving = true;
+            try {
+                const now = new Date().toISOString();
+                const dataUrl = this.exportSignaturePad('zenqor');
+                const sigStoragePath = `signed_documents/${docItem.clientDirectoryId}/${docItem.id}/signature_zenqor.png`;
+                const sigPngBytes = Uint8Array.from(atob(dataUrl.split(',')[1]), c => c.charCodeAt(0));
+                await uploadBytes(storageRef(storage, sigStoragePath), sigPngBytes, { contentType: 'image/png' });
+                const sigDownloadURL = await getDownloadURL(storageRef(storage, sigStoragePath));
+                const zenqorSignature = { dataUrl, storagePath: sigStoragePath, downloadURL: sigDownloadURL, signedByUid: this.userProfile.uid, signedByName: this.userProfile.name, signedByEmail: this.userProfile.email, signedAt: now };
+                const signatures = { client: docItem.signatures ? docItem.signatures.client : null, zenqor: zenqorSignature };
+
+                const pdfBytes = await buildPdfForDocument(docItem.templateId, this.signedDocumentModal.fields, signatures, { referenceNo: docItem.referenceNo });
+                const pdfStoragePath = `signed_documents/${docItem.clientDirectoryId}/${docItem.id}/final.pdf`;
+                await uploadBytes(storageRef(storage, pdfStoragePath), pdfBytes, { contentType: 'application/pdf' });
+                const pdfDownloadURL = await getDownloadURL(storageRef(storage, pdfStoragePath));
+
+                await updateDoc(doc(db, 'signed_documents', docItem.id), {
+                    fields: this.signedDocumentModal.fields,
+                    'signatures.zenqor': zenqorSignature,
+                    status: 'completed',
+                    lockedAt: now,
+                    updatedAt: now,
+                    finalPdf: { storagePath: pdfStoragePath, downloadURL: pdfDownloadURL, generatedAt: now, generatedByUid: this.userProfile.uid },
+                    audit: [...(docItem.audit || []), { action: 'zenqor_finalized', byUid: this.userProfile.uid, byName: this.userProfile.name, byEmail: this.userProfile.email, byRole: this.userProfile.role, at: now }]
+                });
+                this.logAudit('SIGN_DOCUMENT_ZENQOR', `Finalized ${this.documentTemplates[docItem.templateId].label.en} for client ${docItem.clientName}`);
+                this.notifyByEmail({
+                    to: docItem.clientEmail,
+                    subject: `Document Completed — ${this.documentTemplates[docItem.templateId].label.en}`,
+                    heading: 'Your Document Is Now Complete',
+                    message: `${this.documentTemplates[docItem.templateId].label.en} has been countersigned by Zenqor Technologies and is now complete. Sign in to the Client Portal to download the final PDF.`
+                });
+                this.showNotify('Document finalized and PDF generated.');
+                this.signedDocumentModal.show = false;
+                await this.loadSignedDocuments();
+            } catch (error) {
+                console.error('Finalize signed document failed:', error);
+                this.showNotify(error?.message || this.getFirestoreWriteError(error, 'finalize this document'));
+            } finally {
+                this.signedDocumentModal.saving = false;
+            }
+        },
+        requestVoidSignedDocument(docItem) {
+            if (!['Superadmin', 'Director'].includes(this.userProfile.role)) { this.showNotify('You do not have permission to void this document.'); return; }
+            this.requestConfirm({
+                title: 'Void this document?',
+                message: `"${docItem.title}" will be marked void and can no longer be edited or signed. This cannot be undone.`,
+                confirmLabel: 'Yes, Void Document',
+                danger: true,
+                onConfirm: () => this.voidSignedDocument(docItem)
+            });
+        },
+        async voidSignedDocument(docItem) {
+            try {
+                const now = new Date().toISOString();
+                await updateDoc(doc(db, 'signed_documents', docItem.id), {
+                    status: 'voided',
+                    updatedAt: now,
+                    audit: [...(docItem.audit || []), { action: 'voided', byUid: this.userProfile.uid, byName: this.userProfile.name, byEmail: this.userProfile.email, byRole: this.userProfile.role, at: now }]
+                });
+                this.showNotify('Document voided.');
+                await this.loadSignedDocuments();
+            } catch (error) {
+                console.error('Void signed document failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'void this document'));
+            }
+        },
+        // ---- Signature pad (hand-drawn, canvas + Pointer Events) ----
+        signaturePadRef(role) { return this.$refs['sigCanvas_' + role]; },
+        resetSignaturePad(role) {
+            const canvas = this.signaturePadRef(role);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const ratio = window.devicePixelRatio || 1;
+            canvas.width = canvas.clientWidth * ratio;
+            canvas.height = canvas.clientHeight * ratio;
+            ctx.scale(ratio, ratio);
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#0f172a';
+            this.sigPad[role].ctx = ctx;
+            this.sigPad[role].hasStrokes = false;
+        },
+        sigPadPointerDown(role, evt) {
+            const canvas = this.signaturePadRef(role);
+            if (!canvas) return;
+            evt.preventDefault();
+            canvas.setPointerCapture(evt.pointerId);
+            this.sigPad[role].drawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const ctx = this.sigPad[role].ctx;
+            ctx.beginPath();
+            ctx.moveTo(evt.clientX - rect.left, evt.clientY - rect.top);
+        },
+        sigPadPointerMove(role, evt) {
+            if (!this.sigPad[role].drawing) return;
+            const canvas = this.signaturePadRef(role);
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const ctx = this.sigPad[role].ctx;
+            ctx.lineTo(evt.clientX - rect.left, evt.clientY - rect.top);
+            ctx.stroke();
+            this.sigPad[role].hasStrokes = true;
+        },
+        sigPadPointerUp(role) { this.sigPad[role].drawing = false; },
+        sigPadClear(role) {
+            const canvas = this.signaturePadRef(role);
+            if (!canvas) return;
+            const ctx = this.sigPad[role].ctx;
+            ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+            this.sigPad[role].hasStrokes = false;
+        },
+        exportSignaturePad(role) {
+            const canvas = this.signaturePadRef(role);
+            return canvas ? canvas.toDataURL('image/png') : '';
+        },
+        async downloadSignedDocumentPdf(docItem) {
+            if (!docItem.finalPdf || !docItem.finalPdf.downloadURL) return;
+            try {
+                const response = await fetch(docItem.finalPdf.downloadURL);
+                if (!response.ok) throw new Error('Download failed.');
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = `${docItem.title || 'document'}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(blobUrl);
+            } catch (error) {
+                console.error('Download signed document PDF failed:', error);
+                this.showNotify('Unable to download this PDF. Please try again.');
+            }
+        },
+        signedDocumentStatusLabel(status) {
+            return { draft: 'Draft', awaiting_client: 'Awaiting Client', awaiting_zenqor: 'Awaiting Zenqor', completed: 'Completed', voided: 'Voided' }[status] || status;
+        },
+        signedDocumentStatusClass(status) {
+            return {
+                draft: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+                awaiting_client: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+                awaiting_zenqor: 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300',
+                completed: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300',
+                voided: 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300'
+            }[status] || 'bg-slate-100 text-slate-700';
+        },
+        // ===================== END SIGNED DOCUMENTS MODULE =====================
         requestConfirm({ title, message, confirmLabel = 'Yes, Continue', danger = false, onConfirm }) {
             this.appConfirm = { show: true, title, message, confirmLabel, danger, onConfirm };
         },
@@ -2592,6 +2969,7 @@ createApp({
             window.history.pushState({ zenqorPortal: true, tab: tabName }, '', window.location.href);
             this.currentTab = tabName; this.mobileMenuOpen = false; this.desktopSidebarOpen = false;
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (tabName === 'documents') this.loadSignedDocuments();
         },
         returnToDashboard() {
             if (this.userProfile.role === 'Client') this.switchTab('client-portal');
@@ -2604,6 +2982,7 @@ createApp({
             this.mobileMenuOpen = false;
             this.desktopSidebarOpen = false;
             window.scrollTo({ top: 0, behavior: 'auto' });
+            if (safeTab === 'documents') this.loadSignedDocuments();
         },
         refreshDashboardCharts(attempt = 0) {
             if (!this.isLoggedIn || !this.portalDataReady || this.currentTab !== 'dashboard' || ['Staff', 'Client'].includes(this.userProfile.role)) return;

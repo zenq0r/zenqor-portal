@@ -51,6 +51,17 @@ service firebase.storage {
       allow delete: if isStaffDocumentManager();
     }
 
+    // Signed Documents module — generated final PDFs + hand-drawn signature PNGs
+    // for the Authorization Letter / Client Information Form / NDA / Service
+    // Agreement workflow. Metadata lives in Firestore's signed_documents collection.
+    match /signed_documents/{clientDirectoryId}/{docId}/{fileName} {
+      allow read: if isStaffReader() || isOwningClient(clientDirectoryId);
+      allow write: if (isStaffDocumentManager() || isOwningClient(clientDirectoryId)) &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        request.resource.contentType in ['application/pdf', 'image/png'];
+      allow delete: if isStaffDocumentManager();
+    }
+
     // Public zenqor-tech Portfolio gallery images (Digital Systems / Licensing &
     // Permits). Publicly readable — these are marketing images shown to anonymous
     // site visitors — but only content admins may upload/replace/remove them.
