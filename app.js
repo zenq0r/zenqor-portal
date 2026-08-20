@@ -2535,6 +2535,39 @@ createApp({
                 this.showNotify(this.getFirestoreWriteError(error, 'delete this document'));
             }
         },
+        // Re-renders a COMPLETED document's PDF from its already-locked fields and
+        // signatures using the current buildPdfForDocument() — needed because a
+        // finalPdf is generated once and stored as a static file, so a later fix to
+        // the PDF layout/content doesn't retroactively touch documents completed
+        // before the fix shipped. Restricted to Superadmin/Director (matches the
+        // firestore.rules 'Regenerate PDF' clause) and never touches fields,
+        // signatures, or status — only finalPdf itself is replaced.
+        async regenerateSignedDocumentPdf(docItem) {
+            if (!this.canDeleteSignedDocuments) { this.showNotify('You do not have permission to regenerate this PDF.'); return; }
+            try {
+                this.showNotify('Regenerating PDF…');
+                const pdfBytes = await buildPdfForDocument(docItem.templateId, docItem.fields, docItem.signatures, { referenceNo: docItem.referenceNo });
+                const pdfStoragePath = docItem.finalPdf?.storagePath || `signed_documents/${docItem.clientDirectoryId}/${docItem.id}/final.pdf`;
+                await uploadBytes(storageRef(storage, pdfStoragePath), pdfBytes, { contentType: 'application/pdf' });
+                const pdfDownloadURL = await getDownloadURL(storageRef(storage, pdfStoragePath));
+                const now = new Date().toISOString();
+                await updateDoc(doc(db, 'signed_documents', docItem.id), {
+                    finalPdf: { storagePath: pdfStoragePath, downloadURL: pdfDownloadURL, generatedAt: now, generatedByUid: this.userProfile.uid },
+                    updatedAt: now,
+                    audit: [...(docItem.audit || []), { action: 'pdf_regenerated', byUid: this.userProfile.uid, byName: this.userProfile.name, byEmail: this.userProfile.email, byRole: this.userProfile.role, at: now }]
+                });
+                this.logAudit('REGENERATE_SIGNED_DOCUMENT_PDF', `Regenerated PDF for ${this.documentTemplates[docItem.templateId] ? this.documentTemplates[docItem.templateId].label.en : docItem.templateId}, client ${docItem.clientName}`);
+                this.showNotify('PDF regenerated.');
+                await this.loadSignedDocuments();
+                if (this.signedDocumentModal.doc && this.signedDocumentModal.doc.id === docItem.id) {
+                    const refreshed = this.signedDocuments.items.find(d => d.id === docItem.id);
+                    if (refreshed) this.signedDocumentModal.doc = refreshed;
+                }
+            } catch (error) {
+                console.error('Regenerate signed document PDF failed:', error);
+                this.showNotify(error?.message || this.getFirestoreWriteError(error, 'regenerate this PDF'));
+            }
+        },
         // ---- Signature pad (hand-drawn, canvas + Pointer Events) ----
         signaturePadRef(role) { return this.$refs['sigCanvas_' + role]; },
         resetSignaturePad(role) {

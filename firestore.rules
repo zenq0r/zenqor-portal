@@ -284,6 +284,15 @@ service cloud.firestore {
         resource.data.status != 'completed' &&
         request.resource.data.status == 'voided' &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'audit'])
+      ) || (
+        // Regenerate PDF — Superadmin/Director may re-render an already
+        // completed document's PDF from its already-locked fields/signatures
+        // (e.g. after a PDF layout/content fix), without touching any legal
+        // content (fields, signatures, status all stay exactly as signed).
+        (isSuperadmin() || isDirector()) &&
+        resource.data.status == 'completed' &&
+        request.resource.data.status == 'completed' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['finalPdf', 'updatedAt', 'audit'])
       );
 
       allow delete: if isSuperadmin() || isDirector();
