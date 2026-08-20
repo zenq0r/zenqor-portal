@@ -2232,9 +2232,19 @@ createApp({
             this.signedDocuments.error = '';
             try {
                 const baseCol = collection(db, 'signed_documents');
+                // IMPORTANT: Firestore denies an ENTIRE list query if even one document
+                // matching the query's filters fails the read rule — not just that one
+                // document, the whole request. The read rule denies 'draft' documents to
+                // clients (they haven't been sent yet), so the query itself must exclude
+                // drafts too; otherwise a single pending draft for this client would make
+                // their ENTIRE Signed Documents list fail with permission-denied, hiding
+                // documents they actually do have access to.
                 const q = this.userProfile.role === 'Client'
-                    ? query(baseCol, where('clientDirectoryId', '==', this.userProfile.clientDirectoryId))
+                    ? (this.userProfile.clientDirectoryId
+                        ? query(baseCol, where('clientDirectoryId', '==', this.userProfile.clientDirectoryId), where('status', 'in', ['awaiting_client', 'awaiting_zenqor', 'completed', 'voided']))
+                        : null)
                     : baseCol;
+                if (!q) { this.signedDocuments.items = []; this.signedDocuments.loading = false; return; }
                 const snapshot = await getDocs(q);
                 this.signedDocuments.items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
             } catch (error) {
