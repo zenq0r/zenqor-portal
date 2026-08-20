@@ -700,37 +700,82 @@ export async function buildPdfForDocument(templateId, fields, signatures, meta) 
     function drawGridTable(headers, rows, widthFractions, opts = {}) {
         const colWidths = widthFractions.map(fr => fr * CONTENT_WIDTH);
         const hasHeader = !opts.noHeader && headers && headers.some(Boolean);
+        const cellPadX = 6;
         ensureSpace(24);
-        y -= 4;
-        const tableTopY = y + 4;
+        y -= 6;
+
+        // Tracks one border segment per PAGE the table actually spans. A table
+        // that page-breaks mid-row must not draw a single outer box computed
+        // from the pre-break top coordinate onto the post-break page — that
+        // coordinate is meaningless on the new page and produces a stray box/
+        // divider line running through whatever content follows. checkBreak()
+        // closes out the current page's segment and opens a new one whenever
+        // ensureSpace() actually flipped to a new page.
+        const segments = [];
+        let segPage = page, segTopY = y;
+        // `preY` is the y value on segPage right before the ensureSpace() call
+        // that may have flipped to a new page — that's the segment's true
+        // bottom edge. Using `y` itself here would read the NEW page's y
+        // (set by newPage()) instead, corrupting the box height.
+        function checkBreak(preY) {
+            if (page !== segPage) {
+                segments.push({ page: segPage, topY: segTopY, bottomY: preY });
+                segPage = page;
+                segTopY = y;
+            }
+        }
+
         if (hasHeader) {
+            const headerLines = headers.map((h, i) => wrapText(bold, h, 7.5, colWidths[i] - cellPadX * 2));
+            const headerMaxLines = Math.max(...headerLines.map(l => l.length));
+            const headerPadTop = 7, headerPadBottom = 6, headerLineH = 9.5;
+            const headerH = headerPadTop + headerMaxLines * headerLineH + headerPadBottom;
+            const preHeaderY = y;
+            ensureSpace(headerH);
+            checkBreak(preHeaderY);
+            const headerTopY = y;
             let hx = MARGIN;
-            headers.forEach((h, i) => {
-                wrapText(bold, h, 7.5, colWidths[i] - 8).forEach((line, li) =>
-                    page.drawText(line, { x: hx + 4, y: y - li * 9, size: 7.5, font: bold, color: rgb(0.02, 0.16, 0.29) }));
+            headerLines.forEach((lines, i) => {
+                lines.forEach((line, li) => page.drawText(line, { x: hx + cellPadX, y: headerTopY - headerPadTop - li * headerLineH, size: 7.5, font: bold, color: rgb(0.02, 0.16, 0.29) }));
                 hx += colWidths[i];
             });
-            y -= 18;
-            page.drawLine({ start: { x: MARGIN, y: y + 6 }, end: { x: PAGE_WIDTH - MARGIN, y: y + 6 }, thickness: 0.8, color: rgb(0.5, 0.5, 0.5) });
+            y = headerTopY - headerH;
+            page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_WIDTH - MARGIN, y }, thickness: 0.8, color: rgb(0.5, 0.5, 0.5) });
         }
+
+        // Every row's text sits the same fixed distance (padTop) below its own
+        // row's top border, and the same fixed distance (padBottom) above its
+        // bottom border, regardless of how many lines that row wraps to — this
+        // is what keeps the grid looking evenly spaced ("sekata") instead of
+        // rows with more lines reading as cramped and short rows as bloated.
+        const padTop = 7, padBottom = 6, lineH = 11;
         rows.forEach(row => {
-            const wrapped = row.map((cell, i) => wrapText(opts.boldFirstCol && i === 0 ? bold : font, String(cell || '—'), 8.5, colWidths[i] - 8));
-            const rowH = Math.max(...wrapped.map(w => w.length)) * 11 + 8;
+            const wrapped = row.map((cell, i) => wrapText(opts.boldFirstCol && i === 0 ? bold : font, String(cell || '—'), 8.5, colWidths[i] - cellPadX * 2));
+            const maxLines = Math.max(...wrapped.map(w => w.length));
+            const rowH = padTop + maxLines * lineH + padBottom;
+            const preRowY = y;
             ensureSpace(rowH);
+            checkBreak(preRowY);
+            const rowTopY = y;
             let cx = MARGIN;
             wrapped.forEach((lines, i) => {
-                lines.forEach((line, li) => page.drawText(line, { x: cx + 4, y: y - 2 - li * 11, size: 8.5, font: opts.boldFirstCol && i === 0 ? bold : font, color: rgb(0.08, 0.08, 0.08) }));
+                lines.forEach((line, li) => page.drawText(line, { x: cx + cellPadX, y: rowTopY - padTop - li * lineH, size: 8.5, font: opts.boldFirstCol && i === 0 ? bold : font, color: rgb(0.08, 0.08, 0.08) }));
                 cx += colWidths[i];
             });
-            y -= rowH;
-            page.drawLine({ start: { x: MARGIN, y: y + 4 }, end: { x: PAGE_WIDTH - MARGIN, y: y + 4 }, thickness: 0.4, color: rgb(0.82, 0.82, 0.82) });
+            y = rowTopY - rowH;
+            page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_WIDTH - MARGIN, y }, thickness: 0.4, color: rgb(0.82, 0.82, 0.82) });
         });
-        // Outer + column borders for the whole table block just drawn.
-        const tableBottomY = y + 4;
-        page.drawRectangle({ x: MARGIN, y: tableBottomY, width: CONTENT_WIDTH, height: tableTopY - tableBottomY, borderColor: rgb(0.6, 0.6, 0.6), borderWidth: 0.8 });
-        let vx = MARGIN;
-        colWidths.slice(0, -1).forEach(w => { vx += w; page.drawLine({ start: { x: vx, y: tableTopY }, end: { x: vx, y: tableBottomY }, thickness: 0.4, color: rgb(0.82, 0.82, 0.82) }); });
-        y -= 8;
+
+        segments.push({ page: segPage, topY: segTopY, bottomY: y });
+
+        // Outer + column borders, drawn once per page-segment the table
+        // actually spans (see checkBreak() above).
+        segments.forEach(seg => {
+            seg.page.drawRectangle({ x: MARGIN, y: seg.bottomY, width: CONTENT_WIDTH, height: seg.topY - seg.bottomY, borderColor: rgb(0.6, 0.6, 0.6), borderWidth: 0.8 });
+            let vx = MARGIN;
+            colWidths.slice(0, -1).forEach(w => { vx += w; seg.page.drawLine({ start: { x: vx, y: seg.topY }, end: { x: vx, y: seg.bottomY }, thickness: 0.4, color: rgb(0.82, 0.82, 0.82) }); });
+        });
+        y -= 10;
     }
 
     async function drawSignatures(b) {
