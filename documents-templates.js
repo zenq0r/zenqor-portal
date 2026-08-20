@@ -184,30 +184,339 @@ const serviceAgreementFields = [
     { id: 'clientSignDate', label: { en: 'Date', ms: 'Tarikh' }, type: 'date', owner: 'client_fills', section: 'Client Signature Block', required: true, defaultValue: '' }
 ];
 
+// ---------------------------------------------------------------
+// PDF DOCUMENT FLOW — reproduces the ACTUAL wording, clause order and
+// layout of the source .docx templates (headings, full clause text,
+// bullet lists, bordered tables, bilingual paragraphs), not just a
+// field label/value summary. {{fieldId}} inside any string is replaced
+// with the filled value (or an underscore blank line if still empty)
+// at render time — see `sub()` in buildPdfForDocument(). Static legal
+// wording below is transcribed verbatim from the source documents and
+// must not be reworded independently of them.
+// ---------------------------------------------------------------
+const authorizationLetterPdfBlocks = [
+    { t: 'title', en: 'SURAT WAKIL KUASA', ms: 'AUTHORIZATION LETTER' },
+    { t: 'tworef', items: [['Rujukan Kami', '{{refKami}}'], ['Tarikh', '{{tarikhSurat}}']] },
+    { t: 'tworef', items: [['Rujukan Tuan', '{{refTuan}}'], ['Lampiran', '{{lampiran}}']] },
+    { t: 'spacer' },
+    { t: 'para', text: 'MUHAMMAD ANNAS BIN MUHAMMAD NAZMI\nPENGARAH PERKHIDMATAN PERLESENAN & PERUNDINGAN\nSURIA RESIDENCE BLOCK A\nJALAN RESIDENCE SEK 3\nBANDAR MAHKOTA CHERAS\n43200 CHERAS SELANGOR' },
+    { t: 'para', text: 'Tuan / Puan,' },
+    { t: 'boldpara', text: 'PER: PELANTIKAN ZENQOR TECHNOLOGIES SEBAGAI WAKIL RASMI BAGI PENGURUSAN PERMOHONAN, PENYERAHAN DOKUMEN DAN URUSAN BERKAITAN.' },
+    { t: 'para', text: 'Dengan hormatnya, perkara di atas dirujuk.' },
+    { t: 'para', text: 'Saya, {{appointerName}}, selaku {{appointerPosition}} bagi {{appointerCompany}} No. Pendaftaran Syarikat: {{appointerRegNo}}, dengan ini melantik dan memberi kuasa kepada ZENQOR TECHNOLOGIES sebagai wakil rasmi untuk bertindak bagi pihak syarikat berhubung dengan urusan yang dinyatakan dalam surat ini.' },
+    { t: 'para', text: 'Pelantikan ini bertujuan untuk membolehkan ZENQOR TECHNOLOGIES menguruskan segala permohonan, semakan, penyerahan dan pengambilan dokumen, serta urusan komunikasi dengan pihak kementerian, jabatan, agensi kerajaan, pihak berkuasa tempatan, badan berkanun atau mana-mana pihak berkaitan, tertakluk pada skop urusan yang diluluskan oleh pihak syarikat.' },
+    { t: 'heading', text: '1. BUTIRAN PIHAK YANG MELANTIK' },
+    { t: 'table2', rows: [
+        ['Nama Syarikat Pelanggan', '{{clientCompanyName}}'],
+        ['No. Pendaftaran Syarikat', '{{clientRegNo}}'],
+        ['Alamat Berdaftar / Premis', '{{clientRegisteredAddress}}'],
+        ['Nama & Jawatan Penandatangan', '{{clientSignatoryNameTitle}}']
+    ]},
+    { t: 'heading', text: '2. BUTIRAN PIHAK YANG DILANTIK' },
+    { t: 'table2', rows: [
+        ['Nama Syarikat', 'ZENQOR TECHNOLOGIES'],
+        ['No. Pendaftaran Syarikat', '202603157897 (JM1045730-D)'],
+        ['Alamat / Maklumat Hubungan', 'SURIA RESIDENCE BLOCK A, JALAN RESIDENCE SEK 3, BANDAR MAHKOTA CHERAS 43200 CHERAS SELANGOR']
+    ]},
+    { t: 'heading', text: '3. BUTIRAN URUSAN YANG DIBERI KUASA' },
+    { t: 'table2', rows: [
+        ['Jenis Permohonan / Urusan', '{{matterType}}'],
+        ['Pihak / Agensi Berkaitan', '{{matterAgency}}'],
+        ['Lokasi / Premis / Projek', '{{matterLocation}}']
+    ]},
+    { t: 'heading', text: '4. SKOP KUASA YANG DIBERIKAN' },
+    { t: 'bullets', items: [
+        'Penyediaan Dokumen: Menyediakan, menyemak, menyusun dan mengemukakan borang, permohonan, surat, dokumen sokongan serta maklumat yang diperlukan bagi pihak syarikat.',
+        'Permohonan dan Pembaharuan: Menguruskan permohonan baharu, pembaharuan, pindaan, tambahan, pengesahan, semakan atau pembetulan yang berkaitan.',
+        'Urusan dengan Pihak Berkuasa: Berurusan dan berkomunikasi dengan pegawai, jabatan, agensi, pihak berkuasa tempatan, badan berkanun atau pihak berkaitan bagi kelancaran pemprosesan urusan.',
+        'Dokumen dan Surat Rasmi: Mengemukakan, menerima, menyerahkan, melengkapkan, mengambil, serta mendapatkan salinan dokumen atau surat rasmi yang berkaitan.',
+        'Semakan dan Susulan: Membuat semakan status, memantau perkembangan, dan melaksanakan tindakan susulan yang munasabah sehingga urusan selesai.',
+        'Notis dan Keputusan: Menerima notis, surat makluman, keputusan, ulasan, atau dokumen berkaitan yang dikeluarkan oleh pihak berkuasa.',
+        'Tindakan Berkaitan: Mengambil sebarang tindakan pentadbiran yang munasabah dan berkait langsung dengan penyelesaian urusan yang diberi kuasa.'
+    ]},
+    { t: 'heading', text: '5. PENGESAHAN DAN HAD KUASA' },
+    { t: 'para', text: 'Pelantikan ini dibuat dengan kebenaran dan persetujuan penuh pihak syarikat. ZENQOR TECHNOLOGIES diberi kuasa untuk bertindak sebagai wakil bagi melaksanakan urusan yang dinyatakan dalam surat ini.' },
+    { t: 'para', text: 'Walau bagaimanapun, pemberian kuasa ini TIDAK merangkumi sebarang tindakan untuk membuat pengakuan, pengisytiharan, perjanjian, komitmen kewangan, atau keputusan yang mengikat pihak syarikat; kecuali dengan kelulusan bertulis terlebih dahulu daripada pihak syarikat, atau dibenarkan secara nyata oleh pihak berkuasa yang berkenaan.' },
+    { t: 'heading', text: '6. TEMPOH KUAT KUASA' },
+    { t: 'para', text: 'Surat wakil kuasa ini berkuat kuasa mulai {{validityStart}} hingga {{validityEnd}}, atau sehingga dibatalkan secara bertulis oleh pihak syarikat. Segala tindakan yang dilaksanakan hendaklah terhad kepada skop urusan yang dinyatakan di dalam surat ini.' },
+    { t: 'para', text: 'Segala kerjasama pihak tuan/puan dalam melancarkan urusan ini amatlah dihargai.' },
+    { t: 'para', text: 'Sekian, terima kasih.' },
+    { t: 'para', text: 'Yang benar,' },
+    { t: 'signatures2',
+        left: { title: 'BAGI PIHAK SYARIKAT PELANGGAN', nameField: 'clientSigName', positionField: 'clientSigPosition', stampField: 'clientCompanyStampNote', sigRole: 'client' },
+        right: { title: 'DENGAN PENERIMAAN / PENGESAHAN', nameField: 'zenqorSigName', positionField: 'zenqorSigPosition', sigRole: 'zenqor' }
+    }
+];
+
+const ndaPdfBlocks = [
+    { t: 'title', en: 'NON-DISCLOSURE AGREEMENT', ms: 'PERJANJIAN KERAHSIAAN' },
+    { t: 'para', text: 'Perjanjian Kerahsiaan ini (“Perjanjian”) dibuat dan berkuat kuasa pada {{effectiveDate}} (“Tarikh Kuat Kuasa”), antara pihak-pihak berikut:' },
+    { t: 'table3', headers: ['', 'PIHAK PENDEDAH', 'PIHAK PENERIMA'], rows: [
+        ['Nama Syarikat', 'ZENQOR TECHNOLOGIES', '{{receivingCompanyName}}'],
+        ['No. Pendaftaran', '202603157897 (JM1045730-G)', '{{receivingRegNo}}'],
+        ['Alamat', 'SURIA RESIDENCE BLOCK A, JALAN RESIDENCE SEK 3, BANDAR MAHKOTA CHERAS 43200 CHERAS SELANGOR', '{{receivingAddress}}']
+    ]},
+    { t: 'para', text: 'Pihak Pendedah dan Pihak Penerima selepas ini secara bersama dirujuk sebagai “Pihak-Pihak” dan secara berasingan sebagai “Pihak”.' },
+    { t: 'heading', text: '1. TUJUAN' },
+    { t: 'para', text: 'Pihak Pendedah boleh mendedahkan Maklumat Sulit kepada Pihak Penerima bagi tujuan perbincangan, penilaian, perundingan, penyediaan cadangan, pelaksanaan projek, penyampaian perkhidmatan atau urusan perniagaan yang berkaitan antara Pihak-Pihak (“Tujuan Yang Dibenarkan”). Pihak Penerima hanya boleh menggunakan Maklumat Sulit bagi Tujuan Yang Dibenarkan.' },
+    { t: 'heading', text: '2. TAKRIF MAKLUMAT SULIT' },
+    { t: 'para', text: '“Maklumat Sulit” bermaksud apa-apa maklumat yang didedahkan oleh atau bagi pihak Pihak Pendedah kepada Pihak Penerima, sama ada sebelum atau selepas Tarikh Kuat Kuasa, dalam bentuk bertulis, lisan, visual, elektronik, digital atau apa-apa bentuk lain, termasuk tetapi tidak terhad kepada:' },
+    { t: 'bullets', items: [
+        'rancangan perniagaan, strategi, harga, sebut harga, cadangan, kontrak, maklumat kewangan dan operasi;',
+        'maklumat pelanggan, prospek, pembekal, rakan niaga, pekerja dan hubungan komersial;',
+        'pelan teknikal, seni bina sistem, dokumentasi, algoritma, kod sumber, kod objek, pangkalan data, API, token, kunci akses, kata laluan, konfigurasi, reka bentuk, prototaip, pengetahuan teknikal dan rahsia dagangan;',
+        'laporan, analisis, nota, salinan atau bahan terbitan yang mengandungi atau mencerminkan Maklumat Sulit; dan',
+        'apa-apa maklumat yang, menurut sifatnya, keadaan pendedahan atau penandaan munasabah sepatutnya dianggap sulit.'
+    ]},
+    { t: 'heading', text: '3. KEWAJIPAN PIHAK PENERIMA' },
+    { t: 'para', text: 'Pihak Penerima hendaklah:' },
+    { t: 'bullets', items: [
+        'menjaga kerahsiaan Maklumat Sulit dengan tahap penjagaan yang munasabah dan sekurang-kurangnya setara dengan tahap penjagaan yang digunakan untuk melindungi maklumat sulitnya sendiri;',
+        'tidak mendedahkan, menerbitkan, menyalin, memindahkan, menjual atau menyebarkan Maklumat Sulit kepada mana-mana pihak ketiga kecuali sebagaimana dibenarkan di bawah Perjanjian ini;',
+        'tidak menggunakan Maklumat Sulit untuk apa-apa tujuan selain Tujuan Yang Dibenarkan;',
+        'mengambil langkah keselamatan pentadbiran, teknikal dan fizikal yang munasabah bagi mencegah akses, penggunaan, kehilangan atau pendedahan tanpa kebenaran; dan',
+        'memaklumkan Pihak Pendedah dengan segera apabila menyedari sebarang akses, penggunaan, kehilangan atau pendedahan Maklumat Sulit tanpa kebenaran, serta memberikan kerjasama yang munasabah untuk mengurangkan kesannya.'
+    ]},
+    { t: 'heading', text: '4. PENDEDAHAN KEPADA WAKIL YANG DIBENARKAN' },
+    { t: 'para', text: 'Pihak Penerima boleh mendedahkan Maklumat Sulit hanya kepada pengarah, pegawai, pekerja, penasihat profesional, kontraktor atau ejen yang benar-benar perlu mengetahui maklumat tersebut bagi Tujuan Yang Dibenarkan (“Wakil Yang Dibenarkan”), dengan syarat mereka terikat dengan kewajipan kerahsiaan yang sekurang-kurangnya setara dengan Perjanjian ini. Pihak Penerima bertanggungjawab terhadap sebarang pelanggaran Perjanjian ini oleh Wakil Yang Dibenarkan setakat yang dibenarkan oleh undang-undang.' },
+    { t: 'heading', text: '5. PENGECUALIAN DARIPADA MAKLUMAT SULIT' },
+    { t: 'para', text: 'Kewajipan kerahsiaan tidak terpakai kepada maklumat yang dapat dibuktikan oleh Pihak Penerima melalui rekod yang munasabah bahawa maklumat tersebut:' },
+    { t: 'bullets', items: [
+        'telah tersedia kepada umum tanpa pelanggaran Perjanjian ini;',
+        'telah diketahui secara sah oleh Pihak Penerima sebelum pendedahan oleh Pihak Pendedah dan tidak tertakluk kepada kewajipan kerahsiaan;',
+        'diterima secara sah daripada pihak ketiga yang tidak terikat dengan kewajipan kerahsiaan berhubung maklumat tersebut; atau',
+        'dibangunkan secara bebas oleh Pihak Penerima tanpa menggunakan atau merujuk kepada Maklumat Sulit Pihak Pendedah.'
+    ]},
+    { t: 'heading', text: '6. PENDEDAHAN YANG DIKEHENDAKI UNDANG-UNDANG' },
+    { t: 'para', text: 'Sekiranya Pihak Penerima diwajibkan oleh undang-undang, perintah mahkamah atau arahan pihak berkuasa yang mempunyai bidang kuasa untuk mendedahkan Maklumat Sulit, Pihak Penerima hendaklah, setakat yang dibenarkan oleh undang-undang, memberikan notis bertulis kepada Pihak Pendedah secepat yang munasabah dan hanya mendedahkan bahagian Maklumat Sulit yang diwajibkan.' },
+    { t: 'heading', text: '7. HAK MILIK DAN TIADA PEMBERIAN LESEN' },
+    { t: 'para', text: 'Semua hak, hak milik dan kepentingan terhadap Maklumat Sulit kekal milik Pihak Pendedah atau pemiliknya yang sah. Tiada apa-apa dalam Perjanjian ini boleh ditafsirkan sebagai memberikan kepada Pihak Penerima sebarang lesen, pemindahan hak harta intelek atau hak lain kecuali hak terhad untuk menggunakan Maklumat Sulit bagi Tujuan Yang Dibenarkan.' },
+    { t: 'heading', text: '8. DATA PERIBADI' },
+    { t: 'para', text: 'Sekiranya Maklumat Sulit mengandungi data peribadi, setiap Pihak hendaklah memproses dan melindungi data peribadi tersebut mengikut undang-undang perlindungan data yang terpakai di Malaysia, termasuk Akta Perlindungan Data Peribadi 2010 [Akta 709], sebagaimana dipinda dari semasa ke semasa, setakat undang-undang tersebut terpakai kepada pemprosesan berkenaan.' },
+    { t: 'heading', text: '9. PEMULANGAN ATAU PEMUSNAHAN MAKLUMAT' },
+    { t: 'para', text: 'Atas permintaan bertulis Pihak Pendedah atau apabila Tujuan Yang Dibenarkan berakhir, Pihak Penerima hendaklah dalam tempoh yang munasabah memulangkan atau memusnahkan Maklumat Sulit dan semua salinannya yang berada dalam milikan atau kawalannya, kecuali salinan yang perlu disimpan bagi tujuan pematuhan undang-undang, peraturan, audit atau dasar sandaran automatik yang sah. Sebarang salinan yang dikekalkan terus tertakluk kepada kewajipan kerahsiaan di bawah Perjanjian ini.' },
+    { t: 'heading', text: '10. TEMPOH DAN KELANGSUNGAN KEWAJIPAN' },
+    { t: 'para', text: 'Perjanjian ini berkuat kuasa pada Tarikh Kuat Kuasa dan kekal berkuat kuasa sehingga ditamatkan secara bertulis oleh mana-mana Pihak. Walau apa pun penamatan, kewajipan kerahsiaan dan sekatan penggunaan Maklumat Sulit akan terus berkuat kuasa selama {{confidentialitySurvivalPeriod}} selepas tarikh penamatan atau tarikh pendedahan terakhir Maklumat Sulit, yang mana terkemudian.' },
+    { t: 'heading', text: '11. TIADA KEWAJIPAN UNTUK MENERUSKAN TRANSAKSI' },
+    { t: 'para', text: 'Perjanjian ini tidak mewajibkan mana-mana Pihak untuk meneruskan sebarang transaksi, projek atau hubungan perniagaan. Kecuali dipersetujui secara bertulis dalam perjanjian berasingan, setiap Pihak menanggung kosnya sendiri berkaitan perbincangan atau penilaian yang dijalankan.' },
+    { t: 'heading', text: '12. REMEDI' },
+    { t: 'para', text: 'Pihak Penerima mengakui bahawa pendedahan atau penggunaan Maklumat Sulit tanpa kebenaran boleh menyebabkan kerugian kepada Pihak Pendedah. Sekiranya berlaku pelanggaran, Pihak Pendedah berhak mendapatkan apa-apa remedi yang tersedia di sisi undang-undang, tertakluk kepada keputusan mahkamah atau pihak berkuasa yang berbidang kuasa.' },
+    { t: 'heading', text: '13. PERUNTUKAN AM' },
+    { t: 'bullets', items: [
+        'Keseluruhan Perjanjian. Perjanjian ini merupakan keseluruhan persetujuan Pihak-Pihak berhubung kerahsiaan bagi perkara yang dinyatakan di sini dan menggantikan persefahaman terdahulu mengenai perkara yang sama, kecuali dinyatakan sebaliknya secara bertulis.',
+        'Pindaan. Sebarang pindaan atau tambahan kepada Perjanjian ini hendaklah dibuat secara bertulis dan dipersetujui oleh kedua-dua Pihak.',
+        'Ketaksahan Sebahagian. Jika mana-mana peruntukan didapati tidak sah atau tidak boleh dikuatkuasakan, baki peruntukan hendaklah terus berkuat kuasa setakat yang dibenarkan oleh undang-undang.',
+        'Pengabaian. Kegagalan atau kelewatan mana-mana Pihak untuk menguatkuasakan sesuatu hak tidak dianggap sebagai pengabaian hak tersebut.',
+        'Salinan dan Tandatangan Elektronik. Perjanjian ini boleh ditandatangani dalam beberapa salinan dan, setakat dibenarkan oleh undang-undang, melalui tandatangan elektronik; setiap salinan dianggap sebagai sebahagian daripada dokumen yang sama.'
+    ]},
+    { t: 'heading', text: '14. UNDANG-UNDANG MENGAWAL SELIA DAN BIDANG KUASA' },
+    { t: 'para', text: 'Perjanjian ini ditadbir dan ditafsirkan menurut undang-undang Malaysia. Pihak-Pihak bersetuju untuk tertakluk kepada bidang kuasa mahkamah di Malaysia bagi sebarang pertikaian yang timbul daripada atau berkaitan dengan Perjanjian ini.' },
+    { t: 'boldpara', text: 'DITANDATANGANI OLEH PIHAK-PIHAK' },
+    { t: 'signatures2',
+        left: { title: 'BAGI PIHAK PENDEDAH (ZENQOR TECHNOLOGIES)', nameField: 'zenqorRepName', positionField: 'zenqorRepPosition', dateField: 'zenqorSignDate', sigRole: 'zenqor' },
+        right: { title: 'BAGI PIHAK PENERIMA', nameField: 'clientRepName', positionField: 'clientRepPosition', dateField: 'clientSignDate', sigRole: 'client' }
+    },
+    { t: 'para', text: 'Nota: Dokumen ini ialah templat kontrak perniagaan. Sebelum digunakan untuk transaksi bernilai tinggi, maklumat sangat sensitif, urusan rentas sempadan atau keadaan khusus industri, pertimbangkan semakan oleh peguam berkelayakan di Malaysia.', italic: true, small: true }
+];
+
+const serviceAgreementPdfBlocks = [
+    { t: 'title', en: 'CONSULTANCY & LICENSE APPLICATION SERVICE AGREEMENT', ms: 'PERJANJIAN PERKHIDMATAN PERUNDINGAN & PERMOHONAN LESEN' },
+    { t: 'tworef', items: [['Agreement Reference (Rujukan Perjanjian)', 'ZNQ-SA-{{agreementRefSuffix}}'], ['Document Date (Tarikh Dokumen)', '{{documentDate}}']] },
+    { t: 'para', text: 'This Consultancy & License Application Service Agreement (the "Agreement") is entered into as of the Agreement Date stated in Section 1 by and between Zenqor Technologies (the "Service Provider" or "Consultant") and the client identified in Section 1 (the "Client"). Each may be referred to individually as a "Party" and collectively as the "Parties."' },
+    { t: 'para', text: '(Perjanjian Perkhidmatan Perundingan dan Permohonan Lesen ini ("Perjanjian") dibuat pada Tarikh Perjanjian yang dinyatakan dalam Seksyen 1 antara Zenqor Technologies ("Penyedia Perkhidmatan" atau "Perunding") dengan pelanggan yang dikenal pasti dalam Seksyen 1 ("Pelanggan"). Setiap satunya boleh disebut sebagai "Pihak" dan secara bersama sebagai "Pihak-Pihak".)', italic: true },
+    { t: 'heading', text: '1.0 PARTY INFORMATION (MAKLUMAT PIHAK-PIHAK)' },
+    { t: 'table3', headers: ['DETAIL (BUTIRAN)', 'SERVICE PROVIDER (PIHAK PERTAMA)', 'CLIENT (PIHAK KEDUA)'], rows: [
+        ['Company / Business Name', 'ZENQOR TECHNOLOGIES', '{{clientCompanyName}}'],
+        ['Registration No. (SSM)', '202603157897 (JM1045730-D)', '{{clientRegNo}}'],
+        ['Business Address', 'Suria Residence, Block A, Jalan Residence, Bandar Mahkota Cheras, 43200 Selangor', '{{clientBusinessAddress}}'],
+        ['Contact Person', 'Muhammad Annas', '{{clientContactPerson}}'],
+        ['Telephone / WhatsApp', '+60 11-6501 2569', '{{clientPhone}}'],
+        ['Official Email', 'admin@zenq0r.com', '{{clientEmail}}'],
+        ['Agreement Date', '{{agreementDate}}', '{{agreementDate}}']
+    ]},
+    { t: 'heading', text: '2.0 SCOPE OF SERVICES (SKOP PERKHIDMATAN)' },
+    { t: 'para', text: 'Zenqor Technologies will provide consultancy, file-management, and premises-license application services within the following scope:' },
+    { t: 'bullets', items: [
+        '2.1 Document Review and Audit. Review, audit, and organize supporting documents and application files for completeness and alignment with the requirements and guidelines of the relevant Local Authority (Pihak Berkuasa Tempatan, or "PBT") or another competent agency.',
+        '2.2 Application Preparation. Prepare, complete, and process official application documents and forms using information supplied by the Client.',
+        '2.3 Premises Compliance Advisory. Provide basic technical guidance on PBT compliance requirements, including business-signage specifications, fire-extinguisher requirements, and premises layout.',
+        '2.4 Submission and Tracking. Submit the application file at the PBT counter or through the relevant official portal and periodically monitor the application status.',
+        '2.5 Coordination of Authority Feedback. Guide the Client on corrective actions required in response to technical comments, notices, additional conditions, or findings arising from a PBT premises inspection.'
+    ]},
+    { t: 'heading', text: '3.0 SERVICE PROVIDER RESPONSIBILITIES (TANGGUNGJAWAB PENYEDIA PERKHIDMATAN)' },
+    { t: 'bullets', items: [
+        '3.1 Professional Care. Perform the Services with reasonable professional skill, care, and diligence consistent with applicable industry practices in Malaysia.',
+        '3.2 Status Updates. Provide the Client with periodic updates on application progress, status, and official feedback received from the PBT or relevant agencies.',
+        '3.3 Document Management. Organize and safeguard working documents provided by the Client while the application is being processed.'
+    ]},
+    { t: 'heading', text: '4.0 CLIENT RESPONSIBILITIES (TANGGUNGJAWAB PELANGGAN)' },
+    { t: 'para', text: 'To support timely processing and avoid preventable delays, the Client agrees to the following:' },
+    { t: 'bullets', items: [
+        '4.1 Accuracy and Authenticity. Provide valid, accurate, current, and authentic supporting documents, including, where applicable, the SSM profile, tenancy agreement, floor plan, and copies of identification documents.',
+        '4.2 Response Time. Provide all documents or additional information requested by Zenqor Technologies within seven (7) business days.',
+        '4.3 Physical and Technical Compliance. Ensure that the premises comply with applicable PBT requirements, including restrictions on unauthorized structural alterations, Fire and Rescue Department of Malaysia requirements, and hygiene standards.',
+        '4.4 Official Government Fees. Pay all official license fees, inspection charges, signage charges, deposits, penalties, and other governmental charges directly to the PBT or relevant agency. These amounts are separate from Zenqor Technologies’ service fees.'
+    ]},
+    { t: 'heading', text: '5.0 FEES AND PAYMENT TERMS (FI DAN TERMA PEMBAYARAN)' },
+    { t: 'para', text: 'The total fee for the scope of services described in this Agreement is {{totalFee}}, inclusive of the Professional Service Fee and the applicable Official Government / Statutory Charges within the agreed scope of services. The total fee shall be payable in the following fixed instalments:' },
+    { t: 'table4', headers: ['PHASE', 'WORK STAGE', 'AMOUNT (RM)', 'PAYMENT MILESTONE'], rows: [
+        ['Phase 1', '{{phase1_workStage}}', '{{phase1_amount}}', '{{phase1_milestone}}'],
+        ['Phase 2', '{{phase2_workStage}}', '{{phase2_amount}}', '{{phase2_milestone}}'],
+        ['Phase 3', '{{phase3_workStage}}', '{{phase3_amount}}', '{{phase3_milestone}}'],
+        ['TOTAL', '', '{{totalAmount}}', '']
+    ]},
+    { t: 'bullets', items: [
+        '5.1 Official Payment Method. Online bank transfer to Maybank Islamic Berhad, Account No. 5629 8205 7309, Account Name: Zenqor Technologies. The Client should retain and provide proof of payment.',
+        '5.2 Invoice Due Date. Each phase payment is due within three (3) business days after the applicable invoice date.'
+    ]},
+    { t: 'heading', text: '6.0 CANCELLATION AND TERMINATION (PEMBATALAN DAN PENAMATAN)' },
+    { t: 'bullets', items: [
+        '6.1 Cancellation by Client. If the Client cancels the application or terminates this Agreement for its own reasons after consultancy work or the document audit has begun, all deposits and fees already paid are non-refundable.',
+        '6.2 Termination for Breach. Zenqor Technologies may terminate this Agreement immediately by written notice if the Client fails to provide required documents for more than thirty (30) days, provides false or misleading information, or fails to make payment when due.',
+        '6.3 Amounts Due on Termination. The Client remains responsible for payment for every phase of work completed before the effective termination date.'
+    ]},
+    { t: 'heading', text: '7.0 LICENSE APPROVAL DISCLAIMER AND LIMITATION OF LIABILITY' },
+    { t: 'bullets', items: [
+        '7.1 Authority Decision. The Client acknowledges that all decisions to approve, reject, defer, or impose additional conditions on a license application rest solely with the PBT and other competent agencies, subject to their policies, standards, and discretion.',
+        '7.2 Consultant’s Role. Zenqor Technologies acts solely as a professional consultant and facilitator in managing and coordinating the application. Zenqor Technologies does not guarantee approval and makes no representation that approval will be automatic.',
+        '7.3 Limitation of Responsibility. Zenqor Technologies is not responsible for any rejection, processing delay, or loss arising from inaccurate or incomplete Client documents, false information, pre-existing legal or regulatory issues affecting the premises, the Client’s delay, or the premises’ failure to meet applicable technical standards.',
+        '7.4 Non-Refundable Fees. Service fees compensate Zenqor Technologies for consultancy, audit, file preparation, and related work performed and are non-refundable if the PBT rejects the application.'
+    ]},
+    { t: 'heading', text: '8.0 CONFIDENTIALITY AND PERSONAL DATA' },
+    { t: 'bullets', items: [
+        '8.1 Confidential Information. Each Party will keep confidential all non-public business information, technical documents, financial data, and company information shared in connection with the Services and will not disclose such information to a third party without prior written consent, except where disclosure is required by law or reasonably necessary for the license application.',
+        '8.2 Personal Data Protection. Zenqor Technologies will process personal data and Client company information for purposes connected with the license application and in accordance with Malaysia’s Personal Data Protection Act 2010 (Act 709), as applicable.'
+    ]},
+    { t: 'heading', text: '9.0 TERM (TEMPOH PERJANJIAN)' },
+    { t: 'para', text: '9.1 Effective Date and Expiration. This Agreement takes effect when signed by both Parties and continues until the PBT issues its decision on the license application, unless earlier terminated under Section 6.0.' },
+    { t: 'heading', text: '10.0 DISPUTE RESOLUTION AND GOVERNING LAW' },
+    { t: 'bullets', items: [
+        '10.1 Good-Faith Negotiation. The Parties will first attempt to resolve amicably any dispute, difference in interpretation, or claim arising out of or relating to this Agreement through good-faith negotiations for fourteen (14) days after written notice of the dispute.',
+        '10.2 Malaysian Law and Jurisdiction. This Agreement is governed by and construed in accordance with the laws of Malaysia. The Parties submit to the jurisdiction of the courts of Malaysia.'
+    ]},
+    { t: 'heading', text: '11.0 ACKNOWLEDGMENT AND EXECUTION' },
+    { t: 'para', text: 'By signing below, each Party confirms that it has read and understood this Agreement, has had the opportunity to seek independent advice, and agrees to be bound by its terms and conditions. Each signatory represents that they are authorized to sign for the Party identified below.' },
+    { t: 'signatures2',
+        left: { title: 'FOR ZENQOR TECHNOLOGIES', nameField: 'zenqorSignatoryName', positionField: 'zenqorSignatoryTitle', dateField: 'zenqorSignDate', sigRole: 'zenqor' },
+        right: { title: 'FOR THE CLIENT / COMPANY', nameField: 'clientSignatoryName', positionField: 'clientSignatoryTitleStamp', dateField: 'clientSignDate', sigRole: 'client' }
+    }
+];
+
+const clientInfoFormPdfBlocks = [
+    { t: 'title', en: 'CLIENT INFORMATION FORM', ms: 'BORANG MAKLUMAT PELANGGAN' },
+    { t: 'para', text: 'Please complete all applicable fields clearly. Information marked "if applicable" may be left blank where not relevant.', italic: true, small: true },
+    { t: 'para', text: 'Sila lengkapkan semua ruangan yang berkenaan dengan jelas. Ruangan "jika berkenaan" boleh dibiarkan kosong jika tidak berkaitan.', italic: true, small: true },
+    { t: 'heading', text: 'A. CLIENT / COMPANY INFORMATION (Maklumat Pelanggan / Syarikat)' },
+    { t: 'checkboxGroup', fieldId: 'clientType' },
+    { t: 'table2', rows: [
+        ['Legal / Registered Name (Nama Berdaftar)', '{{legalName}}'],
+        ['Trading / Business Name (Nama Perniagaan)', '{{tradingName}}'],
+        ['BRN / NRIC / Passport No. (No. BRN / KP / Pasport)', '{{brnNricPassport}}'],
+        ['Tax Identification No. TIN (No. Pengenalan Cukai)', '{{tin}}'],
+        ['SST Registration No. (No. SST)', '{{sstNo}}'],
+        ['Industry / Nature of Business (Industri / Jenis Perniagaan)', '{{industry}}'],
+        ['Registered Address (Alamat Berdaftar)', '{{registeredAddress}}'],
+        ['Correspondence Address (Alamat Surat-Menyurat)', '{{correspondenceAddress}}']
+    ]},
+    { t: 'heading', text: 'B. PRIMARY CONTACT INFORMATION (Maklumat Perhubungan Utama)' },
+    { t: 'table2', rows: [
+        ['Contact Person (Nama Pegawai Dihubungi)', '{{contactPersonName}}'],
+        ['Designation / Position (Jawatan)', '{{designation}}'],
+        ['Department (Jabatan)', '{{department}}'],
+        ['Mobile No. (No. Telefon Bimbit)', '{{mobileNo}}'],
+        ['Office No. (No. Pejabat)', '{{officeNo}}'],
+        ['Email Address (Alamat E-mel)', '{{contactEmail}}'],
+        ['Website (Laman Web)', '{{website}}'],
+        ['Preferred Contact Method (Kaedah Hubungan Pilihan)', '{{preferredContactMethod}}']
+    ]},
+    { t: 'heading', text: 'C. BILLING & E-INVOICE INFORMATION (Maklumat Bil & e-Invois)' },
+    { t: 'para', text: 'For accurate e-Invoice issuance, complete the buyer information below where applicable.', small: true },
+    { t: 'table2', rows: [
+        ['Billing / Buyer Name (Nama Bil / Pembeli)', '{{billingName}}'],
+        ['Billing Email (E-mel Bil)', '{{billingEmail}}'],
+        ['Buyer TIN (TIN Pembeli)', '{{buyerTin}}'],
+        ['Buyer BRN / NRIC / Passport No. (BRN / KP / Pasport Pembeli)', '{{buyerBrn}}'],
+        ['Buyer SST Registration No. (No. SST Pembeli)', '{{buyerSst}}'],
+        ['Buyer Contact No. (No. Hubungan Pembeli)', '{{buyerContactNo}}'],
+        ['Buyer / Billing Address (Alamat Pembeli / Bil)', '{{buyerAddress}}']
+    ]},
+    { t: 'checkboxGroup', fieldId: 'preferredInvoiceMethod' },
+    { t: 'heading', text: 'D. SERVICE / PROJECT INFORMATION (Maklumat Perkhidmatan / Projek)' },
+    { t: 'checkboxGroup', fieldId: 'serviceRequired' },
+    { t: 'table2', rows: [
+        ['Project / Service Name (Nama Projek / Perkhidmatan)', '{{projectName}}'],
+        ['Estimated Budget (Anggaran Bajet)', '{{estimatedBudget}}'],
+        ['Expected Start Date (Tarikh Mula Dijangka)', '{{expectedStartDate}}'],
+        ['Expected Completion Date (Tarikh Siap Dijangka)', '{{expectedCompletionDate}}'],
+        ['Brief Requirements / Scope (Ringkasan Keperluan / Skop)', '{{briefRequirements}}']
+    ]},
+    { t: 'heading', text: 'E. AUTHORISED REPRESENTATIVE (Wakil Yang Diberi Kuasa)' },
+    { t: 'table2', rows: [
+        ['Name (Nama)', '{{authRepName}}'],
+        ['Designation (Jawatan)', '{{authRepDesignation}}'],
+        ['Contact No. (No. Hubungan)', '{{authRepContactNo}}'],
+        ['Email (E-mel)', '{{authRepEmail}}']
+    ]},
+    { t: 'checkboxGroup', fieldId: 'authorisedToApprove' },
+    { t: 'heading', text: 'F. SUPPORTING DOCUMENTS & ADDITIONAL INFORMATION' },
+    { t: 'checkboxGroup', fieldId: 'documentsAttached' },
+    { t: 'table2', rows: [
+        ['How did you hear about us? (Bagaimana mengetahui kami?)', '{{referralSource}}'],
+        ['Client Reference / Referral (Rujukan / Referral)', '{{clientReference}}'],
+        ['Additional Notes (Catatan Tambahan)', '{{additionalNotes}}']
+    ]},
+    { t: 'heading', text: 'G. PERSONAL DATA PROTECTION NOTICE & CONSENT' },
+    { t: 'para', text: 'Zenqor Technologies may collect and process the personal data provided in this form for client onboarding, identity and contact verification, quotation and contract administration, delivery and support of services, billing, payment administration, e-Invoice and tax compliance, record keeping, legal or regulatory requirements, and related business communications. Where reasonably necessary, such data may be disclosed to service providers, professional advisers, financial institutions, government, tax or regulatory authorities, and other parties permitted or required by law. Reasonable security measures will be applied and personal data will be retained only for as long as necessary for the stated purposes or as required by applicable law.', small: true },
+    { t: 'para', text: 'Zenqor Technologies boleh mengumpul dan memproses data peribadi yang diberikan dalam borang ini bagi tujuan pendaftaran pelanggan, pengesahan identiti dan hubungan, pentadbiran sebut harga dan kontrak, penyampaian serta sokongan perkhidmatan, pengebilan, pentadbiran bayaran, pematuhan e-Invois dan cukai, penyimpanan rekod, keperluan undang-undang atau kawal selia, serta komunikasi perniagaan yang berkaitan. Jika perlu secara munasabah, data tersebut boleh didedahkan kepada penyedia perkhidmatan, penasihat profesional, institusi kewangan, pihak kerajaan, percukaian atau kawal selia, serta pihak lain yang dibenarkan atau dikehendaki oleh undang-undang. Langkah keselamatan yang munasabah akan diambil dan data peribadi akan disimpan hanya selama diperlukan bagi tujuan yang dinyatakan atau sebagaimana dikehendaki oleh undang-undang yang terpakai.', small: true },
+    { t: 'checkboxGroup', fieldId: 'pdpaConsent' },
+    { t: 'table2', rows: [['Privacy Contact (Hubungan Privasi)', '{{privacyContact}}']] },
+    { t: 'heading', text: 'H. CLIENT DECLARATION & AUTHORISATION' },
+    { t: 'para', text: 'I/We confirm that the information provided in this form is true, complete and accurate to the best of my/our knowledge, and I/we am/are authorised to provide it on behalf of the client.', small: true },
+    { t: 'para', text: 'Saya/Kami mengesahkan bahawa maklumat yang diberikan dalam borang ini adalah benar, lengkap dan tepat setakat pengetahuan saya/kami, dan saya/kami diberi kuasa untuk memberikannya bagi pihak pelanggan.', small: true },
+    { t: 'signatures2', left: { title: 'Client Declaration / Akuan Pelanggan', nameField: 'declarationName', positionField: 'declarationDesignation', dateField: 'declarationDate', stampField: 'companyStampNote', sigRole: 'client' }, right: null },
+    { t: 'table2', rows: [['Official Email / Contact', '{{officialEmailContact}}']] },
+    { t: 'heading', text: 'I. FOR OFFICE USE ONLY (Untuk Kegunaan Pejabat Sahaja)' },
+    { t: 'table2', rows: [
+        ['Client ID', '{{clientId}}'],
+        ['Account / Reference No.', '{{accountRefNo}}'],
+        ['Handled By', '{{handledBy}}'],
+        ['Date Received', '{{dateReceived}}'],
+        ['Verified By', '{{verifiedBy}}'],
+        ['Verification Date', '{{verificationDate}}'],
+        ['Remarks', '{{officeRemarks}}']
+    ]},
+    { t: 'checkboxGroup', fieldId: 'clientStatus' },
+    { t: 'para', text: 'Document owner: Zenqor Technologies. Uncontrolled when printed unless otherwise stated.', small: true, italic: true }
+];
+
 export const DOCUMENT_TEMPLATES = {
     authorization_letter: {
         id: 'authorization_letter',
         label: { en: 'Authorization Letter', ms: 'Surat Wakil Kuasa' },
         icon: 'fa-file-signature',
-        fieldConfig: authorizationLetterFields
+        fieldConfig: authorizationLetterFields,
+        pdfBlocks: authorizationLetterPdfBlocks
     },
     client_info_form: {
         id: 'client_info_form',
         label: { en: 'Client Information Form', ms: 'Borang Maklumat Pelanggan' },
         icon: 'fa-address-card',
-        fieldConfig: clientInfoFormFields
+        fieldConfig: clientInfoFormFields,
+        pdfBlocks: clientInfoFormPdfBlocks
     },
     nda: {
         id: 'nda',
         label: { en: 'Non-Disclosure Agreement', ms: 'Perjanjian Kerahsiaan' },
         icon: 'fa-user-secret',
-        fieldConfig: ndaFields
+        fieldConfig: ndaFields,
+        pdfBlocks: ndaPdfBlocks
     },
     service_agreement: {
         id: 'service_agreement',
         label: { en: 'Service Agreement', ms: 'Perjanjian Perkhidmatan' },
         icon: 'fa-file-contract',
-        fieldConfig: serviceAgreementFields
+        fieldConfig: serviceAgreementFields,
+        pdfBlocks: serviceAgreementPdfBlocks
     }
 };
 
@@ -310,12 +619,17 @@ export function prefillFromCustomer(templateId, customer) {
     return Object.fromEntries(Object.entries(overrides).filter(([, v]) => String(v || '').trim() !== ''));
 }
 
+
 // ---------------------------------------------------------------
-// PDF KIT — built on the global `PDFLib` (loaded via CDN in index.html)
+// PDF KIT — built on the global `PDFLib` (loaded via CDN in index.html).
+// Renders the `pdfBlocks` flow defined per template above: real clause
+// text with {{fieldId}} blanks substituted, bordered tables, checkbox
+// lines and a two-party signature block — a faithful reproduction of
+// the source .docx content, not a generic field-summary sheet.
 // ---------------------------------------------------------------
 const PAGE_WIDTH = 595.28;  // A4 portrait, points
 const PAGE_HEIGHT = 841.89;
-const MARGIN = 48;
+const MARGIN = 50;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 
 function wrapText(font, text, size, maxWidth) {
@@ -336,156 +650,200 @@ function wrapText(font, text, size, maxWidth) {
     return lines;
 }
 
-function checkboxGroupText(field, value) {
-    const selected = Array.isArray(value) ? value : [];
-    return (field.options || []).map(opt => `${selected.includes(opt) ? '[X]' : '[ ]'} ${opt}`).join('   ');
-}
-
-function formatFieldValue(field, value) {
-    if (field.type === 'checkbox') return value ? 'Yes / Ya' : 'No / Tidak';
-    if (field.type === 'checkboxGroup') return checkboxGroupText(field, value);
-    return value === undefined || value === null || value === '' ? '—' : String(value);
-}
-
 export async function buildPdfForDocument(templateId, fields, signatures, meta) {
     const { PDFDocument, StandardFonts, rgb } = PDFLib;
     const tpl = DOCUMENT_TEMPLATES[templateId];
-    if (!tpl) throw new Error('Unknown document template.');
+    if (!tpl || !tpl.pdfBlocks) throw new Error('Unknown document template.');
+    const safeFields = fields || {};
 
     const pdfDoc = await PDFDocument.create();
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+    const bold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+    const italic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
 
     let page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     let y = PAGE_HEIGHT - MARGIN;
 
-    function ensureSpace(needed) {
-        if (y - needed < MARGIN + 30) {
-            page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-            y = PAGE_HEIGHT - MARGIN;
-            drawFooter();
-        }
-    }
-    function drawFooter() {
-        page.drawText('ZENQOR TECHNOLOGIES — Confidential Document', { x: MARGIN, y: 24, size: 7, font, color: rgb(0.55, 0.55, 0.55) });
-    }
-    function drawHeader() {
-        page.drawText(ZENQOR_INFO.name, { x: MARGIN, y, size: 16, font: bold, color: rgb(0.02, 0.16, 0.29) });
-        y -= 16;
-        page.drawText(`Reg No: ${ZENQOR_INFO.regNo}`, { x: MARGIN, y, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
-        y -= 11;
-        wrapText(font, ZENQOR_INFO.address, 8, CONTENT_WIDTH).forEach(line => {
-            page.drawText(line, { x: MARGIN, y, size: 8, font, color: rgb(0.35, 0.35, 0.35) });
-            y -= 10;
-        });
-        y -= 6;
-        page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_WIDTH - MARGIN, y }, thickness: 1.2, color: rgb(0.02, 0.16, 0.29) });
-        y -= 22;
-        page.drawText(tpl.label.en, { x: MARGIN, y, size: 14, font: bold, color: rgb(0.05, 0.05, 0.05) });
-        y -= 15;
-        page.drawText(tpl.label.ms, { x: MARGIN, y, size: 10, font, color: rgb(0.35, 0.35, 0.35) });
-        y -= 10;
-        if (meta && meta.referenceNo) {
-            page.drawText(`Reference: ${meta.referenceNo}`, { x: MARGIN, y, size: 9, font, color: rgb(0.35, 0.35, 0.35) });
-            y -= 12;
-        }
+    function drawRunningHeader() {
+        page.drawText(tpl.label.ms.toUpperCase(), { x: MARGIN, y, size: 7.5, font, color: rgb(0.55, 0.55, 0.55) });
+        const right = 'ZENQOR TECHNOLOGIES';
+        const w = font.widthOfTextAtSize(right, 7.5);
+        page.drawText(right, { x: PAGE_WIDTH - MARGIN - w, y, size: 7.5, font, color: rgb(0.55, 0.55, 0.55) });
         y -= 8;
+        page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_WIDTH - MARGIN, y }, thickness: 0.5, color: rgb(0.85, 0.85, 0.85) });
+        y -= 18;
     }
-    function drawSectionTitle(title) {
+    function newPage() {
+        page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+        y = PAGE_HEIGHT - MARGIN;
+        drawRunningHeader();
+    }
+    function ensureSpace(needed) {
+        if (y - needed < MARGIN + 24) newPage();
+    }
+    function sub(str) {
+        return String(str || '').replace(/\{\{(\w+)\}\}/g, (_, id) => {
+            const v = safeFields[id];
+            if (v === undefined || v === null || String(v).trim() === '') return '________________';
+            return String(v);
+        });
+    }
+    function drawWrapped(text, opts = {}) {
+        const { size = 9.5, f = font, color = rgb(0.08, 0.08, 0.08), lh = size + 2.5, x = MARGIN, w = CONTENT_WIDTH } = opts;
+        String(text || '').split('\n').forEach(paragraph => {
+            const lines = wrapText(f, paragraph, size, w);
+            ensureSpace(lines.length * lh);
+            lines.forEach(line => { page.drawText(line, { x, y, size, font: f, color }); y -= lh; });
+        });
+    }
+
+    function drawGridTable(headers, rows, widthFractions, opts = {}) {
+        const colWidths = widthFractions.map(fr => fr * CONTENT_WIDTH);
+        const hasHeader = !opts.noHeader && headers && headers.some(Boolean);
         ensureSpace(24);
         y -= 4;
-        page.drawText(title, { x: MARGIN, y, size: 10.5, font: bold, color: rgb(0.02, 0.16, 0.29) });
-        y -= 6;
-        page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_WIDTH - MARGIN, y }, thickness: 0.5, color: rgb(0.8, 0.8, 0.8) });
-        y -= 14;
-    }
-    function drawLabelValueRow(field, value) {
-        const labelText = `${field.label.en} / ${field.label.ms}`;
-        const valueText = formatFieldValue(field, value);
-        const labelLines = wrapText(bold, labelText, 8, CONTENT_WIDTH);
-        const valueLines = wrapText(font, valueText, 9.5, CONTENT_WIDTH);
-        ensureSpace(labelLines.length * 10 + valueLines.length * 12 + 8);
-        labelLines.forEach(line => { page.drawText(line, { x: MARGIN, y, size: 8, font: bold, color: rgb(0.3, 0.3, 0.3) }); y -= 10; });
-        valueLines.forEach(line => { page.drawText(line, { x: MARGIN, y, size: 9.5, font, color: rgb(0.05, 0.05, 0.05) }); y -= 12; });
-        y -= 4;
-    }
-
-    drawHeader();
-
-    let currentSection = null;
-    const feeTableFields = tpl.fieldConfig.filter(f => f.pdf && f.pdf.table === 'fees');
-    const skipIds = new Set(feeTableFields.map(f => f.id));
-
-    tpl.fieldConfig.forEach(field => {
-        if (skipIds.has(field.id)) return;
-        if (field.section !== currentSection) {
-            currentSection = field.section;
-            drawSectionTitle(currentSection);
-        }
-        drawLabelValueRow(field, fields ? fields[field.id] : undefined);
-    });
-
-    if (feeTableFields.length) {
-        drawSectionTitle('Payment Phases / Fasa Pembayaran');
-        const rows = 3;
-        const colWidths = [CONTENT_WIDTH * 0.4, CONTENT_WIDTH * 0.2, CONTENT_WIDTH * 0.4];
-        const headers = ['Work Stage / Peringkat Kerja', 'Amount (RM) / Amaun', 'Payment Milestone / Milestone'];
-        ensureSpace(20);
-        let x = MARGIN;
-        headers.forEach((h, i) => {
-            wrapText(bold, h, 7.5, colWidths[i] - 6).forEach((line, li) => page.drawText(line, { x: x + 3, y: y - li * 9, size: 7.5, font: bold, color: rgb(0.02, 0.16, 0.29) }));
-            x += colWidths[i];
-        });
-        y -= 22;
-        for (let r = 0; r < rows; r++) {
-            const stageField = tpl.fieldConfig.find(f => f.pdf && f.pdf.table === 'fees' && f.pdf.row === r && f.pdf.col === 0);
-            const amountField = tpl.fieldConfig.find(f => f.pdf && f.pdf.table === 'fees' && f.pdf.row === r && f.pdf.col === 1);
-            const milestoneField = tpl.fieldConfig.find(f => f.pdf && f.pdf.table === 'fees' && f.pdf.row === r && f.pdf.col === 2);
-            const cellTexts = [
-                formatFieldValue(stageField, fields ? fields[stageField.id] : ''),
-                formatFieldValue(amountField, fields ? fields[amountField.id] : ''),
-                formatFieldValue(milestoneField, fields ? fields[milestoneField.id] : '')
-            ];
-            const wrapped = cellTexts.map((t, i) => wrapText(font, t, 8, colWidths[i] - 6));
-            const rowHeight = Math.max(...wrapped.map(w => w.length)) * 10 + 6;
-            ensureSpace(rowHeight);
-            x = MARGIN;
-            wrapped.forEach((lines, i) => {
-                lines.forEach((line, li) => page.drawText(line, { x: x + 3, y: y - li * 10, size: 8, font, color: rgb(0.05, 0.05, 0.05) }));
-                x += colWidths[i];
+        const tableTopY = y + 4;
+        if (hasHeader) {
+            let hx = MARGIN;
+            headers.forEach((h, i) => {
+                wrapText(bold, h, 7.5, colWidths[i] - 8).forEach((line, li) =>
+                    page.drawText(line, { x: hx + 4, y: y - li * 9, size: 7.5, font: bold, color: rgb(0.02, 0.16, 0.29) }));
+                hx += colWidths[i];
             });
-            y -= rowHeight;
+            y -= 18;
+            page.drawLine({ start: { x: MARGIN, y: y + 6 }, end: { x: PAGE_WIDTH - MARGIN, y: y + 6 }, thickness: 0.8, color: rgb(0.5, 0.5, 0.5) });
         }
+        rows.forEach(row => {
+            const wrapped = row.map((cell, i) => wrapText(opts.boldFirstCol && i === 0 ? bold : font, String(cell || '—'), 8.5, colWidths[i] - 8));
+            const rowH = Math.max(...wrapped.map(w => w.length)) * 11 + 8;
+            ensureSpace(rowH);
+            let cx = MARGIN;
+            wrapped.forEach((lines, i) => {
+                lines.forEach((line, li) => page.drawText(line, { x: cx + 4, y: y - 2 - li * 11, size: 8.5, font: opts.boldFirstCol && i === 0 ? bold : font, color: rgb(0.08, 0.08, 0.08) }));
+                cx += colWidths[i];
+            });
+            y -= rowH;
+            page.drawLine({ start: { x: MARGIN, y: y + 4 }, end: { x: PAGE_WIDTH - MARGIN, y: y + 4 }, thickness: 0.4, color: rgb(0.82, 0.82, 0.82) });
+        });
+        // Outer + column borders for the whole table block just drawn.
+        const tableBottomY = y + 4;
+        page.drawRectangle({ x: MARGIN, y: tableBottomY, width: CONTENT_WIDTH, height: tableTopY - tableBottomY, borderColor: rgb(0.6, 0.6, 0.6), borderWidth: 0.8 });
+        let vx = MARGIN;
+        colWidths.slice(0, -1).forEach(w => { vx += w; page.drawLine({ start: { x: vx, y: tableTopY }, end: { x: vx, y: tableBottomY }, thickness: 0.4, color: rgb(0.82, 0.82, 0.82) }); });
         y -= 8;
     }
 
-    // Signature blocks
-    ensureSpace(150);
-    drawSectionTitle('Signatures / Tandatangan');
-    const boxWidth = CONTENT_WIDTH / 2 - 10;
-    const boxHeight = 90;
-    ensureSpace(boxHeight + 40);
-    const topY = y;
-
-    async function drawSignatureBox(x, label, sig) {
-        page.drawRectangle({ x, y: topY - boxHeight, width: boxWidth, height: boxHeight, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 1 });
-        page.drawText(label, { x: x + 6, y: topY - 14, size: 8, font: bold, color: rgb(0.3, 0.3, 0.3) });
-        if (sig && sig.dataUrl) {
-            try {
-                const pngBytes = Uint8Array.from(atob(sig.dataUrl.split(',')[1]), c => c.charCodeAt(0));
-                const png = await pdfDoc.embedPng(pngBytes);
-                const scale = Math.min((boxWidth - 12) / png.width, 46 / png.height);
-                page.drawImage(png, { x: x + 6, y: topY - boxHeight + 30, width: png.width * scale, height: png.height * scale });
-            } catch (e) { /* ignore malformed signature image */ }
+    async function drawSignatures(b) {
+        const sides = [b.left, b.right].filter(Boolean);
+        const boxWidth = sides.length === 2 ? CONTENT_WIDTH / 2 - 10 : CONTENT_WIDTH;
+        const boxHeight = 110;
+        ensureSpace(boxHeight + 10);
+        const topY = y;
+        for (let i = 0; i < sides.length; i++) {
+            const s = sides[i];
+            const x = MARGIN + i * (boxWidth + 20);
+            page.drawRectangle({ x, y: topY - boxHeight, width: boxWidth, height: boxHeight, borderColor: rgb(0.75, 0.75, 0.75), borderWidth: 1 });
+            wrapText(bold, s.title, 8, boxWidth - 12).forEach((line, li) => page.drawText(line, { x: x + 6, y: topY - 13 - li * 10, size: 8, font: bold, color: rgb(0.02, 0.16, 0.29) }));
+            const sig = signatures ? signatures[s.sigRole] : null;
+            if (sig && sig.dataUrl) {
+                try {
+                    const pngBytes = Uint8Array.from(atob(sig.dataUrl.split(',')[1]), c => c.charCodeAt(0));
+                    const png = await pdfDoc.embedPng(pngBytes);
+                    const scale = Math.min((boxWidth - 12) / png.width, 38 / png.height);
+                    page.drawImage(png, { x: x + 6, y: topY - boxHeight + 56, width: png.width * scale, height: png.height * scale });
+                } catch (e) { /* ignore malformed signature image */ }
+            }
+            const nameVal = (s.nameField && safeFields[s.nameField]) || (sig && sig.signedByName) || '';
+            const posVal = s.positionField ? safeFields[s.positionField] : '';
+            const dateVal = s.dateField ? safeFields[s.dateField] : (sig && sig.signedAt ? new Date(sig.signedAt).toLocaleDateString('en-GB') : '');
+            let ly = topY - boxHeight + 44;
+            page.drawText(`Name / Nama: ${nameVal || '—'}`, { x: x + 6, y: ly, size: 7.5, font, color: rgb(0.2, 0.2, 0.2) }); ly -= 10;
+            if (s.positionField) { page.drawText(`Position / Jawatan: ${posVal || '—'}`, { x: x + 6, y: ly, size: 7.5, font, color: rgb(0.2, 0.2, 0.2) }); ly -= 10; }
+            if (s.dateField) { page.drawText(`Date / Tarikh: ${dateVal || '—'}`, { x: x + 6, y: ly, size: 7.5, font, color: rgb(0.2, 0.2, 0.2) }); ly -= 10; }
+            if (s.stampField) page.drawText(`Stamp / Cop: ${safeFields[s.stampField] || '—'}`, { x: x + 6, y: ly, size: 7, font, color: rgb(0.4, 0.4, 0.4) });
         }
-        const signerLine = sig && sig.signedByName ? `${sig.signedByName}${sig.signedAt ? ' — ' + new Date(sig.signedAt).toLocaleDateString('en-GB') : ''}` : 'Not yet signed';
-        page.drawText(signerLine, { x: x + 6, y: topY - boxHeight + 12, size: 7.5, font, color: rgb(0.35, 0.35, 0.35) });
+        y = topY - boxHeight - 16;
     }
 
-    await drawSignatureBox(MARGIN, 'Client / Pelanggan', signatures ? signatures.client : null);
-    await drawSignatureBox(MARGIN + boxWidth + 20, 'Zenqor Technologies', signatures ? signatures.zenqor : null);
-    y = topY - boxHeight - 16;
+    async function drawBlock(b) {
+        if (b.t === 'title') {
+            ensureSpace(56);
+            const enSize = 14.5;
+            const enW = bold.widthOfTextAtSize(b.en, enSize);
+            page.drawText(b.en, { x: (PAGE_WIDTH - enW) / 2, y, size: enSize, font: bold, color: rgb(0.02, 0.16, 0.29) });
+            y -= 18;
+            const msSize = 10.5;
+            const msW = italic.widthOfTextAtSize(b.ms, msSize);
+            page.drawText(b.ms, { x: (PAGE_WIDTH - msW) / 2, y, size: msSize, font: italic, color: rgb(0.35, 0.35, 0.35) });
+            y -= 12;
+            page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_WIDTH - MARGIN, y }, thickness: 1.2, color: rgb(0.02, 0.16, 0.29) });
+            y -= 18;
+        } else if (b.t === 'heading') {
+            ensureSpace(24);
+            y -= 4;
+            page.drawText(sub(b.text), { x: MARGIN, y, size: 10.5, font: bold, color: rgb(0.02, 0.16, 0.29) });
+            y -= 5;
+            page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_WIDTH - MARGIN, y }, thickness: 0.5, color: rgb(0.82, 0.82, 0.82) });
+            y -= 13;
+        } else if (b.t === 'boldpara') {
+            drawWrapped(sub(b.text), { size: 9.5, f: bold, lh: 12 });
+            y -= 5;
+        } else if (b.t === 'para') {
+            const f = b.italic ? italic : font;
+            const size = b.small ? 7.8 : 9.5;
+            drawWrapped(sub(b.text), { size, f, lh: size + 3, color: b.small ? rgb(0.35, 0.35, 0.35) : undefined });
+            y -= 5;
+        } else if (b.t === 'bullets') {
+            b.items.forEach(item => {
+                const lines = wrapText(font, sub(item), 9, CONTENT_WIDTH - 14);
+                ensureSpace(lines.length * 11.5 + 2);
+                lines.forEach((line, i) => {
+                    if (i === 0) page.drawText('•', { x: MARGIN, y, size: 9, font, color: rgb(0.08, 0.08, 0.08) });
+                    page.drawText(line, { x: MARGIN + 13, y, size: 9, font, color: rgb(0.08, 0.08, 0.08) });
+                    y -= 11.5;
+                });
+            });
+            y -= 4;
+        } else if (b.t === 'spacer') {
+            y -= 8;
+        } else if (b.t === 'tworef') {
+            ensureSpace(30);
+            const colW = CONTENT_WIDTH / 2;
+            b.items.forEach(([label], i) => page.drawText(label, { x: MARGIN + i * colW, y, size: 8, font: bold, color: rgb(0.3, 0.3, 0.3) }));
+            y -= 11;
+            b.items.forEach(([, tmpl], i) => page.drawText(sub(tmpl), { x: MARGIN + i * colW, y, size: 9.5, font, color: rgb(0.08, 0.08, 0.08) }));
+            y -= 15;
+        } else if (b.t === 'table2') {
+            drawGridTable(['', ''], b.rows.map(r => [r[0], sub(r[1])]), [0.4, 0.6], { noHeader: true, boldFirstCol: true });
+        } else if (b.t === 'table3') {
+            drawGridTable(b.headers, b.rows.map(r => r.map((c, i) => i === 0 ? c : sub(c))), [0.3, 0.35, 0.35], { boldFirstCol: true });
+        } else if (b.t === 'table4') {
+            drawGridTable(b.headers, b.rows.map(r => r.map((c, i) => (i === 0 || c === '') ? c : sub(c))), [0.13, 0.35, 0.17, 0.35], {});
+        } else if (b.t === 'checkboxGroup') {
+            const field = tpl.fieldConfig.find(f => f.id === b.fieldId);
+            if (field) {
+                ensureSpace(14);
+                page.drawText(`${field.label.en} / ${field.label.ms}`, { x: MARGIN, y, size: 8, font: bold, color: rgb(0.3, 0.3, 0.3) });
+                y -= 11;
+                const text = field.type === 'checkbox'
+                    ? `${safeFields[b.fieldId] ? '[X]' : '[ ]'} ${field.label.en}`
+                    : (field.options || []).map(o => `${(safeFields[b.fieldId] || []).includes(o) ? '[X]' : '[ ]'} ${o}`).join('   ');
+                drawWrapped(text, { size: 9, lh: 11.5 });
+                y -= 10;
+            }
+        } else if (b.t === 'signatures2') {
+            await drawSignatures(b);
+        }
+    }
 
-    drawFooter();
+    drawRunningHeader();
+    if (meta && meta.referenceNo) {
+        page.drawText(`Reference: ${meta.referenceNo}`, { x: MARGIN, y, size: 8, font: italic, color: rgb(0.4, 0.4, 0.4) });
+        y -= 14;
+    }
+    for (const b of tpl.pdfBlocks) {
+        await drawBlock(b);
+    }
+
     return pdfDoc.save();
 }
