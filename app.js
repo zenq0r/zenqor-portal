@@ -714,6 +714,13 @@ createApp({
     },
     computed: {
         canManageSensitiveData() { return ['Superadmin', 'Director', 'HR'].includes(this.userProfile.role); },
+        // Identity/banking numbers (IC/Passport, Bank Account, EPF/SOCSO) may be
+        // entered ONCE when an employee record is first created by anyone with HR
+        // Employees access (canManageEmployees), but once that record already
+        // exists, changing these specific fields is restricted to Superadmin/
+        // Director only — narrower than canManageSensitiveData above, which still
+        // includes HR for everything else on the employee record.
+        canEditLockedIdentityFields() { return ['Superadmin', 'Director'].includes(this.userProfile.role); },
         canManageEmployees() { return this.hasModulePermission('hr-employees', 'edit'); },
         canManageClients() { return this.hasModulePermission('client-directory', 'edit'); },
         canManageDocuments() { return this.hasModulePermission('doc-generator', 'edit'); },
@@ -4142,6 +4149,17 @@ createApp({
                 if (!this.employeeModal.isEdit && !form.ic) return this.showNotify("National ID / Passport is required for a new employee.");
                 form.email = String(form.email || '').trim().toLowerCase();
                 if (sensitiveFields.some(field => /^X{5}/i.test(String(form[field] || '').trim()))) return this.showNotify("Enter the complete sensitive number, not a masked value.");
+                // National ID/Passport, Bank Account and EPF/SOCSO can only be set once at
+                // creation — once the employee record already exists, changing them is
+                // Superadmin/Director only (the inputs are also disabled for anyone else on
+                // an existing record; this is the server-side-facing guard in case of a
+                // direct API call). Leaving a field blank always means "keep unchanged" and
+                // is never blocked, matching the existing masked-placeholder UX.
+                const lockedFields = ['ic', 'bankAcc', 'epfNo', 'socsoNo'];
+                if (this.employeeModal.isEdit && !this.canEditLockedIdentityFields &&
+                    lockedFields.some(field => String(form[field] || '').trim() && String(form[field] || '').trim() !== String(this.employeeModal.originalSensitive[field] || '').trim())) {
+                    return this.showNotify('Only Superadmin and Director may change National ID/Passport, Bank Account or EPF/SOCSO on an existing employee record.');
+                }
                 sensitiveFields.forEach(field => {
                     if (this.employeeModal.isEdit && !String(form[field] || '').trim()) form[field] = this.employeeModal.originalSensitive[field] || '';
                 });

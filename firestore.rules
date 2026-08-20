@@ -170,7 +170,21 @@ service cloud.firestore {
       );
       allow create: if isAdmin() || isHR();
       allow delete: if isAdmin();
-      allow update: if isAdmin() || isHR() || (
+      // National ID/Passport, Bank Account and EPF/SOCSO may be set once at create
+      // (HR's isHR() clause above still applies there), but on an UPDATE to an
+      // already-existing employee record those four fields must stay byte-identical
+      // unless the caller is Superadmin/Director — HR can still update everything
+      // else on the record freely. Mirrors the client's "leave blank = unchanged"
+      // save behavior (saveEmployee() in app.js reverts a blanked sensitive field
+      // to its original value before writing), so a legitimate no-change save from
+      // HR never trips this.
+      allow update: if isAdmin() || (
+        isHR() &&
+        request.resource.data.ic == resource.data.ic &&
+        request.resource.data.bankAcc == resource.data.bankAcc &&
+        request.resource.data.epfNo == resource.data.epfNo &&
+        request.resource.data.socsoNo == resource.data.socsoNo
+      ) || (
         isAuthenticated() &&
         resource.data.email is string &&
         request.auth.token.email is string &&
