@@ -661,6 +661,29 @@ export async function buildPdfForDocument(templateId, fields, signatures, meta) 
     const bold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
     const italic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
 
+    // Matches the official letterhead — the source templates carry the Zenqor
+    // logo on their cover page. /logo.png itself is a 1920x1080 canvas that's
+    // mostly blank padding around a much smaller centered wordmark (measured
+    // pixel bounds: x 227–1694, y 396–625) — embedding the full canvas at a
+    // small letterhead size renders as an near-invisible sliver, so it's
+    // cropped to the wordmark (plus a small margin) via an offscreen canvas
+    // before embedding. Any failure here (offline, blocked request, no canvas
+    // support) must not break PDF generation, so it degrades to a text-only
+    // header with no logo.
+    let logoImage = null;
+    try {
+        const logoResp = await fetch('/logo.png');
+        if (logoResp.ok) {
+            const bitmap = await createImageBitmap(await logoResp.blob());
+            const cropX = 205, cropY = 375, cropW = 1497, cropH = 262; // wordmark bounds + ~15px margin
+            const canvas = document.createElement('canvas');
+            canvas.width = cropW; canvas.height = cropH;
+            canvas.getContext('2d').drawImage(bitmap, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+            const croppedBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            if (croppedBlob) logoImage = await pdfDoc.embedPng(await croppedBlob.arrayBuffer());
+        }
+    } catch (e) { /* no logo, continue without it */ }
+
     let page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     let y = PAGE_HEIGHT - MARGIN;
 
@@ -819,6 +842,12 @@ export async function buildPdfForDocument(templateId, fields, signatures, meta) 
     async function drawBlock(b) {
         if (b.t === 'title') {
             ensureSpace(56);
+            if (logoImage) {
+                const logoH = 34;
+                const logoW = logoImage.width * (logoH / logoImage.height);
+                page.drawImage(logoImage, { x: MARGIN, y: y - logoH + 6, width: logoW, height: logoH });
+                y -= logoH + 4;
+            }
             const enSize = 14.5;
             const enW = bold.widthOfTextAtSize(b.en, enSize);
             page.drawText(b.en, { x: (PAGE_WIDTH - enW) / 2, y, size: enSize, font: bold, color: rgb(0.02, 0.16, 0.29) });
