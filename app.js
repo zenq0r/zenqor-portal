@@ -725,6 +725,10 @@ createApp({
         // Staff who can create/prefill/countersign Signed Documents — same roster as
         // 'documents' in RBAC_ROLES for the non-Client roles.
         canManageSignedDocuments() { return ['Director', 'Superadmin', 'HR', 'Account'].includes(this.userProfile.role); },
+        // Deleting a Voided signed document is more destructive than the routine
+        // create/prefill/countersign work canManageSignedDocuments covers — restricted to
+        // Superadmin/Director only, matching firestore.rules' delete rule on this collection.
+        canDeleteSignedDocuments() { return ['Director', 'Superadmin'].includes(this.userProfile.role); },
         activeTemplateFieldConfig() {
             const templateId = this.signedDocumentModal.doc ? this.signedDocumentModal.doc.templateId : this.newSignedDocumentModal.templateId;
             const tpl = this.documentTemplates[templateId];
@@ -2481,6 +2485,44 @@ createApp({
             } catch (error) {
                 console.error('Void signed document failed:', error);
                 this.showNotify(this.getFirestoreWriteError(error, 'void this document'));
+            }
+        },
+        // Deleting a signed_documents record is restricted to Superadmin/Director only —
+        // matches firestore.rules' `allow delete: if isSuperadmin() || isDirector();` on
+        // this collection, and is only ever offered once a document is already Voided
+        // (a live draft/awaiting/completed record should be voided first, not deleted outright).
+        requestDeleteSignedDocument(docItem) {
+            if (!['Superadmin', 'Director'].includes(this.userProfile.role)) { this.showNotify('You do not have permission to delete this document.'); return; }
+            this.requestConfirm({
+                title: 'Permanently delete this document?',
+                message: `"${docItem.title}" and its signature/PDF files will be permanently removed. This cannot be undone.`,
+                confirmLabel: 'Yes, Delete Document',
+                danger: true,
+                onConfirm: () => this.deleteSignedDocument(docItem)
+            });
+        },
+        async deleteSignedDocument(docItem) {
+            try {
+                const storagePaths = [
+                    docItem.signatures?.client?.storagePath,
+                    docItem.signatures?.zenqor?.storagePath,
+                    docItem.finalPdf?.storagePath
+                ].filter(Boolean);
+                for (const path of storagePaths) {
+                    try {
+                        await deleteObject(storageRef(storage, path));
+                    } catch (storageError) {
+                        if (storageError?.code !== 'storage/object-not-found') throw storageError;
+                    }
+                }
+                await deleteDoc(doc(db, 'signed_documents', docItem.id));
+                this.logAudit('DELETE_SIGNED_DOCUMENT', `Deleted ${this.documentTemplates[docItem.templateId] ? this.documentTemplates[docItem.templateId].label.en : docItem.templateId} for client ${docItem.clientName}`);
+                this.showNotify('Document permanently deleted.');
+                this.signedDocumentModal.show = false;
+                await this.loadSignedDocuments();
+            } catch (error) {
+                console.error('Delete signed document failed:', error);
+                this.showNotify(this.getFirestoreWriteError(error, 'delete this document'));
             }
         },
         // ---- Signature pad (hand-drawn, canvas + Pointer Events) ----
