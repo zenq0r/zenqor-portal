@@ -728,8 +728,11 @@ export async function buildPdfForDocument(templateId, fields, signatures, meta) 
         if (hasHeader) {
             const headerLines = headers.map((h, i) => wrapText(bold, h, 7.5, colWidths[i] - cellPadX * 2));
             const headerMaxLines = Math.max(...headerLines.map(l => l.length));
-            const headerPadTop = 7, headerPadBottom = 6, headerLineH = 9.5;
-            const headerH = headerPadTop + headerMaxLines * headerLineH + headerPadBottom;
+            // headerH's tail after the LAST line is a small descender allowance
+            // (headerLastTail), not a full extra headerLineH — using a whole line
+            // height there left a big dead gap below single-line header cells.
+            const headerPadTop = 7, headerPadBottom = 5, headerLineH = 9.5, headerLastTail = 3.5;
+            const headerH = headerPadTop + Math.max(0, headerMaxLines - 1) * headerLineH + headerLastTail + headerPadBottom;
             const preHeaderY = y;
             ensureSpace(headerH);
             checkBreak(preHeaderY);
@@ -748,11 +751,14 @@ export async function buildPdfForDocument(templateId, fields, signatures, meta) 
         // bottom border, regardless of how many lines that row wraps to — this
         // is what keeps the grid looking evenly spaced ("sekata") instead of
         // rows with more lines reading as cramped and short rows as bloated.
-        const padTop = 7, padBottom = 6, lineH = 11;
+        // The tail after the LAST line is `lastTail` (a small descender
+        // allowance), not a full extra `lineH` — reserving a whole line height
+        // there was leaving a large dead gap below single-line cells.
+        const padTop = 7, padBottom = 5, lineH = 11, lastTail = 4;
         rows.forEach(row => {
             const wrapped = row.map((cell, i) => wrapText(opts.boldFirstCol && i === 0 ? bold : font, String(cell || '—'), 8.5, colWidths[i] - cellPadX * 2));
             const maxLines = Math.max(...wrapped.map(w => w.length));
-            const rowH = padTop + maxLines * lineH + padBottom;
+            const rowH = padTop + Math.max(0, maxLines - 1) * lineH + lastTail + padBottom;
             const preRowY = y;
             ensureSpace(rowH);
             checkBreak(preRowY);

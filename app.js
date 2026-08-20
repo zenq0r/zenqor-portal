@@ -2443,7 +2443,11 @@ createApp({
 
                 const pdfBytes = await buildPdfForDocument(docItem.templateId, this.signedDocumentModal.fields, signatures, { referenceNo: docItem.referenceNo });
                 const pdfStoragePath = `signed_documents/${docItem.clientDirectoryId}/${docItem.id}/final.pdf`;
-                await uploadBytes(storageRef(storage, pdfStoragePath), pdfBytes, { contentType: 'application/pdf' });
+                // no-cache/must-revalidate: this exact URL (path stays the same across
+                // a later Regenerate PDF) would otherwise be served from the browser's
+                // cache for up to an hour under Storage's default Cache-Control, so a
+                // regenerated PDF could silently keep showing the old cached bytes.
+                await uploadBytes(storageRef(storage, pdfStoragePath), pdfBytes, { contentType: 'application/pdf', cacheControl: 'no-cache, max-age=0, must-revalidate' });
                 const pdfDownloadURL = await getDownloadURL(storageRef(storage, pdfStoragePath));
 
                 await updateDoc(doc(db, 'signed_documents', docItem.id), {
@@ -2548,7 +2552,11 @@ createApp({
                 this.showNotify('Regenerating PDF…');
                 const pdfBytes = await buildPdfForDocument(docItem.templateId, docItem.fields, docItem.signatures, { referenceNo: docItem.referenceNo });
                 const pdfStoragePath = docItem.finalPdf?.storagePath || `signed_documents/${docItem.clientDirectoryId}/${docItem.id}/final.pdf`;
-                await uploadBytes(storageRef(storage, pdfStoragePath), pdfBytes, { contentType: 'application/pdf' });
+                // no-cache/must-revalidate: this exact URL (path stays the same across
+                // a later Regenerate PDF) would otherwise be served from the browser's
+                // cache for up to an hour under Storage's default Cache-Control, so a
+                // regenerated PDF could silently keep showing the old cached bytes.
+                await uploadBytes(storageRef(storage, pdfStoragePath), pdfBytes, { contentType: 'application/pdf', cacheControl: 'no-cache, max-age=0, must-revalidate' });
                 const pdfDownloadURL = await getDownloadURL(storageRef(storage, pdfStoragePath));
                 const now = new Date().toISOString();
                 await updateDoc(doc(db, 'signed_documents', docItem.id), {
@@ -2620,14 +2628,25 @@ createApp({
         // Opens the finished PDF in a new tab so either party (Client or Zenqor staff)
         // can use their browser's own PDF viewer to print it — same open-in-tab pattern
         // as viewClientDocument(), just for the Signed Documents module's finalPdf.
+        // Appends a cache-busting param so a PDF fetched again right after a
+        // Regenerate PDF can't be served from an existing browser cache entry
+        // for this exact same URL (path/token stay identical across a regenerate).
+        signedDocumentPdfUrl(docItem) {
+            const url = docItem.finalPdf && docItem.finalPdf.downloadURL;
+            if (!url) return '';
+            const cacheBust = docItem.finalPdf.generatedAt ? new Date(docItem.finalPdf.generatedAt).getTime() : Date.now();
+            return `${url}${url.includes('?') ? '&' : '?'}cb=${cacheBust}`;
+        },
         printSignedDocumentPdf(docItem) {
-            if (!docItem.finalPdf || !docItem.finalPdf.downloadURL) return;
-            window.open(docItem.finalPdf.downloadURL, '_blank', 'noopener');
+            const url = this.signedDocumentPdfUrl(docItem);
+            if (!url) return;
+            window.open(url, '_blank', 'noopener');
         },
         async downloadSignedDocumentPdf(docItem) {
-            if (!docItem.finalPdf || !docItem.finalPdf.downloadURL) return;
+            const url = this.signedDocumentPdfUrl(docItem);
+            if (!url) return;
             try {
-                const response = await fetch(docItem.finalPdf.downloadURL);
+                const response = await fetch(url, { cache: 'no-store' });
                 if (!response.ok) throw new Error('Download failed.');
                 const blob = await response.blob();
                 const blobUrl = URL.createObjectURL(blob);
